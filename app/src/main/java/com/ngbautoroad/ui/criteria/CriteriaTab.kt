@@ -245,11 +245,14 @@ fun CriteriaSlider(
             )
         }
 
+        val sliderMax = effectiveMax.coerceAtLeast(1)
+        val sliderSteps = (sliderMax - 1).coerceAtLeast(0)
+
         Slider(
-            value = value.toFloat(),
+            value = value.toFloat().coerceIn(0f, sliderMax.toFloat()),
             onValueChange = { onValueChange(it.toInt()) },
-            valueRange = 0f..effectiveMax.toFloat(),
-            steps = effectiveMax - 1,
+            valueRange = 0f..sliderMax.toFloat(),
+            steps = sliderSteps,
             enabled = effectiveMax > 0 || value > 0,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
