@@ -3,6 +3,8 @@ package com.ngbautoroad.ui.settings
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -516,12 +518,31 @@ fun SettingsTab(prefsManager: PrefsManager) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // App Info
+        // App Info - Gesto secreto: 7 toques abre Admin
+        var tapCount by remember { mutableIntStateOf(0) }
+        var lastTapTime by remember { mutableLongStateOf(0L) }
+
         Text(
-            text = "NGB AutoRoad v3.1.0",
+            text = "NGB AutoRoad v3.2.0",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .clickable {
+                    val now = System.currentTimeMillis()
+                    if (now - lastTapTime > 3000) tapCount = 0
+                    lastTapTime = now
+                    tapCount++
+                    if (tapCount == 5) {
+                        Toast.makeText(context, "Mais 2 toques...", Toast.LENGTH_SHORT).show()
+                    }
+                    if (tapCount >= 7) {
+                        tapCount = 0
+                        context.startActivity(
+                            Intent(context, com.ngbautoroad.ui.admin.AdminActivity::class.java)
+                        )
+                    }
+                }
         )
 
         Spacer(modifier = Modifier.height(16.dp))

@@ -1,5 +1,6 @@
 package com.ngbautoroad.ui.dashboard
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -13,12 +14,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.model.DashboardData
 import com.ngbautoroad.data.prefs.PrefsManager
+import com.ngbautoroad.ui.finance.FinanceActivity
 import com.ngbautoroad.ui.theme.*
 import kotlinx.coroutines.launch
 import java.util.*
@@ -152,6 +155,24 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
 
         // Resumo semanal/mensal
         PeriodSummaryCard(dashData)
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Botão Controle Financeiro
+        val context = LocalContext.current
+        Button(
+            onClick = {
+                context.startActivity(Intent(context, FinanceActivity::class.java))
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            )
+        ) {
+            Icon(Icons.Default.AccountBalance, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Controle Financeiro")
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 

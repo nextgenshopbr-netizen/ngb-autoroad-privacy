@@ -336,6 +336,24 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    // --- Admin ---
+
+    private val KEY_ADMIN_PIN = stringPreferencesKey("admin_pin")
+
+    val adminPinFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_ADMIN_PIN] ?: "147258"
+    }
+
+    suspend fun saveAdminPin(pin: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_ADMIN_PIN] = pin
+        }
+    }
+
+    suspend fun resetAll() {
+        context.dataStore.edit { it.clear() }
+    }
+
     // --- Helpers ---
 
     private fun parseNeighborhoods(raw: String): List<Pair<String, Int>> {

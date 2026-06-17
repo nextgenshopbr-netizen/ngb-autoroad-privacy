@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:2:1-80:12
-INJECTED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:2:1-80:12
-INJECTED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:2:1-80:12
-INJECTED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:2:1-80:12
+ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:2:1-92:12
+INJECTED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:2:1-92:12
+INJECTED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:2:1-92:12
+INJECTED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:2:1-92:12
 MERGED from [com.google.mlkit:text-recognition:16.0.0] /home/ubuntu/.gradle/caches/transforms-3/01ee2fea1e975a1c0957f85a06d259a7/transformed/text-recognition-16.0.0/AndroidManifest.xml:2:1-7:12
 MERGED from [com.google.android.gms:play-services-mlkit-text-recognition:19.0.0] /home/ubuntu/.gradle/caches/transforms-3/088c97edf1e12a3c9e6913d1759dcc61/transformed/play-services-mlkit-text-recognition-19.0.0/AndroidManifest.xml:2:1-8:12
 MERGED from [com.google.mlkit:text-recognition-bundled-common:16.0.0] /home/ubuntu/.gradle/caches/transforms-3/f7803fe9d6b87b137ab3e6f4f3076c4e/transformed/text-recognition-bundled-common-16.0.0/AndroidManifest.xml:2:1-7:12
@@ -140,8 +140,8 @@ MERGED from [com.google.android.datatransport:transport-runtime:2.2.6] /home/ubu
 	android:name
 		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:12:22-76
 application
-ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:14:5-78:19
-INJECTED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:14:5-78:19
+ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:14:5-90:19
+INJECTED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:14:5-90:19
 MERGED from [com.google.android.gms:play-services-mlkit-text-recognition-common:19.0.0] /home/ubuntu/.gradle/caches/transforms-3/57f59c28afa1a7e1d86545f3242403ac/transformed/play-services-mlkit-text-recognition-common-19.0.0/AndroidManifest.xml:8:5-16:19
 MERGED from [com.google.android.gms:play-services-mlkit-text-recognition-common:19.0.0] /home/ubuntu/.gradle/caches/transforms-3/57f59c28afa1a7e1d86545f3242403ac/transformed/play-services-mlkit-text-recognition-common-19.0.0/AndroidManifest.xml:8:5-16:19
 MERGED from [com.google.mlkit:vision-common:17.3.0] /home/ubuntu/.gradle/caches/transforms-3/3700d5e528b3fb6f90b99c5855352208/transformed/vision-common-17.3.0/AndroidManifest.xml:8:5-16:19
@@ -232,7 +232,7 @@ ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:42:9-45:
 		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:45:13-53
 	android:name
 		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:43:13-57
-activity#com.ngbautoroad.ui.map.ZoneMapActivity
+activity#com.ngbautoroad.ui.admin.AdminActivity
 ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:48:9-51:56
 	android:exported
 		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:50:13-37
@@ -240,42 +240,58 @@ ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:48:9-51:
 		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:51:13-53
 	android:name
 		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:49:13-51
-service#com.ngbautoroad.service.OverlayService
-ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:54:9-57:58
+activity#com.ngbautoroad.ui.finance.FinanceActivity
+ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:54:9-57:56
 	android:exported
 		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:56:13-37
-	android:foregroundServiceType
-		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:57:13-55
+	android:theme
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:57:13-53
 	android:name
-		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:55:13-51
-service#com.ngbautoroad.service.OcrCaptureService
-ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:60:9-63:63
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:55:13-55
+activity#com.ngbautoroad.ui.map.ZoneMapActivity
+ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:60:9-63:56
 	android:exported
 		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:62:13-37
-	android:foregroundServiceType
-		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:63:13-60
+	android:theme
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:63:13-53
 	android:name
-		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:61:13-54
-service#com.ngbautoroad.service.RideAccessibilityService
-ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:66:9-76:19
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:61:13-51
+service#com.ngbautoroad.service.OverlayService
+ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:66:9-69:58
 	android:exported
-		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:68:13-36
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:68:13-37
+	android:foregroundServiceType
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:69:13-55
+	android:name
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:67:13-51
+service#com.ngbautoroad.service.OcrCaptureService
+ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:72:9-75:63
+	android:exported
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:74:13-37
+	android:foregroundServiceType
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:75:13-60
+	android:name
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:73:13-54
+service#com.ngbautoroad.service.RideAccessibilityService
+ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:78:9-88:19
+	android:exported
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:80:13-36
 	android:permission
-		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:69:13-79
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:81:13-79
 	android:name
-		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:67:13-61
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:79:13-61
 intent-filter#action:name:android.accessibilityservice.AccessibilityService
-ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:70:13-72:29
+ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:82:13-84:29
 action#android.accessibilityservice.AccessibilityService
-ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:71:17-92
+ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:83:17-92
 	android:name
-		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:71:25-89
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:83:25-89
 meta-data#android.accessibilityservice
-ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:73:13-75:72
+ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:85:13-87:72
 	android:resource
-		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:75:17-69
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:87:17-69
 	android:name
-		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:74:17-60
+		ADDED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml:86:17-60
 uses-sdk
 INJECTED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/ubuntu/NGBAutoRoad-v3/app/src/main/AndroidManifest.xml

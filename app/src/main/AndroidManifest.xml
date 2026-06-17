@@ -44,6 +44,18 @@
             android:exported="false"
             android:theme="@style/Theme.NGBAutoRoad" />
 
+        <!-- Admin Activity (oculta) -->
+        <activity
+            android:name=".ui.admin.AdminActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NGBAutoRoad" />
+
+        <!-- Finance Activity -->
+        <activity
+            android:name=".ui.finance.FinanceActivity"
+            android:exported="false"
+            android:theme="@style/Theme.NGBAutoRoad" />
+
         <!-- Zone Map Activity -->
         <activity
             android:name=".ui.map.ZoneMapActivity"
