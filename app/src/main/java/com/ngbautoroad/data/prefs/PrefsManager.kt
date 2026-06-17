@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import com.ngbautoroad.data.model.CardModel
 import com.ngbautoroad.data.model.CriteriaWeights
+import com.ngbautoroad.data.model.DriverThresholds
 import com.ngbautoroad.domain.ScoringThresholds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -24,10 +25,22 @@ class PrefsManager(private val context: Context) {
     private val KEY_WEIGHT_PICKUP_DIST = intPreferencesKey("weight_pickup_distance")
     private val KEY_WEIGHT_DROPOFF_DIST = intPreferencesKey("weight_dropoff_distance")
 
+    // Driver Thresholds Keys (valores mínimos desejados)
+    private val KEY_THRESH_MIN_VALUE_PER_KM = doublePreferencesKey("thresh_min_value_per_km")
+    private val KEY_THRESH_MIN_VALUE_PER_HOUR = doublePreferencesKey("thresh_min_value_per_hour")
+    private val KEY_THRESH_MIN_RIDE_VALUE = doublePreferencesKey("thresh_min_ride_value")
+    private val KEY_THRESH_MAX_PICKUP_DIST = doublePreferencesKey("thresh_max_pickup_distance")
+    private val KEY_THRESH_MIN_RATING = doublePreferencesKey("thresh_min_passenger_rating")
+    private val KEY_THRESH_MAX_DURATION = doublePreferencesKey("thresh_max_duration")
+    private val KEY_THRESH_MAX_STOPS = intPreferencesKey("thresh_max_stops")
+    private val KEY_THRESH_MIN_DROPOFF_DIST = doublePreferencesKey("thresh_min_dropoff_distance")
+
     // Card Selection Keys
     private val KEY_ACTIVE_CARD_SLOT = intPreferencesKey("active_card_slot") // 1, 2, or 3
     private val KEY_CARD1_MODEL_ID = intPreferencesKey("card1_model_id")
     private val KEY_CARD2_MODEL_ID = intPreferencesKey("card2_model_id")
+    private val KEY_CARD1_NAME = stringPreferencesKey("card1_name")
+    private val KEY_CARD2_NAME = stringPreferencesKey("card2_name")
 
     // Card 3 Custom Keys
     private val KEY_CARD3_BG_COLOR = longPreferencesKey("card3_bg_color")
@@ -36,14 +49,27 @@ class PrefsManager(private val context: Context) {
     private val KEY_CARD3_BORDER_COLOR = longPreferencesKey("card3_border_color")
     private val KEY_CARD3_BORDER_RADIUS = intPreferencesKey("card3_border_radius")
     private val KEY_CARD3_FONT_SIZE = intPreferencesKey("card3_font_size")
+    private val KEY_CARD3_LAYOUT_JSON = stringPreferencesKey("card3_layout_json")
+
+    // Overlay Size & Accessibility
+    private val KEY_OVERLAY_WIDTH = intPreferencesKey("overlay_width")
+    private val KEY_OVERLAY_HEIGHT = intPreferencesKey("overlay_height")
+    private val KEY_OVERLAY_FONT_SCALE = floatPreferencesKey("overlay_font_scale")
 
     // Service State
     private val KEY_SERVICE_ENABLED = booleanPreferencesKey("service_enabled")
     private val KEY_OCR_ENABLED = booleanPreferencesKey("ocr_enabled")
+    private val KEY_PROTECTION_ENABLED = booleanPreferencesKey("protection_enabled")
 
-    // Blocked Neighborhoods (stored as comma-separated JSON)
+    // Blocked Neighborhoods (stored as comma-separated)
     private val KEY_BLOCKED_PICKUP = stringPreferencesKey("blocked_pickup_neighborhoods")
     private val KEY_BLOCKED_DROPOFF = stringPreferencesKey("blocked_dropoff_neighborhoods")
+
+    // Blocked Zones (stored as JSON)
+    private val KEY_BLOCKED_ZONES_JSON = stringPreferencesKey("blocked_zones_json")
+
+    // Gallery favorites
+    private val KEY_GALLERY_FAVORITES = stringPreferencesKey("gallery_favorites")
 
     // --- Criteria Weights ---
 
@@ -73,6 +99,34 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    // --- Driver Thresholds (valores mínimos desejados) ---
+
+    val driverThresholdsFlow: Flow<DriverThresholds> = context.dataStore.data.map { prefs ->
+        DriverThresholds(
+            minValuePerKm = prefs[KEY_THRESH_MIN_VALUE_PER_KM] ?: 0.0,
+            minValuePerHour = prefs[KEY_THRESH_MIN_VALUE_PER_HOUR] ?: 0.0,
+            minRideValue = prefs[KEY_THRESH_MIN_RIDE_VALUE] ?: 0.0,
+            maxPickupDistance = prefs[KEY_THRESH_MAX_PICKUP_DIST] ?: 0.0,
+            minPassengerRating = prefs[KEY_THRESH_MIN_RATING] ?: 0.0,
+            maxDuration = prefs[KEY_THRESH_MAX_DURATION] ?: 0.0,
+            maxStops = prefs[KEY_THRESH_MAX_STOPS] ?: 99,
+            minDropoffDistance = prefs[KEY_THRESH_MIN_DROPOFF_DIST] ?: 0.0
+        )
+    }
+
+    suspend fun saveDriverThresholds(thresholds: DriverThresholds) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_THRESH_MIN_VALUE_PER_KM] = thresholds.minValuePerKm
+            prefs[KEY_THRESH_MIN_VALUE_PER_HOUR] = thresholds.minValuePerHour
+            prefs[KEY_THRESH_MIN_RIDE_VALUE] = thresholds.minRideValue
+            prefs[KEY_THRESH_MAX_PICKUP_DIST] = thresholds.maxPickupDistance
+            prefs[KEY_THRESH_MIN_RATING] = thresholds.minPassengerRating
+            prefs[KEY_THRESH_MAX_DURATION] = thresholds.maxDuration
+            prefs[KEY_THRESH_MAX_STOPS] = thresholds.maxStops
+            prefs[KEY_THRESH_MIN_DROPOFF_DIST] = thresholds.minDropoffDistance
+        }
+    }
+
     // --- Card Selection ---
 
     val activeCardSlotFlow: Flow<Int> = context.dataStore.data.map { prefs ->
@@ -93,11 +147,28 @@ class PrefsManager(private val context: Context) {
         prefs[KEY_CARD2_MODEL_ID] ?: 2
     }
 
+    val card1NameFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_CARD1_NAME] ?: "Card 1"
+    }
+
+    val card2NameFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_CARD2_NAME] ?: "Card 2"
+    }
+
     suspend fun setCardModelId(slot: Int, modelId: Int) {
         context.dataStore.edit { prefs ->
             when (slot) {
                 1 -> prefs[KEY_CARD1_MODEL_ID] = modelId
                 2 -> prefs[KEY_CARD2_MODEL_ID] = modelId
+            }
+        }
+    }
+
+    suspend fun setCardName(slot: Int, name: String) {
+        context.dataStore.edit { prefs ->
+            when (slot) {
+                1 -> prefs[KEY_CARD1_NAME] = name
+                2 -> prefs[KEY_CARD2_NAME] = name
             }
         }
     }
@@ -118,6 +189,10 @@ class PrefsManager(private val context: Context) {
         )
     }
 
+    val card3LayoutJsonFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_CARD3_LAYOUT_JSON] ?: ""
+    }
+
     suspend fun saveCard3Custom(card: CardModel) {
         context.dataStore.edit { prefs ->
             prefs[KEY_CARD3_BG_COLOR] = card.backgroundColor
@@ -126,6 +201,39 @@ class PrefsManager(private val context: Context) {
             prefs[KEY_CARD3_BORDER_COLOR] = card.borderColor
             prefs[KEY_CARD3_BORDER_RADIUS] = card.borderRadius
             prefs[KEY_CARD3_FONT_SIZE] = card.fontSize
+        }
+    }
+
+    suspend fun saveCard3LayoutJson(json: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_CARD3_LAYOUT_JSON] = json
+        }
+    }
+
+    // --- Overlay Size & Accessibility ---
+
+    val overlayWidthFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_OVERLAY_WIDTH] ?: 320
+    }
+
+    val overlayHeightFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_OVERLAY_HEIGHT] ?: 180
+    }
+
+    val overlayFontScaleFlow: Flow<Float> = context.dataStore.data.map { prefs ->
+        prefs[KEY_OVERLAY_FONT_SCALE] ?: 1.0f
+    }
+
+    suspend fun saveOverlaySize(width: Int, height: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_OVERLAY_WIDTH] = width
+            prefs[KEY_OVERLAY_HEIGHT] = height
+        }
+    }
+
+    suspend fun saveOverlayFontScale(scale: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_OVERLAY_FONT_SCALE] = scale.coerceIn(0.7f, 2.0f)
         }
     }
 
@@ -151,6 +259,16 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    val protectionEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_PROTECTION_ENABLED] ?: false
+    }
+
+    suspend fun setProtectionEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_PROTECTION_ENABLED] = enabled
+        }
+    }
+
     // --- Blocked Neighborhoods ---
 
     val blockedPickupFlow: Flow<List<Pair<String, Int>>> = context.dataStore.data.map { prefs ->
@@ -173,6 +291,53 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    // --- Blocked Zones JSON ---
+
+    val blockedZonesJsonFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_BLOCKED_ZONES_JSON] ?: "[]"
+    }
+
+    suspend fun saveBlockedZonesJson(json: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_BLOCKED_ZONES_JSON] = json
+        }
+    }
+
+    // --- Zone Map Data (mapa interativo) ---
+
+    val zoneMapDataFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_BLOCKED_ZONES_JSON] ?: ""
+    }
+
+    suspend fun saveZoneMapData(json: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_BLOCKED_ZONES_JSON] = json
+        }
+    }
+
+    // --- Gallery Favorites ---
+
+    val galleryFavoritesFlow: Flow<Set<Int>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[KEY_GALLERY_FAVORITES] ?: ""
+        if (raw.isBlank()) emptySet()
+        else raw.split(",").mapNotNull { it.toIntOrNull() }.toSet()
+    }
+
+    suspend fun toggleGalleryFavorite(cardId: Int) {
+        context.dataStore.edit { prefs ->
+            val raw = prefs[KEY_GALLERY_FAVORITES] ?: ""
+            val current = if (raw.isBlank()) mutableSetOf()
+            else raw.split(",").mapNotNull { it.toIntOrNull() }.toMutableSet()
+
+            if (current.contains(cardId)) current.remove(cardId)
+            else current.add(cardId)
+
+            prefs[KEY_GALLERY_FAVORITES] = current.joinToString(",")
+        }
+    }
+
+    // --- Helpers ---
+
     private fun parseNeighborhoods(raw: String): List<Pair<String, Int>> {
         if (raw.isBlank()) return emptyList()
         return raw.split(";").mapNotNull { entry ->
@@ -187,3 +352,5 @@ class PrefsManager(private val context: Context) {
         return list.joinToString(";") { "${it.first}:${it.second}" }
     }
 }
+
+

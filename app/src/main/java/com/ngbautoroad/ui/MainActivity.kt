@@ -13,9 +13,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.prefs.PrefsManager
-import com.ngbautoroad.ui.criteria.CriteriaTab
 import com.ngbautoroad.ui.card.CardTab
+import com.ngbautoroad.ui.criteria.CriteriaTab
+import com.ngbautoroad.ui.dashboard.DashboardTab
 import com.ngbautoroad.ui.history.HistoryTab
 import com.ngbautoroad.ui.settings.SettingsTab
 import com.ngbautoroad.ui.theme.NGBAutoRoadTheme
@@ -23,10 +25,12 @@ import com.ngbautoroad.ui.theme.NGBAutoRoadTheme
 class MainActivity : ComponentActivity() {
 
     private lateinit var prefsManager: PrefsManager
+    private lateinit var database: AppDatabase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefsManager = PrefsManager(applicationContext)
+        database = AppDatabase.getInstance(applicationContext)
 
         // Check overlay permission
         if (!Settings.canDrawOverlays(this)) {
@@ -39,22 +43,23 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             NGBAutoRoadTheme {
-                MainScreen(prefsManager = prefsManager)
+                MainScreen(prefsManager = prefsManager, database = database)
             }
         }
     }
 }
 
 enum class TabItem(val title: String, val icon: ImageVector) {
+    DASHBOARD("Dashboard", Icons.Default.Dashboard),
     CRITERIA("Critérios", Icons.Default.Tune),
-    CARD("Card", Icons.Default.CreditCard),
+    CARD("Cards", Icons.Default.CreditCard),
     HISTORY("Histórico", Icons.Default.History),
     SETTINGS("Config", Icons.Default.Settings)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(prefsManager: PrefsManager) {
+fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = TabItem.entries.toTypedArray()
 
@@ -62,7 +67,7 @@ fun MainScreen(prefsManager: PrefsManager) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text("NGB AutoRoad v3.0")
+                    Text("NGB AutoRoad v3.1")
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
@@ -99,10 +104,11 @@ fun MainScreen(prefsManager: PrefsManager) {
                 .padding(paddingValues)
         ) {
             when (selectedTab) {
-                0 -> CriteriaTab(prefsManager = prefsManager)
-                1 -> CardTab(prefsManager = prefsManager)
-                2 -> HistoryTab(prefsManager = prefsManager)
-                3 -> SettingsTab(prefsManager = prefsManager)
+                0 -> DashboardTab(prefsManager = prefsManager, database = database)
+                1 -> CriteriaTab(prefsManager = prefsManager)
+                2 -> CardTab(prefsManager = prefsManager)
+                3 -> HistoryTab(prefsManager = prefsManager, database = database)
+                4 -> SettingsTab(prefsManager = prefsManager)
             }
         }
     }

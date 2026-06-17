@@ -4,7 +4,7 @@
             "outputFile": "com.ngbautoroad.app-mergeDebugResources-60:/values-v16/values-v16.xml",
             "map": [
                 {
-                    "source": "/home/ubuntu/.gradle/caches/transforms-3/05365192e8c93a127ae620124358980f/transformed/core-1.12.0/res/values-v16/values-v16.xml",
+                    "source": "/home/ubuntu/.gradle/caches/transforms-3/acd251abdebb78822d80ca5cfc22e253/transformed/core-1.12.0/res/values-v16/values-v16.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

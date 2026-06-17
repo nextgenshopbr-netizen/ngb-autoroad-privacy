@@ -4,8 +4,8 @@
         "source": "com.ngbautoroad.app-main-64:/mipmap-hdpi/ic_launcher.png"
     },
     {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/mipmap-xxhdpi_ic_launcher.png.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/mipmap-xxhdpi/ic_launcher.png"
+        "merged": "com.ngbautoroad.app-merged_res-62:/xml_accessibility_service_config.xml.flat",
+        "source": "com.ngbautoroad.app-main-64:/xml/accessibility_service_config.xml"
     },
     {
         "merged": "com.ngbautoroad.app-merged_res-62:/mipmap-xhdpi_ic_launcher.png.flat",
@@ -20,32 +20,12 @@
         "source": "com.ngbautoroad.app-main-64:/mipmap-xhdpi/ic_launcher_round.png"
     },
     {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/mipmap-anydpi-v26/ic_launcher_round.xml"
+        "merged": "com.ngbautoroad.app-merged_res-62:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.ngbautoroad.app-main-64:/mipmap-anydpi-v26/ic_launcher.xml"
     },
     {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/xml_accessibility_service_config.xml.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/xml/accessibility_service_config.xml"
-    },
-    {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/mipmap-xxxhdpi/ic_launcher_round.png"
-    },
-    {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/mipmap-anydpi-v26_ic_launcher.xml.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/mipmap-anydpi-v26/ic_launcher.xml"
-    },
-    {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/drawable_ic_launcher_foreground.xml.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/drawable/ic_launcher_foreground.xml"
-    },
-    {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/drawable_ic_launcher_background.xml.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/drawable/ic_launcher_background.xml"
-    },
-    {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/mipmap-xhdpi_ic_launcher.png.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/mipmap-xhdpi/ic_launcher.png"
+        "merged": "com.ngbautoroad.app-merged_res-62:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.ngbautoroad.app-main-64:/mipmap-anydpi-v26/ic_launcher_round.xml"
     },
     {
         "merged": "com.ngbautoroad.app-merged_res-62:/mipmap-xxhdpi_ic_launcher_round.png.flat",
@@ -56,35 +36,19 @@
         "source": "com.ngbautoroad.app-main-64:/mipmap-xxxhdpi/ic_launcher_round.png"
     },
     {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/mipmap-xxxhdpi_ic_launcher.png.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/mipmap-xxxhdpi/ic_launcher.png"
-    },
-    {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/mipmap-hdpi_ic_launcher_round.png.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/mipmap-hdpi/ic_launcher_round.png"
+        "merged": "com.ngbautoroad.app-merged_res-62:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.ngbautoroad.app-main-64:/drawable/ic_launcher_background.xml"
     },
     {
         "merged": "com.ngbautoroad.app-merged_res-62:/drawable_ic_launcher_foreground.xml.flat",
         "source": "com.ngbautoroad.app-main-64:/drawable/ic_launcher_foreground.xml"
     },
     {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/mipmap-hdpi_ic_launcher.png.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/mipmap-hdpi/ic_launcher.png"
-    },
-    {
         "merged": "com.ngbautoroad.app-merged_res-62:/mipmap-hdpi_ic_launcher_round.png.flat",
         "source": "com.ngbautoroad.app-main-64:/mipmap-hdpi/ic_launcher_round.png"
     },
     {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/mipmap-xxhdpi_ic_launcher_round.png.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/mipmap-xxhdpi/ic_launcher_round.png"
-    },
-    {
         "merged": "com.ngbautoroad.app-merged_res-62:/mipmap-xxhdpi_ic_launcher.png.flat",
         "source": "com.ngbautoroad.app-main-64:/mipmap-xxhdpi/ic_launcher.png"
-    },
-    {
-        "merged": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-merged_res-62:/mipmap-xhdpi_ic_launcher_round.png.flat",
-        "source": "/home/ubuntu/.gradle/daemon/8.5/com.ngbautoroad.app-main-64:/mipmap-xhdpi/ic_launcher_round.png"
     }
 ]

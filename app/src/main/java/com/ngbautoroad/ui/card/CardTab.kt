@@ -1,12 +1,11 @@
 package com.ngbautoroad.ui.card
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,39 +15,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ngbautoroad.data.model.CardGallery
-import com.ngbautoroad.data.model.CardModel
+import androidx.compose.ui.window.Dialog
+import com.ngbautoroad.data.model.*
 import com.ngbautoroad.data.prefs.PrefsManager
+import com.ngbautoroad.domain.RideScorer
 import com.ngbautoroad.ui.theme.*
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 @Composable
 fun CardTab(prefsManager: PrefsManager) {
     val scope = rememberCoroutineScope()
     val activeSlot by prefsManager.activeCardSlotFlow.collectAsState(initial = 1)
+    val card1Name by prefsManager.card1NameFlow.collectAsState(initial = "Card 1")
+    val card2Name by prefsManager.card2NameFlow.collectAsState(initial = "Card 2")
     val card1ModelId by prefsManager.card1ModelIdFlow.collectAsState(initial = 1)
-    val card2ModelId by prefsManager.card2ModelIdFlow.collectAsState(initial = 2)
-    val card3Custom by prefsManager.card3CustomFlow.collectAsState(initial = CardModel(0, "Custom", isCustom = true))
+    val card2ModelId by prefsManager.card2ModelIdFlow.collectAsState(initial = 5)
+    val favorites by prefsManager.galleryFavoritesFlow.collectAsState(initial = emptySet())
+    val weights by prefsManager.criteriaWeightsFlow.collectAsState(initial = CriteriaWeights())
+    val thresholds by prefsManager.driverThresholdsFlow.collectAsState(initial = DriverThresholds())
 
     var showGallery by remember { mutableStateOf(false) }
     var galleryTargetSlot by remember { mutableIntStateOf(1) }
-    var showCustomEditor by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var renameSlot by remember { mutableIntStateOf(1) }
+    var showPreview by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
-
-    if (showGallery) {
-        CardGalleryDialog(
-            onDismiss = { showGallery = false },
-            onSelect = { modelId ->
-                scope.launch {
-                    prefsManager.setCardModelId(galleryTargetSlot, modelId)
-                }
-                showGallery = false
-            }
-        )
-    }
 
     Column(
         modifier = Modifier
@@ -56,100 +52,175 @@ fun CardTab(prefsManager: PrefsManager) {
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
+        // Card Slot Selector
         Text(
-            text = "Cards de Overlay",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface
+            "Slots de Card",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            "Selecione o card ativo que será exibido no overlay",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Card Slot 1
+        // Slot 1
         CardSlotItem(
-            slotNumber = 1,
+            slotName = card1Name,
+            modelName = CardGallery.getById(card1ModelId)?.name ?: "Padrão",
             isActive = activeSlot == 1,
-            model = CardGallery.getModelById(card1ModelId),
-            isCustom = false,
             onActivate = { scope.launch { prefsManager.setActiveCardSlot(1) } },
-            onChangeModel = {
-                galleryTargetSlot = 1
-                showGallery = true
-            },
-            onEditCustom = {}
+            onOpenGallery = { galleryTargetSlot = 1; showGallery = true },
+            onRename = { renameSlot = 1; showRenameDialog = true }
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Card Slot 2
-        CardSlotItem(
-            slotNumber = 2,
-            isActive = activeSlot == 2,
-            model = CardGallery.getModelById(card2ModelId),
-            isCustom = false,
-            onActivate = { scope.launch { prefsManager.setActiveCardSlot(2) } },
-            onChangeModel = {
-                galleryTargetSlot = 2
-                showGallery = true
-            },
-            onEditCustom = {}
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Card Slot 3 (Custom - sem galeria)
-        CardSlotItem(
-            slotNumber = 3,
-            isActive = activeSlot == 3,
-            model = card3Custom,
-            isCustom = true,
-            onActivate = { scope.launch { prefsManager.setActiveCardSlot(3) } },
-            onChangeModel = {},
-            onEditCustom = { showCustomEditor = true }
-        )
-
-        if (showCustomEditor) {
-            Spacer(modifier = Modifier.height(16.dp))
-            CustomCardEditor(
-                card = card3Custom,
-                onSave = { updatedCard ->
-                    scope.launch {
-                        prefsManager.saveCard3Custom(updatedCard)
-                    }
-                    showCustomEditor = false
-                },
-                onDismiss = { showCustomEditor = false }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Preview do card ativo
-        Text(
-            text = "Preview",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
-        )
         Spacer(modifier = Modifier.height(8.dp))
 
-        val activeModel = when (activeSlot) {
-            1 -> CardGallery.getModelById(card1ModelId)
-            2 -> CardGallery.getModelById(card2ModelId)
-            3 -> card3Custom
-            else -> CardGallery.getModelById(1)
+        // Slot 2
+        CardSlotItem(
+            slotName = card2Name,
+            modelName = CardGallery.getById(card2ModelId)?.name ?: "Padrão",
+            isActive = activeSlot == 2,
+            onActivate = { scope.launch { prefsManager.setActiveCardSlot(2) } },
+            onOpenGallery = { galleryTargetSlot = 2; showGallery = true },
+            onRename = { renameSlot = 2; showRenameDialog = true }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Slot 3 - Custom
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { scope.launch { prefsManager.setActiveCardSlot(3) } },
+            colors = CardDefaults.cardColors(
+                containerColor = if (activeSlot == 3)
+                    MaterialTheme.colorScheme.primaryContainer
+                else
+                    MaterialTheme.colorScheme.surfaceVariant
+            ),
+            border = if (activeSlot == 3) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Build,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            "Custom (exclusivo)",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "Editor visual completo",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                if (activeSlot == 3) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = "Ativo",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
-        CardPreview(model = activeModel)
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Preview / Simulação
+        Text(
+            "Simulação",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            "Veja como o card aparece com dados aleatórios e seus critérios",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(
+            onClick = { showPreview = true },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary
+            )
+        ) {
+            Icon(Icons.Default.Visibility, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Simular Card")
+        }
+    }
+
+    // Gallery Dialog
+    if (showGallery) {
+        GalleryDialog(
+            favorites = favorites,
+            onDismiss = { showGallery = false },
+            onSelectCard = { cardId ->
+                scope.launch {
+                    prefsManager.setCardModelId(galleryTargetSlot, cardId)
+                }
+                showGallery = false
+            },
+            onToggleFavorite = { cardId ->
+                scope.launch { prefsManager.toggleGalleryFavorite(cardId) }
+            }
+        )
+    }
+
+    // Rename Dialog
+    if (showRenameDialog) {
+        RenameDialog(
+            currentName = if (renameSlot == 1) card1Name else card2Name,
+            onDismiss = { showRenameDialog = false },
+            onConfirm = { newName ->
+                scope.launch { prefsManager.setCardName(renameSlot, newName) }
+                showRenameDialog = false
+            }
+        )
+    }
+
+    // Preview Dialog
+    if (showPreview) {
+        PreviewDialog(
+            activeSlot = activeSlot,
+            card1ModelId = card1ModelId,
+            card2ModelId = card2ModelId,
+            weights = weights,
+            thresholds = thresholds,
+            onDismiss = { showPreview = false }
+        )
     }
 }
 
 @Composable
 fun CardSlotItem(
-    slotNumber: Int,
+    slotName: String,
+    modelName: String,
     isActive: Boolean,
-    model: CardModel,
-    isCustom: Boolean,
     onActivate: () -> Unit,
-    onChangeModel: () -> Unit,
-    onEditCustom: () -> Unit
+    onOpenGallery: () -> Unit,
+    onRename: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -161,157 +232,252 @@ fun CardSlotItem(
             else
                 MaterialTheme.colorScheme.surfaceVariant
         ),
-        border = if (isActive) CardDefaults.outlinedCardBorder() else null
+        border = if (isActive) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Radio indicator
-            RadioButton(
-                selected = isActive,
-                onClick = onActivate
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Card $slotNumber",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = if (isCustom) "Custom (exclusivo)" else model.name,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            if (isCustom) {
-                IconButton(onClick = onEditCustom) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                if (isActive) {
                     Icon(
-                        Icons.Default.Edit,
-                        contentDescription = "Editar",
-                        tint = MaterialTheme.colorScheme.primary
+                        Icons.Default.CheckCircle,
+                        contentDescription = "Ativo",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.RadioButtonUnchecked,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
-            } else {
-                IconButton(onClick = onChangeModel) {
-                    Icon(
-                        Icons.Default.Palette,
-                        contentDescription = "Galeria",
-                        tint = MaterialTheme.colorScheme.primary
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        slotName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
                     )
+                    Text(
+                        modelName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Row {
+                IconButton(onClick = onRename, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.Edit, contentDescription = "Renomear", modifier = Modifier.size(18.dp))
+                }
+                IconButton(onClick = onOpenGallery, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.Collections, contentDescription = "Galeria", modifier = Modifier.size(18.dp))
                 }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CardPreview(model: CardModel) {
-    val bgColor = Color(model.backgroundColor)
-    val textColor = Color(model.textColor)
-    val accentColor = Color(model.accentColor)
-    val borderColor = Color(model.borderColor)
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(model.borderRadius.dp))
-            .border(2.dp, borderColor, RoundedCornerShape(model.borderRadius.dp))
-            .background(bgColor)
-            .padding(16.dp)
-    ) {
-        Column {
-            Text(
-                text = "Uber • 4.92 ★",
-                color = accentColor,
-                fontSize = model.fontSize.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("R$ 18,50", color = textColor, fontSize = model.fontSize.sp)
-                    Text("3.2 km • 12 min", color = textColor.copy(alpha = 0.7f), fontSize = (model.fontSize - 2).sp)
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("Score", color = accentColor, fontSize = (model.fontSize - 2).sp)
-                    Text("78", color = ScoreGreen, fontSize = (model.fontSize + 4).sp, fontWeight = FontWeight.Bold)
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            // Campos com cores
-            ScoreFieldPreview("Valor/KM", "R$ 5.78", ScoreGreen, textColor, model.fontSize)
-            ScoreFieldPreview("Valor/Hora", "R$ 92.50", ScoreGreen, textColor, model.fontSize)
-            ScoreFieldPreview("Paradas", "0", ScoreGreen, textColor, model.fontSize)
-            ScoreFieldPreview("Avaliação", "4.92", ScoreGreen, textColor, model.fontSize)
-        }
-    }
-}
-
-@Composable
-fun ScoreFieldPreview(label: String, value: String, scoreColor: Color, textColor: Color, fontSize: Int) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = label, color = textColor.copy(alpha = 0.8f), fontSize = (fontSize - 2).sp)
-        Text(text = value, color = scoreColor, fontSize = (fontSize - 1).sp, fontWeight = FontWeight.Medium)
-    }
-}
-
-@Composable
-fun CardGalleryDialog(
+fun GalleryDialog(
+    favorites: Set<Int>,
     onDismiss: () -> Unit,
-    onSelect: (Int) -> Unit
+    onSelectCard: (Int) -> Unit,
+    onToggleFavorite: (Int) -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Galeria de Cards") },
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState())
-            ) {
-                CardGallery.models.forEach { model ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                            .clickable { onSelect(model.id) },
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(model.backgroundColor)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(Color(model.accentColor))
+    var selectedCategory by remember { mutableStateOf<CardGallery.CardCategory?>(null) }
+    var showFavoritesOnly by remember { mutableStateOf(false) }
+
+    val displayCards = CardGallery.allCards.filter { card ->
+        val categoryMatch = selectedCategory == null || card.category == selectedCategory
+        val favoriteMatch = !showFavoritesOnly || favorites.contains(card.id)
+        categoryMatch && favoriteMatch
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.85f),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Galeria de Cards",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Row {
+                        IconButton(onClick = { showFavoritesOnly = !showFavoritesOnly }) {
+                            Icon(
+                                if (showFavoritesOnly) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Favoritos",
+                                tint = if (showFavoritesOnly) ScoreRed else MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = model.name,
-                                color = Color(model.textColor),
-                                fontWeight = FontWeight.Medium
-                            )
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Default.Close, contentDescription = "Fechar")
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Category filter
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedCategory == null,
+                        onClick = { selectedCategory = null },
+                        label = { Text("Todos", style = MaterialTheme.typography.labelSmall) }
+                    )
+                    CardGallery.CardCategory.entries.forEach { cat ->
+                        FilterChip(
+                            selected = selectedCategory == cat,
+                            onClick = { selectedCategory = cat },
+                            label = { Text(cat.label, style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    "${displayCards.size} cards",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Grid
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(displayCards) { card ->
+                        GalleryCardItem(
+                            card = card,
+                            isFavorite = favorites.contains(card.id),
+                            onSelect = { onSelectCard(card.id) },
+                            onToggleFavorite = { onToggleFavorite(card.id) }
+                        )
+                    }
+                }
             }
+        }
+    }
+}
+
+@Composable
+fun GalleryCardItem(
+    card: CardGallery.GalleryCard,
+    isFavorite: Boolean,
+    onSelect: () -> Unit,
+    onToggleFavorite: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp)
+            .clickable { onSelect() },
+        shape = RoundedCornerShape(card.borderRadius.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(card.backgroundColor)
+        ),
+        border = if (card.showBorder) BorderStroke(1.dp, Color(card.borderColor)) else null
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    card.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color(card.textColor),
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    "85",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color(card.accentColor),
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    card.category.label + " • ${card.fields.size} campos",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                    color = Color(card.textColor).copy(alpha = 0.7f)
+                )
+            }
+
+            // Favorite button
+            IconButton(
+                onClick = onToggleFavorite,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(28.dp)
+            ) {
+                Icon(
+                    if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Favorito",
+                    tint = if (isFavorite) ScoreRed else Color(card.textColor).copy(alpha = 0.5f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun RenameDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var name by remember { mutableStateOf(currentName) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Renomear Card") },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Nome do card") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
         },
         confirmButton = {
+            TextButton(onClick = { onConfirm(name) }) {
+                Text("Salvar")
+            }
+        },
+        dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancelar")
             }
@@ -320,76 +486,202 @@ fun CardGalleryDialog(
 }
 
 @Composable
-fun CustomCardEditor(
-    card: CardModel,
-    onSave: (CardModel) -> Unit,
+fun PreviewDialog(
+    activeSlot: Int,
+    card1ModelId: Int,
+    card2ModelId: Int,
+    weights: CriteriaWeights,
+    thresholds: DriverThresholds,
     onDismiss: () -> Unit
 ) {
-    var bgColor by remember { mutableLongStateOf(card.backgroundColor) }
-    var textColor by remember { mutableLongStateOf(card.textColor) }
-    var accentColor by remember { mutableLongStateOf(card.accentColor) }
-    var borderColor by remember { mutableLongStateOf(card.borderColor) }
-    var borderRadius by remember { mutableIntStateOf(card.borderRadius) }
-    var fontSize by remember { mutableIntStateOf(card.fontSize) }
+    // Gerar corrida aleatória
+    var randomRide by remember { mutableStateOf(generateRandomRide()) }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Editor Custom (Card 3)",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+    // Calcular score com os critérios reais do motorista
+    val scorer = remember(weights, thresholds) {
+        RideScorer(weights = weights, driverThresholds = thresholds)
+    }
+    val result = remember(randomRide, scorer) { scorer.calculateScore(randomRide) }
 
-            Spacer(modifier = Modifier.height(12.dp))
+    // Obter card ativo
+    val activeCard = when (activeSlot) {
+        1 -> CardGallery.getById(card1ModelId)
+        2 -> CardGallery.getById(card2ModelId)
+        else -> null
+    }
 
-            // Border Radius
-            Text("Borda: ${borderRadius}dp", style = MaterialTheme.typography.bodySmall)
-            Slider(
-                value = borderRadius.toFloat(),
-                onValueChange = { borderRadius = it.toInt() },
-                valueRange = 0f..24f
-            )
+    val scoreColor = when {
+        result.totalScore >= 70 -> ScoreGreen
+        result.totalScore >= 50 -> ScoreYellow
+        result.totalScore >= 30 -> ScoreOrange
+        else -> ScoreRed
+    }
 
-            // Font Size
-            Text("Fonte: ${fontSize}sp", style = MaterialTheme.typography.bodySmall)
-            Slider(
-                value = fontSize.toFloat(),
-                onValueChange = { fontSize = it.toInt() },
-                valueRange = 10f..20f
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                TextButton(onClick = onDismiss) {
-                    Text("Cancelar")
-                }
-                Button(onClick = {
-                    onSave(
-                        card.copy(
-                            backgroundColor = bgColor,
-                            textColor = textColor,
-                            accentColor = accentColor,
-                            borderColor = borderColor,
-                            borderRadius = borderRadius,
-                            fontSize = fontSize
+                Text(
+                    "Simulação do Card",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Dados aleatórios + seus critérios reais",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Card Preview
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape((activeCard?.borderRadius ?: 12).dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(activeCard?.backgroundColor ?: 0xFF101830)
+                    ),
+                    border = if (activeCard?.showBorder != false)
+                        BorderStroke(2.dp, Color(activeCard?.borderColor ?: 0xFF4F6BFF))
+                    else null
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        // Score + Platform
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                randomRide.platform.displayName,
+                                color = Color(activeCard?.textColor ?: 0xFFFFFFFF),
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                            Text(
+                                String.format("%.0f", result.totalScore),
+                                color = scoreColor,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        val textColor = Color(activeCard?.textColor ?: 0xFFFFFFFF)
+                        val accentColor = Color(activeCard?.accentColor ?: 0xFF4F6BFF)
+
+                        PreviewField("Valor", String.format("R$ %.2f", randomRide.rideValue), textColor, accentColor)
+                        PreviewField("R$/KM", String.format("R$ %.2f", randomRide.valuePerKm), textColor, accentColor)
+                        PreviewField("R$/Hora", String.format("R$ %.2f", randomRide.valuePerHour), textColor, accentColor)
+                        PreviewField("Embarque", String.format("%.1f km", randomRide.pickupDistance), textColor, accentColor)
+                        PreviewField("Destino", String.format("%.1f km", randomRide.dropoffDistance), textColor, accentColor)
+                        PreviewField("Avaliação", String.format("%.1f ★", randomRide.passengerRating), textColor, accentColor)
+                        if (randomRide.intermediateStops > 0) {
+                            PreviewField("Paradas", "${randomRide.intermediateStops}", textColor, accentColor)
+                        }
+
+                        // Score bar
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            progress = (result.totalScore.toFloat() / 100f).coerceIn(0f, 1f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = scoreColor,
+                            trackColor = Color(activeCard?.textColor ?: 0xFFFFFFFF).copy(alpha = 0.2f),
                         )
-                    )
-                }) {
-                    Icon(Icons.Default.Save, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Salvar / Testar")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Violações
+                if (result.hasViolations) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = ScoreRed.copy(alpha = 0.1f)
+                        )
+                    ) {
+                        Column(modifier = Modifier.padding(8.dp)) {
+                            Text(
+                                "Violações de mínimo:",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = ScoreRed
+                            )
+                            result.thresholdViolations.forEach { v ->
+                                Text(
+                                    "${v.criteriaName}: ${String.format("%.2f", v.currentValue)} < ${String.format("%.2f", v.minimumRequired)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = ScoreRed.copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    OutlinedButton(onClick = { randomRide = generateRandomRide() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Nova Simulação")
+                    }
+                    TextButton(onClick = onDismiss) {
+                        Text("Fechar")
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+fun PreviewField(label: String, value: String, textColor: Color, accentColor: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.7f))
+        Text(value, style = MaterialTheme.typography.labelSmall, color = accentColor, fontWeight = FontWeight.Bold)
+    }
+}
+
+/**
+ * Gera uma corrida com valores aleatórios realistas
+ */
+fun generateRandomRide(): RideData {
+    val platforms = listOf(Platform.UBER, Platform.NINETY_NINE, Platform.INDRIVE, Platform.CABIFY)
+    val neighborhoods = listOf("Centro", "Barra", "Pituba", "Itapuã", "Brotas", "Paralela",
+        "Ondina", "Rio Vermelho", "Liberdade", "Cabula", "Imbuí", "Stella Maris")
+
+    val dropoffDist = Random.nextDouble(2.0, 25.0)
+    val rideValue = dropoffDist * Random.nextDouble(1.0, 3.5)
+    val duration = Random.nextDouble(8.0, 45.0)
+
+    return RideData(
+        platform = platforms.random(),
+        rideValue = rideValue,
+        rideDuration = duration,
+        pickupDistance = Random.nextDouble(0.3, 5.0),
+        dropoffDistance = dropoffDist,
+        passengerRating = Random.nextDouble(3.5, 5.0),
+        intermediateStops = if (Random.nextFloat() < 0.3f) Random.nextInt(1, 3) else 0,
+        pickupNeighborhood = neighborhoods.random(),
+        dropoffNeighborhood = neighborhoods.random()
+    )
 }

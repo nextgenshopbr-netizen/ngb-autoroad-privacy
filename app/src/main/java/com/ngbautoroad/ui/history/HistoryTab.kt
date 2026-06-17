@@ -1,78 +1,230 @@
 package com.ngbautoroad.ui.history
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.RideHistoryEntity
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.ui.theme.*
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+enum class HistoryFilter(val label: String) {
+    TODAY("Hoje"),
+    WEEK("Semana"),
+    MONTH("Mês"),
+    ALL("Todos"),
+    ACCEPTED("Aceitas"),
+    REFUSED("Recusadas"),
+    CANCELLED("Canceladas")
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryTab(prefsManager: PrefsManager) {
-    // Placeholder - será conectado ao Room DB
-    var rides by remember { mutableStateOf(emptyList<RideHistoryEntity>()) }
+fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
+    val scope = rememberCoroutineScope()
+    var rides by remember { mutableStateOf<List<RideHistoryEntity>>(emptyList()) }
+    var selectedFilter by remember { mutableStateOf(HistoryFilter.TODAY) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    fun getStartOfDay(): Long {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
+    }
+
+    fun getStartOfWeek(): Long {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
+        return cal.timeInMillis
+    }
+
+    fun getStartOfMonth(): Long {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        cal.set(Calendar.DAY_OF_MONTH, 1)
+        return cal.timeInMillis
+    }
+
+    fun loadData() {
+        scope.launch {
+            isLoading = true
+            val dao = database.rideHistoryDao()
+            rides = when (selectedFilter) {
+                HistoryFilter.TODAY -> dao.getSince(getStartOfDay())
+                HistoryFilter.WEEK -> dao.getSince(getStartOfWeek())
+                HistoryFilter.MONTH -> dao.getSince(getStartOfMonth())
+                HistoryFilter.ALL -> dao.getAll()
+                HistoryFilter.ACCEPTED -> dao.getByStatus("ACCEPTED")
+                HistoryFilter.REFUSED -> dao.getByStatus("REFUSED")
+                HistoryFilter.CANCELLED -> dao.getByStatus("CANCELLED")
+            }
+            isLoading = false
+        }
+    }
+
+    LaunchedEffect(selectedFilter) {
+        loadData()
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        // Filter chips - Period
+        Text(
+            "Filtros",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(
-                text = "Histórico de Corridas",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            IconButton(onClick = { rides = emptyList() }) {
-                Icon(
-                    Icons.Default.DeleteSweep,
-                    contentDescription = "Limpar",
-                    tint = MaterialTheme.colorScheme.error
+            listOf(HistoryFilter.TODAY, HistoryFilter.WEEK, HistoryFilter.MONTH, HistoryFilter.ALL).forEach { filter ->
+                FilterChip(
+                    selected = selectedFilter == filter,
+                    onClick = { selectedFilter = filter },
+                    label = { Text(filter.label, style = MaterialTheme.typography.labelSmall) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Filter chips - Status
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            listOf(HistoryFilter.ACCEPTED, HistoryFilter.REFUSED, HistoryFilter.CANCELLED).forEach { filter ->
+                FilterChip(
+                    selected = selectedFilter == filter,
+                    onClick = { selectedFilter = filter },
+                    label = { Text(filter.label, style = MaterialTheme.typography.labelSmall) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = when (filter) {
+                            HistoryFilter.ACCEPTED -> ScoreGreen.copy(alpha = 0.2f)
+                            HistoryFilter.REFUSED -> ScoreRed.copy(alpha = 0.2f)
+                            HistoryFilter.CANCELLED -> ScoreOrange.copy(alpha = 0.2f)
+                            else -> MaterialTheme.colorScheme.primaryContainer
+                        },
+                        selectedLabelColor = when (filter) {
+                            HistoryFilter.ACCEPTED -> ScoreGreen
+                            HistoryFilter.REFUSED -> ScoreRed
+                            HistoryFilter.CANCELLED -> ScoreOrange
+                            else -> MaterialTheme.colorScheme.onPrimaryContainer
+                        }
+                    )
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        if (rides.isEmpty()) {
+        // Summary card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "${rides.size} corridas",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                if (rides.isNotEmpty()) {
+                    val totalValue = rides.filter { it.status == "ACCEPTED" }.sumOf { it.rideValue }
+                    Text(
+                        String.format("Total: R$ %.2f", totalValue),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ScoreGreen
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // List
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (rides.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "Nenhuma corrida registrada",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Icon(
+                        Icons.Default.History,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "As corridas detectadas aparecerão aqui",
+                        "Nenhuma corrida encontrada",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "As corridas detectadas aparecerão aqui",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
             }
         } else {
-            LazyColumn {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 items(rides) { ride ->
                     RideHistoryItem(ride = ride)
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
@@ -81,20 +233,33 @@ fun HistoryTab(prefsManager: PrefsManager) {
 
 @Composable
 fun RideHistoryItem(ride: RideHistoryEntity) {
+    val dateFormat = remember { SimpleDateFormat("dd/MM HH:mm", Locale.getDefault()) }
     val scoreColor = when {
         ride.score >= 70 -> ScoreGreen
         ride.score >= 50 -> ScoreYellow
         ride.score >= 30 -> ScoreOrange
         else -> ScoreRed
     }
-
-    val dateFormat = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
+    val statusColor = when (ride.status) {
+        "ACCEPTED" -> ScoreGreen
+        "REFUSED" -> ScoreRed
+        "CANCELLED" -> ScoreOrange
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val statusLabel = when (ride.status) {
+        "ACCEPTED" -> "Aceita"
+        "REFUSED" -> "Recusada"
+        "CANCELLED" -> "Cancelada"
+        "EXPIRED" -> "Expirada"
+        else -> ride.status
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
@@ -102,37 +267,81 @@ fun RideHistoryItem(ride: RideHistoryEntity) {
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            // Score circle
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(scoreColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
-                    text = "${ride.platform} • R$ ${"%.2f".format(ride.rideValue)}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    String.format("%.0f", ride.score),
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "${"%.1f".format(ride.dropoffDistance)} km • ${ride.rideDuration.toInt()} min",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = dateFormat.format(Date(ride.timestamp)),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    color = scoreColor
                 )
             }
 
-            // Score badge
-            Surface(
-                shape = MaterialTheme.shapes.small,
-                color = scoreColor.copy(alpha = 0.15f)
-            ) {
-                Text(
-                    text = "${ride.score.toInt()}",
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    color = scoreColor,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium
-                )
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Info
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        ride.platform.ifBlank { "—" },
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        dateFormat.format(Date(ride.timestamp)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        String.format("R$ %.2f", ride.rideValue),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        String.format("%.2f R$/km", ride.valuePerKm),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    if (ride.pickupNeighborhood.isNotBlank() || ride.dropoffNeighborhood.isNotBlank()) {
+                        Text(
+                            "${ride.pickupNeighborhood} → ${ride.dropoffNeighborhood}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Text(
+                        statusLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = statusColor
+                    )
+                }
             }
         }
     }

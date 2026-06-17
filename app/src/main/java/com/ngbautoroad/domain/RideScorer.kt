@@ -9,15 +9,20 @@ import com.ngbautoroad.data.model.*
  * A soma dos pesos deve ser exatamente 100.
  * Cada critério é normalizado para 0-100 e depois multiplicado pelo peso.
  * Score final = soma(normalizado * peso) / 100
+ *
+ * Adicionalmente, os DriverThresholds (valores mínimos desejados) aplicam
+ * penalidades quando a corrida não atinge os mínimos do motorista.
  */
 class RideScorer(
     private val weights: CriteriaWeights,
+    private val driverThresholds: DriverThresholds = DriverThresholds(),
     private val blockedNeighborhoods: List<BlockedNeighborhood> = emptyList(),
     private val thresholds: ScoringThresholds = ScoringThresholds()
 ) {
 
     fun calculateScore(ride: RideData): RideScore {
         val criteriaScores = mutableMapOf<String, CriteriaScore>()
+        val violations = mutableListOf<ThresholdViolation>()
 
         // 1. Valor por KM
         if (weights.valuePerKm > 0) {
@@ -30,6 +35,16 @@ class RideScorer(
                 weightedScore = normalized * weights.valuePerKm / 100.0,
                 level = getLevel(normalized)
             )
+            // Verificar threshold do motorista
+            if (driverThresholds.isValuePerKmActive() && ride.valuePerKm < driverThresholds.minValuePerKm) {
+                val penalty = weights.valuePerKm * 0.5 // Penalidade de 50% do peso
+                violations.add(ThresholdViolation(
+                    criteriaName = "Valor/KM",
+                    currentValue = ride.valuePerKm,
+                    minimumRequired = driverThresholds.minValuePerKm,
+                    penaltyApplied = penalty
+                ))
+            }
         }
 
         // 2. Valor por Hora
@@ -43,6 +58,15 @@ class RideScorer(
                 weightedScore = normalized * weights.valuePerHour / 100.0,
                 level = getLevel(normalized)
             )
+            if (driverThresholds.isValuePerHourActive() && ride.valuePerHour < driverThresholds.minValuePerHour) {
+                val penalty = weights.valuePerHour * 0.5
+                violations.add(ThresholdViolation(
+                    criteriaName = "Valor/Hora",
+                    currentValue = ride.valuePerHour,
+                    minimumRequired = driverThresholds.minValuePerHour,
+                    penaltyApplied = penalty
+                ))
+            }
         }
 
         // 3. Paradas Intermediárias
@@ -56,6 +80,15 @@ class RideScorer(
                 weightedScore = normalized * weights.intermediateStops / 100.0,
                 level = getLevel(normalized)
             )
+            if (driverThresholds.isStopsActive() && ride.intermediateStops > driverThresholds.maxStops) {
+                val penalty = weights.intermediateStops * 0.7
+                violations.add(ThresholdViolation(
+                    criteriaName = "Paradas",
+                    currentValue = ride.intermediateStops.toDouble(),
+                    minimumRequired = driverThresholds.maxStops.toDouble(),
+                    penaltyApplied = penalty
+                ))
+            }
         }
 
         // 4. Avaliação do Passageiro
@@ -69,6 +102,15 @@ class RideScorer(
                 weightedScore = normalized * weights.passengerRating / 100.0,
                 level = getLevel(normalized)
             )
+            if (driverThresholds.isPassengerRatingActive() && ride.passengerRating < driverThresholds.minPassengerRating) {
+                val penalty = weights.passengerRating * 0.6
+                violations.add(ThresholdViolation(
+                    criteriaName = "Avaliação",
+                    currentValue = ride.passengerRating,
+                    minimumRequired = driverThresholds.minPassengerRating,
+                    penaltyApplied = penalty
+                ))
+            }
         }
 
         // 5. Valor da Corrida
@@ -82,6 +124,15 @@ class RideScorer(
                 weightedScore = normalized * weights.rideValue / 100.0,
                 level = getLevel(normalized)
             )
+            if (driverThresholds.isRideValueActive() && ride.rideValue < driverThresholds.minRideValue) {
+                val penalty = weights.rideValue * 0.5
+                violations.add(ThresholdViolation(
+                    criteriaName = "Valor Corrida",
+                    currentValue = ride.rideValue,
+                    minimumRequired = driverThresholds.minRideValue,
+                    penaltyApplied = penalty
+                ))
+            }
         }
 
         // 6. Duração da Corrida
@@ -95,6 +146,15 @@ class RideScorer(
                 weightedScore = normalized * weights.rideDuration / 100.0,
                 level = getLevel(normalized)
             )
+            if (driverThresholds.isDurationActive() && ride.rideDuration > driverThresholds.maxDuration) {
+                val penalty = weights.rideDuration * 0.5
+                violations.add(ThresholdViolation(
+                    criteriaName = "Duração",
+                    currentValue = ride.rideDuration,
+                    minimumRequired = driverThresholds.maxDuration,
+                    penaltyApplied = penalty
+                ))
+            }
         }
 
         // 7. Distância até Embarque
@@ -108,6 +168,15 @@ class RideScorer(
                 weightedScore = normalized * weights.pickupDistance / 100.0,
                 level = getLevel(normalized)
             )
+            if (driverThresholds.isPickupDistanceActive() && ride.pickupDistance > driverThresholds.maxPickupDistance) {
+                val penalty = weights.pickupDistance * 0.6
+                violations.add(ThresholdViolation(
+                    criteriaName = "Dist. Embarque",
+                    currentValue = ride.pickupDistance,
+                    minimumRequired = driverThresholds.maxPickupDistance,
+                    penaltyApplied = penalty
+                ))
+            }
         }
 
         // 8. Distância até Desembarque
@@ -121,10 +190,23 @@ class RideScorer(
                 weightedScore = normalized * weights.dropoffDistance / 100.0,
                 level = getLevel(normalized)
             )
+            if (driverThresholds.isDropoffDistanceActive() && ride.dropoffDistance < driverThresholds.minDropoffDistance) {
+                val penalty = weights.dropoffDistance * 0.5
+                violations.add(ThresholdViolation(
+                    criteriaName = "Dist. Destino",
+                    currentValue = ride.dropoffDistance,
+                    minimumRequired = driverThresholds.minDropoffDistance,
+                    penaltyApplied = penalty
+                ))
+            }
         }
 
         // Calcular score total
         var totalScore = criteriaScores.values.sumOf { it.weightedScore }
+
+        // Aplicar penalidades de thresholds violados
+        val thresholdPenalty = violations.sumOf { it.penaltyApplied }
+        totalScore -= thresholdPenalty
 
         // Aplicar penalidade de bairros bloqueados
         val pickupPenalty = blockedNeighborhoods
@@ -140,26 +222,24 @@ class RideScorer(
 
         return RideScore(
             totalScore = totalScore,
-            criteriaScores = criteriaScores
+            criteriaScores = criteriaScores,
+            thresholdViolations = violations
         )
     }
 
     // --- Normalização dos critérios (0-100) ---
 
     private fun normalizeValuePerKm(value: Double): Double {
-        // Ideal: >= R$2.50/km = 100, <= R$0.50/km = 0
         return ((value - thresholds.minValuePerKm) / (thresholds.maxValuePerKm - thresholds.minValuePerKm) * 100)
             .coerceIn(0.0, 100.0)
     }
 
     private fun normalizeValuePerHour(value: Double): Double {
-        // Ideal: >= R$40/h = 100, <= R$10/h = 0
         return ((value - thresholds.minValuePerHour) / (thresholds.maxValuePerHour - thresholds.minValuePerHour) * 100)
             .coerceIn(0.0, 100.0)
     }
 
     private fun normalizeStops(stops: Int): Double {
-        // 0 paradas = 100, 1 = 50, 2+ = 0
         return when (stops) {
             0 -> 100.0
             1 -> 50.0
@@ -168,7 +248,6 @@ class RideScorer(
     }
 
     private fun normalizeRating(rating: Double): Double {
-        // 5.0 = 100, 4.5 = 75, 4.0 = 50, < 4.0 = linear até 0
         return when {
             rating >= 5.0 -> 100.0
             rating >= 4.0 -> ((rating - 4.0) / 1.0 * 100.0)
@@ -182,20 +261,16 @@ class RideScorer(
     }
 
     private fun normalizeDuration(minutes: Double): Double {
-        // Corridas mais curtas são melhores (menos tempo parado)
-        // <= 10 min = 100, >= 60 min = 0
         return ((thresholds.maxDuration - minutes) / (thresholds.maxDuration - thresholds.minDuration) * 100)
             .coerceIn(0.0, 100.0)
     }
 
     private fun normalizePickupDistance(km: Double): Double {
-        // Menor distância = melhor. <= 0.5km = 100, >= 5km = 0
         return ((thresholds.maxPickupDistance - km) / (thresholds.maxPickupDistance - thresholds.minPickupDistance) * 100)
             .coerceIn(0.0, 100.0)
     }
 
     private fun normalizeDropoffDistance(km: Double): Double {
-        // Maior distância = melhor (mais R$/km potencial)
         return ((km - thresholds.minDropoffDistance) / (thresholds.maxDropoffDistance - thresholds.minDropoffDistance) * 100)
             .coerceIn(0.0, 100.0)
     }
@@ -211,7 +286,7 @@ class RideScorer(
 }
 
 /**
- * Thresholds para normalização dos critérios
+ * Thresholds para normalização dos critérios (escala do sistema)
  */
 data class ScoringThresholds(
     val minValuePerKm: Double = 0.50,
