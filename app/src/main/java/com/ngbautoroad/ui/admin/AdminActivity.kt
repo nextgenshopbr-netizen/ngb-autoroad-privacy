@@ -328,13 +328,41 @@ fun AdminPanel(
             simulationResult?.let { result ->
                 // Disparar overlay real end-to-end
                 LaunchedEffect(result) {
-                    // Garantir que o OverlayService está rodando
-                    OverlayService.start(context)
-                    // Pequeno delay para garantir que o serviço iniciou
-                    kotlinx.coroutines.delay(300)
-                    // Enviar RideData real para o overlay (exatamente como AccessibilityService faz)
-                    val rideData = result.toRideData()
-                    OverlayService.onRideDetected?.invoke(rideData)
+                    try {
+                        android.util.Log.d("NGB_SIMULACAO", "[1] Iniciando simulação de corrida")
+                        // Verificar permissão de overlay
+                        val canDraw = android.provider.Settings.canDrawOverlays(context)
+                        android.util.Log.d("NGB_SIMULACAO", "[2] canDrawOverlays=$canDraw")
+                        if (!canDraw) {
+                            android.util.Log.w("NGB_SIMULACAO", "[ERR] Sem permissão de overlay. Abra Configurações > Apps > NGB AutoRoad > Permissões > Exibir sobre outros apps")
+                            return@LaunchedEffect
+                        }
+                        // Garantir que o OverlayService está rodando
+                        val wasRunning = OverlayService.isRunning()
+                        android.util.Log.d("NGB_SIMULACAO", "[3] OverlayService.isRunning()=$wasRunning")
+                        if (!wasRunning) {
+                            android.util.Log.d("NGB_SIMULACAO", "[4] Iniciando OverlayService...")
+                            OverlayService.start(context)
+                        }
+                        // Pequeno delay para garantir que o serviço iniciou
+                        kotlinx.coroutines.delay(300)
+                        val nowRunning = OverlayService.isRunning()
+                        android.util.Log.d("NGB_SIMULACAO", "[5] OverlayService.isRunning() após start=$nowRunning")
+                        // Enviar RideData real para o overlay (exatamente como AccessibilityService faz)
+                        val rideData = result.toRideData()
+                        android.util.Log.d("NGB_SIMULACAO", "[6] RideData: plataforma=${rideData.platform} valor=${rideData.rideValue} dist=${rideData.dropoffDistance}km score=${result.score}")
+                        val cb = OverlayService.onRideDetected
+                        android.util.Log.d("NGB_SIMULACAO", "[7] onRideDetected callback=${cb != null}")
+                        if (cb != null) {
+                            cb.invoke(rideData)
+                            android.util.Log.d("NGB_SIMULACAO", "[8] Callback invocado com sucesso")
+                        } else {
+                            android.util.Log.w("NGB_SIMULACAO", "[ERR] onRideDetected é null. Serviço não inicializou corretamente.")
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("NGB_SIMULACAO", "[ERR] Exceção na simulação: ${e.javaClass.simpleName}: ${e.message}", e)
+                        android.util.Log.e("NGB_SIMULACAO", "[ERR] StackTrace: ${e.stackTraceToString().take(1000)}")
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

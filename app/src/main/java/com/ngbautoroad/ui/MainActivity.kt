@@ -88,6 +88,20 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+            // v5.2.3: Aplicar idioma ao iniciar
+            val languagePref by prefsManager.languageFlow.collectAsState(initial = "pt")
+            LaunchedEffect(languagePref) {
+                val locale = when (languagePref) {
+                    "en" -> java.util.Locale.ENGLISH
+                    "es" -> java.util.Locale("es")
+                    else -> java.util.Locale("pt", "BR")
+                }
+                val config = android.content.res.Configuration(resources.configuration)
+                config.setLocale(locale)
+                @Suppress("DEPRECATION")
+                resources.updateConfiguration(config, resources.displayMetrics)
+            }
+
             // v5.1.0: Dark mode dinâmico baseado na preferência do usuário
             val darkModePref by prefsManager.darkModeFlow.collectAsState(initial = "system")
             val isDark = when (darkModePref) {

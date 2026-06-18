@@ -334,7 +334,7 @@ fun IndividualExpensesTab(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("Custo Fixo Mensal (rateado)", fontSize = 12.sp, color = Color.Gray)
+                    Text("Despesas Fixas Mensais (rateadas)", fontSize = 12.sp, color = Color.Gray)
                     Text("R$ %.2f".format(totalMonthly ?: 0.0), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = ScoreOrange)
                 }
                 Text("${expenses.count { it.isIncludedInCalc }} itens", fontSize = 11.sp, color = Color.Gray)
@@ -347,7 +347,7 @@ fun IndividualExpensesTab(
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Cadastrar Despesa")
+            Text("Cadastrar Despesa Fixa")
         }
 
         LazyColumn(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
@@ -604,27 +604,38 @@ fun ProjectionTab(
     LaunchedEffect(selectedPeriod) {
         isLoading = true
         errorMessage = null
+        android.util.Log.d("NGB_PROJECAO", "[1] Iniciando projeção para período: $selectedPeriod")
         try {
             kotlinx.coroutines.delay(100) // Aguardar composição estabilizar
+            android.util.Log.d("NGB_PROJECAO", "[2] Chamando engine.projectFinances($selectedPeriod)")
             val result = engine.projectFinances(selectedPeriod)
             if (!coroutineContext.isActive) return@LaunchedEffect
+            android.util.Log.d("NGB_PROJECAO", "[3] projectFinances OK: ganhos=${result.projectedEarnings} corridas=${result.projectedRides} confianca=${result.confidenceLevel}")
+            android.util.Log.d("NGB_PROJECAO", "[4] Chamando engine.simulateWhatIf($selectedPeriod)")
             val whatIf = engine.simulateWhatIf(selectedPeriod)
             if (!coroutineContext.isActive) return@LaunchedEffect
+            android.util.Log.d("NGB_PROJECAO", "[5] simulateWhatIf OK: ${whatIf.size} cenários")
             projection = result
             whatIfResults = whatIf
             if (result.projectedEarnings == 0.0 && result.projectedRides == 0) {
                 errorMessage = "Sem dados suficientes. Registre corridas e ganhos para gerar projeções."
+                android.util.Log.w("NGB_PROJECAO", "[6] Sem dados suficientes para projeção")
+            } else {
+                android.util.Log.d("NGB_PROJECAO", "[6] Projeção concluída com sucesso")
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
+            android.util.Log.d("NGB_PROJECAO", "[ERR] LaunchedEffect cancelado (normal na troca de aba)")
             throw e
         } catch (e: Exception) {
             if (coroutineContext.isActive) {
                 errorMessage = "Erro ao calcular projeção: ${e.message ?: "desconhecido"}"
-                android.util.Log.e("ProjectionTab", "Erro projeção", e)
+                android.util.Log.e("NGB_PROJECAO", "[ERR] Exceção na projeção: ${e.javaClass.simpleName}: ${e.message}", e)
+                android.util.Log.e("NGB_PROJECAO", "[ERR] StackTrace: ${e.stackTraceToString().take(1000)}")
             }
         } finally {
             if (coroutineContext.isActive) {
                 isLoading = false
+                android.util.Log.d("NGB_PROJECAO", "[FIM] isLoading=false")
             }
         }
     }

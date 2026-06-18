@@ -478,6 +478,17 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    // v5.2.3: Multi-idiomas
+    private val KEY_LANGUAGE = stringPreferencesKey("app_language") // "pt", "en", "es"
+    val languageFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_LANGUAGE] ?: "pt"
+    }
+    suspend fun saveLanguage(lang: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_LANGUAGE] = lang
+        }
+    }
+
     suspend fun resetAll() {
         context.dataStore.edit { it.clear() }
     }

@@ -223,27 +223,37 @@ fun CardTab(prefsManager: PrefsManager) {
                 onClick = {
                     scope.launch {
                         try {
+                            android.util.Log.d("NGB_TESTAR_CARD", "[1] Botão Testar clicado")
                             // Verificar permissão de overlay antes de tentar
-                            if (!android.provider.Settings.canDrawOverlays(context)) {
+                            val canDrawOverlay = android.provider.Settings.canDrawOverlays(context)
+                            android.util.Log.d("NGB_TESTAR_CARD", "[2] canDrawOverlays=$canDrawOverlay")
+                            if (!canDrawOverlay) {
                                 android.widget.Toast.makeText(context, "Permissão de overlay necessária. Ative nas configurações.", android.widget.Toast.LENGTH_LONG).show()
                                 return@launch
                             }
                             // Verificar permissão de notificação (necessária para foreground service no Android 13+)
                             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
                                 val notifPerm = android.Manifest.permission.POST_NOTIFICATIONS
-                                if (context.checkSelfPermission(notifPerm) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                val notifGranted = context.checkSelfPermission(notifPerm) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                android.util.Log.d("NGB_TESTAR_CARD", "[3] POST_NOTIFICATIONS granted=$notifGranted")
+                                if (!notifGranted) {
                                     android.widget.Toast.makeText(context, "Ative a permissão de Notificações nas configurações.", android.widget.Toast.LENGTH_LONG).show()
                                     return@launch
                                 }
                             }
                             // Gerar corrida aleatória
                             val ride = generateRandomRide()
+                            android.util.Log.d("NGB_TESTAR_CARD", "[4] Corrida gerada: plataforma=${ride.platform} valor=${ride.rideValue} dist=${ride.dropoffDistance}km")
                             // v5.2.1: Iniciar OverlayService apenas se não está rodando
-                            if (!OverlayService.isRunning()) {
+                            val serviceRunning = OverlayService.isRunning()
+                            android.util.Log.d("NGB_TESTAR_CARD", "[5] OverlayService.isRunning()=$serviceRunning")
+                            if (!serviceRunning) {
                                 try {
+                                    android.util.Log.d("NGB_TESTAR_CARD", "[6] Iniciando OverlayService...")
                                     OverlayService.start(context)
+                                    android.util.Log.d("NGB_TESTAR_CARD", "[7] OverlayService.start() chamado")
                                 } catch (e: Exception) {
-                                    android.util.Log.e("CardTab", "Falha ao iniciar serviço", e)
+                                    android.util.Log.e("NGB_TESTAR_CARD", "[ERR] Falha ao iniciar OverlayService: ${e.javaClass.simpleName}: ${e.message}", e)
                                     android.widget.Toast.makeText(context, "Falha ao iniciar serviço: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                                     return@launch
                                 }
@@ -251,14 +261,19 @@ fun CardTab(prefsManager: PrefsManager) {
                             // Aguardar até 3 tentativas (3x800ms = 2.4s máx)
                             var retries = 0
                             var callback = OverlayService.onRideDetected
+                            android.util.Log.d("NGB_TESTAR_CARD", "[8] onRideDetected callback=${callback != null} (tentativa 0)")
                             while (callback == null && retries < 3) {
                                 delay(800)
                                 callback = OverlayService.onRideDetected
                                 retries++
+                                android.util.Log.d("NGB_TESTAR_CARD", "[8.$retries] onRideDetected callback=${callback != null} (tentativa $retries)")
                             }
                             if (callback != null) {
+                                android.util.Log.d("NGB_TESTAR_CARD", "[9] Invocando callback com corrida simulada")
                                 callback.invoke(ride)
+                                android.util.Log.d("NGB_TESTAR_CARD", "[10] Callback invocado com sucesso")
                             } else {
+                                android.util.Log.w("NGB_TESTAR_CARD", "[ERR] callback nulo após $retries tentativas. OverlayService.isRunning()=${OverlayService.isRunning()}")
                                 android.widget.Toast.makeText(context, "Serviço não iniciou. Verifique permissão de acessibilidade.", android.widget.Toast.LENGTH_LONG).show()
                             }
                         } catch (e: Exception) {
@@ -269,8 +284,9 @@ fun CardTab(prefsManager: PrefsManager) {
                                     "Permissão negada. Verifique as configurações do app."
                                 else -> "Erro ao testar: ${e.message}"
                             }
+                            android.util.Log.e("NGB_TESTAR_CARD", "[ERR] Exceção: ${e.javaClass.simpleName}: ${e.message}", e)
+                            android.util.Log.e("NGB_TESTAR_CARD", "[ERR] StackTrace: ${e.stackTraceToString().take(1000)}")
                             android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
-                            android.util.Log.e("CardTab", "Testar Real erro", e)
                         }
                     }
                 },

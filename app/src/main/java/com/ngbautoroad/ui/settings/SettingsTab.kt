@@ -111,6 +111,45 @@ fun SettingsTab(prefsManager: PrefsManager) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // === IDIOMA (v5.2.3) ===
+        val language by prefsManager.languageFlow.collectAsState(initial = "pt")
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Language,
+                        contentDescription = "Idioma",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Idioma do App", fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("pt" to "🇧🇷 Português", "en" to "🇺🇸 English", "es" to "🇪🇸 Español").forEach { (key, label) ->
+                        FilterChip(
+                            selected = language == key,
+                            onClick = { scope.launch { prefsManager.saveLanguage(key) } },
+                            label = { Text(label, fontSize = 11.sp) }
+                        )
+                    }
+                }
+                if (language != "pt") {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "ℹ️ Reinicie o app para aplicar o idioma completamente.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         // === MANTER TELA LIGADA ===
         Card(
             modifier = Modifier.fillMaxWidth(),

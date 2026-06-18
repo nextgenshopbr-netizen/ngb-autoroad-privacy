@@ -111,7 +111,7 @@ fun FinanceScreen(
     onBack: () -> Unit
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(0) }
-    val tabs = listOf("Resumo", "Ganhos", "Gastos", "Veículos", "Despesas", "Projeção", "Metas")
+    val tabs = listOf("Resumo", "Ganhos", "Despesas", "Veículos", "Desp. Fixas", "Projeção", "Metas")
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
@@ -239,7 +239,7 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FinanceInfoCard("Ganhos", "R$ %.2f".format(earnings), ScoreGreen, Modifier.weight(1f))
-            FinanceInfoCard("Gastos", "R$ %.2f".format(expenses), ScoreRed, Modifier.weight(1f))
+            FinanceInfoCard("Despesas", "R$ %.2f".format(expenses), ScoreRed, Modifier.weight(1f))
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -557,14 +557,14 @@ fun AddEarningDialog(existingEarning: EarningEntity?, onDismiss: () -> Unit, onC
                                 }
                             }
                         },
-                        label = { Text("H:mm") },
+                        label = { Text("Horas:min") },
                         placeholder = { Text("0:00") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f), singleLine = true
                     )
                     OutlinedTextField(
                         value = rides, onValueChange = { rides = it },
-                        label = { Text("Qtd.") },
+                        label = { Text("Corridas") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f), singleLine = true
                     )
@@ -634,7 +634,7 @@ fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = r
         ) {
             Icon(Icons.Default.Add, contentDescription = "Ícone")
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Registrar Gasto")
+            Text("Registrar Despesa")
         }
 
         // Resumo por categoria
@@ -650,7 +650,7 @@ fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = r
                     .padding(horizontal = 16.dp)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Gastos por Categoria", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text("Despesas por Categoria", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     totalByCategory.take(5).forEach { (cat, total) ->
                         val catEnum = try { ExpenseCategory.valueOf(cat) } catch (e: Exception) { null }
@@ -680,7 +680,7 @@ fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = r
                         showEditDialog = true
                     },
                     onDelete = {
-                        scope.launch { expenseDao.delete(expense); snackbarHostState.showSnackbar("Gasto excluído") }
+                        scope.launch { expenseDao.delete(expense); snackbarHostState.showSnackbar("Despesa excluída") }
                     }
                 )
             }
@@ -693,7 +693,7 @@ fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = r
             onConfirm = { expense ->
                 scope.launch {
                     expenseDao.insert(expense)
-                    snackbarHostState.showSnackbar("Gasto salvo \u2713")
+                    snackbarHostState.showSnackbar("Despesa salva \u2713")
                     showAddDialog = false
                 }
             }
@@ -708,7 +708,7 @@ fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = r
             onConfirm = { updated ->
                 scope.launch {
                     expenseDao.update(updated)
-                    snackbarHostState.showSnackbar("Gasto atualizado \u2713")
+                    snackbarHostState.showSnackbar("Despesa atualizada \u2713")
                     showEditDialog = false
                     editingExpense = null
                 }
@@ -781,7 +781,7 @@ fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit, 
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (existingExpense != null) "Editar Gasto" else "Registrar Gasto") },
+        title = { Text(if (existingExpense != null) "Editar Despesa" else "Registrar Despesa") },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -853,7 +853,7 @@ fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit, 
                 // Recorrência
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = isRecurring, onCheckedChange = { isRecurring = it })
-                    Text("Gasto recorrente", fontSize = 13.sp)
+                    Text("Despesa recorrente", fontSize = 13.sp)
                 }
 
                 if (isRecurring) {

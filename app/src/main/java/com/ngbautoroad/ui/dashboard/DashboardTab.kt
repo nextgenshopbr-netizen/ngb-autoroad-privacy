@@ -710,8 +710,9 @@ fun ShiftDashboardCard(
 ) {
     val shiftManager = remember { ShiftManager(context) }
     var shiftState by remember { mutableStateOf(shiftManager.loadState()) }
-    var goalInput by remember { mutableStateOf(shiftState.goalValue.let { if (it > 0) it.toInt().toString() else "200" }) }
+    var goalInput by remember { mutableStateOf(shiftState.goalValue.let { if (it > 0) it.toInt().toString() else "" }) }
     var showGoalEdit by remember { mutableStateOf(false) }
+    var showGoalRequiredDialog by remember { mutableStateOf(false) }
 
     // Atualizar estado a cada 30s quando turno ativo
     LaunchedEffect(shiftState.isActive, shiftState.isPaused) {
@@ -764,10 +765,35 @@ fun ShiftDashboardCard(
                         // Botão Iniciar Turno
                         Button(
                             onClick = {
-                                val goal = goalInput.toDoubleOrNull() ?: 200.0
-                                shiftState = shiftManager.startShift(goal)
-                                // Ativar todos os serviços ao iniciar turno
+                                val goalValue = goalInput.toDoubleOrNull()
+                                // Verificar se meta foi configurada (obrigatório)
+                                if (goalValue == null || goalValue <= 0.0) {
+                                    showGoalRequiredDialog = true
+                                    return@Button
+                                }
+                                shiftState = shiftManager.startShift(goalValue)
+                                // Criar meta diária automática no módulo financeiro
                                 scope.launch {
+                                    try {
+                                        val finDb = FinanceDatabase.getInstance(context)
+                                        val goalDao = finDb.financialGoalDao()
+                                        val today = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+                                        val existingGoals = goalDao.getActiveGoalsSync()
+                                        val dailyGoal = existingGoals.firstOrNull { it.period == "DIA" }
+                                        if (dailyGoal != null) {
+                                            goalDao.update(dailyGoal.copy(targetAmount = goalValue))
+                                        } else {
+                                            goalDao.insert(
+                                                com.ngbautoroad.data.db.FinancialGoalEntity(
+                                                    title = "Meta Diária - $today",
+                                                    targetAmount = goalValue,
+                                                    period = "DIA",
+                                                    isActive = true
+                                                )
+                                            )
+                                        }
+                                    } catch (_: Exception) {}
+                                    // Ativar todos os serviços ao iniciar turno
                                     prefsManager.setServiceEnabled(true)
                                     prefsManager.setProtectionEnabled(true)
                                     try { OverlayService.start(context) } catch (_: Exception) {}
@@ -973,5 +999,69 @@ fun ShiftDashboardCard(
                 }
             }
         }
+    }
+
+    // Dialog: Meta obrigatória
+    if (showGoalRequiredDialog) {
+        AlertDialog(
+            onDismissRequest = { showGoalRequiredDialog = false },
+            title = { Text("⚠️ Meta não configurada") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Para iniciar o turno, você precisa definir uma meta diária de ganho.")
+                    Text("Informe o valor que deseja ganhar hoje:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(
+                        value = goalInput,
+                        onValueChange = { goalInput = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("Meta do dia (R$)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val goalValue = goalInput.toDoubleOrNull()
+                        if (goalValue != null && goalValue > 0.0) {
+                            showGoalRequiredDialog = false
+                            shiftState = shiftManager.startShift(goalValue)
+                            scope.launch {
+                                try {
+                                    val finDb = FinanceDatabase.getInstance(context)
+                                    val goalDao = finDb.financialGoalDao()
+                                    val today = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+                                    val existingGoals = goalDao.getActiveGoalsSync()
+                                    val dailyGoal = existingGoals.firstOrNull { it.period == "DIA" }
+                                    if (dailyGoal != null) {
+                                        goalDao.update(dailyGoal.copy(targetAmount = goalValue))
+                                    } else {
+                                        goalDao.insert(
+                                            com.ngbautoroad.data.db.FinancialGoalEntity(
+                                                title = "Meta Diária - $today",
+                                                targetAmount = goalValue,
+                                                period = "DIA",
+                                                isActive = true
+                                            )
+                                        )
+                                    }
+                                } catch (_: Exception) {}
+                                prefsManager.setServiceEnabled(true)
+                                prefsManager.setProtectionEnabled(true)
+                                try { OverlayService.start(context) } catch (_: Exception) {}
+                                try { com.ngbautoroad.service.BubbleService.start(context) } catch (_: Exception) {}
+                            }
+                        }
+                    },
+                    enabled = goalInput.toDoubleOrNull()?.let { it > 0.0 } == true
+                ) { Text("Iniciar Turno") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showGoalRequiredDialog = false }) { Text("Cancelar") }
+            }
+        )
     }
 }
