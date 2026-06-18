@@ -497,6 +497,43 @@ public final class EarningDao_Impl implements EarningDao {
   }
 
   @Override
+  public Object getTotalDistanceSync(final long startDate, final long endDate,
+      final Continuation<? super Double> $completion) {
+    final String _sql = "SELECT SUM(distance) FROM earnings WHERE date >= ? AND date <= ?";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 2);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, startDate);
+    _argIndex = 2;
+    _statement.bindLong(_argIndex, endDate);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<Double>() {
+      @Override
+      @Nullable
+      public Double call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final Double _result;
+          if (_cursor.moveToFirst()) {
+            final Double _tmp;
+            if (_cursor.isNull(0)) {
+              _tmp = null;
+            } else {
+              _tmp = _cursor.getDouble(0);
+            }
+            _result = _tmp;
+          } else {
+            _result = null;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Flow<Integer> getTotalDuration(final long startDate, final long endDate) {
     final String _sql = "SELECT SUM(duration) FROM earnings WHERE date >= ? AND date <= ?";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 2);
@@ -533,6 +570,43 @@ public final class EarningDao_Impl implements EarningDao {
         _statement.release();
       }
     });
+  }
+
+  @Override
+  public Object getTotalDurationSync(final long startDate, final long endDate,
+      final Continuation<? super Integer> $completion) {
+    final String _sql = "SELECT SUM(duration) FROM earnings WHERE date >= ? AND date <= ?";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 2);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, startDate);
+    _argIndex = 2;
+    _statement.bindLong(_argIndex, endDate);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<Integer>() {
+      @Override
+      @Nullable
+      public Integer call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final Integer _result;
+          if (_cursor.moveToFirst()) {
+            final Integer _tmp;
+            if (_cursor.isNull(0)) {
+              _tmp = null;
+            } else {
+              _tmp = _cursor.getInt(0);
+            }
+            _result = _tmp;
+          } else {
+            _result = null;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
   }
 
   @Override

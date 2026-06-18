@@ -331,14 +331,21 @@ class OverlayService : Service(),
             }
         }
 
-        // Drag para mover (item 4.2: salvar posição ao soltar)
+        // Drag livre + Pinch-to-zoom (v4.3.0)
+        // O motorista pode arrastar o card para qualquer posição e usar pinça para redimensionar
         var initialX = 0
         var initialY = 0
         var touchX = 0f
         var touchY = 0f
+        var initialSpacing = 0f
+        var initialWidth = widthPx
+        val screenWidth = resources.displayMetrics.widthPixels
+        val screenHeight = resources.displayMetrics.heightPixels
+        val minWidth = (120 * density).toInt()  // Mínimo 120dp
+        val maxWidth = screenWidth              // Máximo = largura da tela
 
         view.setOnTouchListener { _, event ->
-            when (event.action) {
+            when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     initialX = params.x
                     initialY = params.y
@@ -346,17 +353,47 @@ class OverlayService : Service(),
                     touchY = event.rawY
                     true
                 }
-                MotionEvent.ACTION_MOVE -> {
-                    params.x = initialX + (event.rawX - touchX).toInt()
-                    params.y = initialY + (event.rawY - touchY).toInt()
-                    windowManager?.updateViewLayout(view, params)
+                MotionEvent.ACTION_POINTER_DOWN -> {
+                    // Início do pinch (2 dedos)
+                    if (event.pointerCount == 2) {
+                        val dx = event.getX(0) - event.getX(1)
+                        val dy = event.getY(0) - event.getY(1)
+                        initialSpacing = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+                        initialWidth = params.width
+                    }
                     true
                 }
-                MotionEvent.ACTION_UP -> {
-                    // Persistir posição (item 4.2)
+                MotionEvent.ACTION_MOVE -> {
+                    if (event.pointerCount == 2 && initialSpacing > 10f) {
+                        // Pinch-to-zoom: redimensionar card
+                        val dx = event.getX(0) - event.getX(1)
+                        val dy = event.getY(0) - event.getY(1)
+                        val currentSpacing = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat()
+                        val scaleFactor = currentSpacing / initialSpacing
+                        val newWidth = (initialWidth * scaleFactor).toInt().coerceIn(minWidth, maxWidth)
+                        params.width = newWidth
+                        windowManager?.updateViewLayout(view, params)
+                    } else if (event.pointerCount == 1) {
+                        // Drag livre: mover card
+                        var newX = initialX + (event.rawX - touchX).toInt()
+                        var newY = initialY + (event.rawY - touchY).toInt()
+                        // Respeitar bordas do celular
+                        newX = newX.coerceIn(0, screenWidth - params.width)
+                        newY = newY.coerceIn(0, screenHeight - (params.height.takeIf { it > 0 } ?: (200 * density).toInt()))
+                        params.x = newX
+                        params.y = newY
+                        windowManager?.updateViewLayout(view, params)
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+                    // Persistir posição e tamanho
                     serviceScope.launch {
                         prefsManager.saveOverlayPosition(params.x, params.y)
+                        val newDp = (params.width / density).toInt()
+                        prefsManager.saveOverlaySize(newDp, 0)
                     }
+                    overlayWidth = (params.width / density).toInt()
                     true
                 }
                 else -> false

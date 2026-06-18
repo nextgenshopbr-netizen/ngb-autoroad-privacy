@@ -36,10 +36,14 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
 
   private volatile FinancialGoalDao _financialGoalDao;
 
+  private volatile VehicleProfileDao _vehicleProfileDao;
+
+  private volatile IndividualExpenseDao _individualExpenseDao;
+
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(3) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(4) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
         db.execSQL("CREATE TABLE IF NOT EXISTS `expenses` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `category` TEXT NOT NULL, `amount` REAL NOT NULL, `description` TEXT NOT NULL, `date` INTEGER NOT NULL, `isRecurring` INTEGER NOT NULL, `recurringDay` INTEGER NOT NULL, `recurringDays` TEXT NOT NULL, `recurringDuration` INTEGER NOT NULL, `recurringEndDate` INTEGER NOT NULL, `liters` REAL, `pricePerLiter` REAL, `odometer` INTEGER, `fuelType` TEXT, `parentExpenseId` INTEGER NOT NULL, `isGenerated` INTEGER NOT NULL)");
@@ -47,8 +51,10 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
         db.execSQL("CREATE TABLE IF NOT EXISTS `maintenance_reminders` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `category` TEXT NOT NULL, `nextDate` INTEGER NOT NULL, `nextOdometer` INTEGER NOT NULL, `intervalDays` INTEGER NOT NULL, `intervalKm` INTEGER NOT NULL, `isActive` INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `vehicle_config` (`id` INTEGER NOT NULL, `vehicleType` TEXT NOT NULL, `fuelType` TEXT NOT NULL, `brand` TEXT NOT NULL, `model` TEXT NOT NULL, `year` INTEGER NOT NULL, `plate` TEXT NOT NULL, `averageConsumption` REAL NOT NULL, `fuelPrice` REAL NOT NULL, `costPerKm` REAL NOT NULL, `monthlyFixedCosts` REAL NOT NULL, `isOwned` INTEGER NOT NULL, `rentalCost` REAL NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `financial_goals` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `targetAmount` REAL NOT NULL, `currentAmount` REAL NOT NULL, `period` TEXT NOT NULL, `isActive` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `vehicle_profiles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `isActive` INTEGER NOT NULL, `brand` TEXT NOT NULL, `model` TEXT NOT NULL, `year` INTEGER NOT NULL, `plate` TEXT NOT NULL, `vehicleType` TEXT NOT NULL, `fuelType` TEXT NOT NULL, `averageConsumption` REAL NOT NULL, `fuelPrice` REAL NOT NULL, `costPerKm` REAL NOT NULL, `isOwned` INTEGER NOT NULL, `rentalCost` REAL NOT NULL, `purchaseValue` REAL NOT NULL, `currentOdometer` INTEGER NOT NULL, `tireLifeKm` INTEGER NOT NULL, `tireCost` REAL NOT NULL, `brakepadLifeKm` INTEGER NOT NULL, `brakepadCost` REAL NOT NULL, `oilChangeKm` INTEGER NOT NULL, `oilChangeCost` REAL NOT NULL, `maintenanceIntervalKm` INTEGER NOT NULL, `maintenanceCost` REAL NOT NULL, `createdAt` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `individual_expenses` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `vehicleId` INTEGER NOT NULL, `title` TEXT NOT NULL, `category` TEXT NOT NULL, `totalAmount` REAL NOT NULL, `installments` INTEGER NOT NULL, `installmentsPaid` INTEGER NOT NULL, `monthlyAmount` REAL NOT NULL, `startDate` INTEGER NOT NULL, `dueDay` INTEGER NOT NULL, `isIncludedInCalc` INTEGER NOT NULL, `isRecurringAnnual` INTEGER NOT NULL, `frequency` TEXT NOT NULL, `notes` TEXT NOT NULL, `isPaid` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'aa8a852a1ab9de2f465400286f3632cc')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '40281e30780c7721040d1e4664194beb')");
       }
 
       @Override
@@ -58,6 +64,8 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
         db.execSQL("DROP TABLE IF EXISTS `maintenance_reminders`");
         db.execSQL("DROP TABLE IF EXISTS `vehicle_config`");
         db.execSQL("DROP TABLE IF EXISTS `financial_goals`");
+        db.execSQL("DROP TABLE IF EXISTS `vehicle_profiles`");
+        db.execSQL("DROP TABLE IF EXISTS `individual_expenses`");
         final List<? extends RoomDatabase.Callback> _callbacks = mCallbacks;
         if (_callbacks != null) {
           for (RoomDatabase.Callback _callback : _callbacks) {
@@ -208,9 +216,69 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
                   + " Expected:\n" + _infoFinancialGoals + "\n"
                   + " Found:\n" + _existingFinancialGoals);
         }
+        final HashMap<String, TableInfo.Column> _columnsVehicleProfiles = new HashMap<String, TableInfo.Column>(24);
+        _columnsVehicleProfiles.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("isActive", new TableInfo.Column("isActive", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("brand", new TableInfo.Column("brand", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("model", new TableInfo.Column("model", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("year", new TableInfo.Column("year", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("plate", new TableInfo.Column("plate", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("vehicleType", new TableInfo.Column("vehicleType", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("fuelType", new TableInfo.Column("fuelType", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("averageConsumption", new TableInfo.Column("averageConsumption", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("fuelPrice", new TableInfo.Column("fuelPrice", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("costPerKm", new TableInfo.Column("costPerKm", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("isOwned", new TableInfo.Column("isOwned", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("rentalCost", new TableInfo.Column("rentalCost", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("purchaseValue", new TableInfo.Column("purchaseValue", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("currentOdometer", new TableInfo.Column("currentOdometer", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("tireLifeKm", new TableInfo.Column("tireLifeKm", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("tireCost", new TableInfo.Column("tireCost", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("brakepadLifeKm", new TableInfo.Column("brakepadLifeKm", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("brakepadCost", new TableInfo.Column("brakepadCost", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("oilChangeKm", new TableInfo.Column("oilChangeKm", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("oilChangeCost", new TableInfo.Column("oilChangeCost", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("maintenanceIntervalKm", new TableInfo.Column("maintenanceIntervalKm", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("maintenanceCost", new TableInfo.Column("maintenanceCost", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsVehicleProfiles.put("createdAt", new TableInfo.Column("createdAt", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysVehicleProfiles = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesVehicleProfiles = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoVehicleProfiles = new TableInfo("vehicle_profiles", _columnsVehicleProfiles, _foreignKeysVehicleProfiles, _indicesVehicleProfiles);
+        final TableInfo _existingVehicleProfiles = TableInfo.read(db, "vehicle_profiles");
+        if (!_infoVehicleProfiles.equals(_existingVehicleProfiles)) {
+          return new RoomOpenHelper.ValidationResult(false, "vehicle_profiles(com.ngbautoroad.data.db.VehicleProfileEntity).\n"
+                  + " Expected:\n" + _infoVehicleProfiles + "\n"
+                  + " Found:\n" + _existingVehicleProfiles);
+        }
+        final HashMap<String, TableInfo.Column> _columnsIndividualExpenses = new HashMap<String, TableInfo.Column>(16);
+        _columnsIndividualExpenses.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("vehicleId", new TableInfo.Column("vehicleId", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("title", new TableInfo.Column("title", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("category", new TableInfo.Column("category", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("totalAmount", new TableInfo.Column("totalAmount", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("installments", new TableInfo.Column("installments", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("installmentsPaid", new TableInfo.Column("installmentsPaid", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("monthlyAmount", new TableInfo.Column("monthlyAmount", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("startDate", new TableInfo.Column("startDate", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("dueDay", new TableInfo.Column("dueDay", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("isIncludedInCalc", new TableInfo.Column("isIncludedInCalc", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("isRecurringAnnual", new TableInfo.Column("isRecurringAnnual", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("frequency", new TableInfo.Column("frequency", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("notes", new TableInfo.Column("notes", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("isPaid", new TableInfo.Column("isPaid", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsIndividualExpenses.put("createdAt", new TableInfo.Column("createdAt", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        final HashSet<TableInfo.ForeignKey> _foreignKeysIndividualExpenses = new HashSet<TableInfo.ForeignKey>(0);
+        final HashSet<TableInfo.Index> _indicesIndividualExpenses = new HashSet<TableInfo.Index>(0);
+        final TableInfo _infoIndividualExpenses = new TableInfo("individual_expenses", _columnsIndividualExpenses, _foreignKeysIndividualExpenses, _indicesIndividualExpenses);
+        final TableInfo _existingIndividualExpenses = TableInfo.read(db, "individual_expenses");
+        if (!_infoIndividualExpenses.equals(_existingIndividualExpenses)) {
+          return new RoomOpenHelper.ValidationResult(false, "individual_expenses(com.ngbautoroad.data.db.IndividualExpenseEntity).\n"
+                  + " Expected:\n" + _infoIndividualExpenses + "\n"
+                  + " Found:\n" + _existingIndividualExpenses);
+        }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "aa8a852a1ab9de2f465400286f3632cc", "1c649a5976f7dd71ddd7800b5074210a");
+    }, "40281e30780c7721040d1e4664194beb", "c8b5934abbd19e9b7c30b6adf32d3a0d");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;
@@ -221,7 +289,7 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
   protected InvalidationTracker createInvalidationTracker() {
     final HashMap<String, String> _shadowTablesMap = new HashMap<String, String>(0);
     final HashMap<String, Set<String>> _viewTables = new HashMap<String, Set<String>>(0);
-    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "expenses","earnings","maintenance_reminders","vehicle_config","financial_goals");
+    return new InvalidationTracker(this, _shadowTablesMap, _viewTables, "expenses","earnings","maintenance_reminders","vehicle_config","financial_goals","vehicle_profiles","individual_expenses");
   }
 
   @Override
@@ -235,6 +303,8 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
       _db.execSQL("DELETE FROM `maintenance_reminders`");
       _db.execSQL("DELETE FROM `vehicle_config`");
       _db.execSQL("DELETE FROM `financial_goals`");
+      _db.execSQL("DELETE FROM `vehicle_profiles`");
+      _db.execSQL("DELETE FROM `individual_expenses`");
       super.setTransactionSuccessful();
     } finally {
       super.endTransaction();
@@ -254,6 +324,8 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
     _typeConvertersMap.put(ReminderDao.class, ReminderDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(VehicleConfigDao.class, VehicleConfigDao_Impl.getRequiredConverters());
     _typeConvertersMap.put(FinancialGoalDao.class, FinancialGoalDao_Impl.getRequiredConverters());
+    _typeConvertersMap.put(VehicleProfileDao.class, VehicleProfileDao_Impl.getRequiredConverters());
+    _typeConvertersMap.put(IndividualExpenseDao.class, IndividualExpenseDao_Impl.getRequiredConverters());
     return _typeConvertersMap;
   }
 
@@ -338,6 +410,34 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
           _financialGoalDao = new FinancialGoalDao_Impl(this);
         }
         return _financialGoalDao;
+      }
+    }
+  }
+
+  @Override
+  public VehicleProfileDao vehicleProfileDao() {
+    if (_vehicleProfileDao != null) {
+      return _vehicleProfileDao;
+    } else {
+      synchronized(this) {
+        if(_vehicleProfileDao == null) {
+          _vehicleProfileDao = new VehicleProfileDao_Impl(this);
+        }
+        return _vehicleProfileDao;
+      }
+    }
+  }
+
+  @Override
+  public IndividualExpenseDao individualExpenseDao() {
+    if (_individualExpenseDao != null) {
+      return _individualExpenseDao;
+    } else {
+      synchronized(this) {
+        if(_individualExpenseDao == null) {
+          _individualExpenseDao = new IndividualExpenseDao_Impl(this);
+        }
+        return _individualExpenseDao;
       }
     }
   }

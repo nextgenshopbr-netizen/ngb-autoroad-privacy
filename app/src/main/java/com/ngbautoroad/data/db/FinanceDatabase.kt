@@ -185,8 +185,14 @@ interface EarningDao {
     @Query("SELECT SUM(distance) FROM earnings WHERE date >= :startDate AND date <= :endDate")
     fun getTotalDistance(startDate: Long, endDate: Long): Flow<Double?>
 
+    @Query("SELECT SUM(distance) FROM earnings WHERE date >= :startDate AND date <= :endDate")
+    suspend fun getTotalDistanceSync(startDate: Long, endDate: Long): Double?
+
     @Query("SELECT SUM(duration) FROM earnings WHERE date >= :startDate AND date <= :endDate")
     fun getTotalDuration(startDate: Long, endDate: Long): Flow<Int?>
+
+    @Query("SELECT SUM(duration) FROM earnings WHERE date >= :startDate AND date <= :endDate")
+    suspend fun getTotalDurationSync(startDate: Long, endDate: Long): Int?
 
     @Query("SELECT SUM(ridesCount) FROM earnings WHERE date >= :startDate AND date <= :endDate")
     fun getTotalRides(startDate: Long, endDate: Long): Flow<Int?>
@@ -280,9 +286,11 @@ data class PlatformSummary(
         EarningEntity::class,
         ReminderEntity::class,
         VehicleConfigEntity::class,
-        FinancialGoalEntity::class
+        FinancialGoalEntity::class,
+        VehicleProfileEntity::class,
+        IndividualExpenseEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class FinanceDatabase : RoomDatabase() {
@@ -291,6 +299,8 @@ abstract class FinanceDatabase : RoomDatabase() {
     abstract fun reminderDao(): ReminderDao
     abstract fun vehicleConfigDao(): VehicleConfigDao
     abstract fun financialGoalDao(): FinancialGoalDao
+    abstract fun vehicleProfileDao(): VehicleProfileDao
+    abstract fun individualExpenseDao(): IndividualExpenseDao
 
     companion object {
         @Volatile
@@ -305,6 +315,60 @@ abstract class FinanceDatabase : RoomDatabase() {
             }
         }
 
+        // Migração v3 → v4: Adicionar tabelas vehicle_profiles e individual_expenses (v4.3.0)
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS vehicle_profiles (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        isActive INTEGER NOT NULL DEFAULT 0,
+                        brand TEXT NOT NULL DEFAULT '',
+                        model TEXT NOT NULL DEFAULT '',
+                        year INTEGER NOT NULL DEFAULT 0,
+                        plate TEXT NOT NULL DEFAULT '',
+                        vehicleType TEXT NOT NULL DEFAULT 'COMBUSTION',
+                        fuelType TEXT NOT NULL DEFAULT 'FLEX',
+                        averageConsumption REAL NOT NULL DEFAULT 0.0,
+                        fuelPrice REAL NOT NULL DEFAULT 0.0,
+                        costPerKm REAL NOT NULL DEFAULT 0.0,
+                        isOwned INTEGER NOT NULL DEFAULT 1,
+                        rentalCost REAL NOT NULL DEFAULT 0.0,
+                        purchaseValue REAL NOT NULL DEFAULT 0.0,
+                        currentOdometer INTEGER NOT NULL DEFAULT 0,
+                        tireLifeKm INTEGER NOT NULL DEFAULT 40000,
+                        tireCost REAL NOT NULL DEFAULT 0.0,
+                        brakepadLifeKm INTEGER NOT NULL DEFAULT 30000,
+                        brakepadCost REAL NOT NULL DEFAULT 0.0,
+                        oilChangeKm INTEGER NOT NULL DEFAULT 10000,
+                        oilChangeCost REAL NOT NULL DEFAULT 0.0,
+                        maintenanceIntervalKm INTEGER NOT NULL DEFAULT 20000,
+                        maintenanceCost REAL NOT NULL DEFAULT 0.0,
+                        createdAt INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS individual_expenses (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        vehicleId INTEGER NOT NULL DEFAULT 0,
+                        title TEXT NOT NULL DEFAULT '',
+                        category TEXT NOT NULL DEFAULT '',
+                        totalAmount REAL NOT NULL DEFAULT 0.0,
+                        installments INTEGER NOT NULL DEFAULT 1,
+                        installmentsPaid INTEGER NOT NULL DEFAULT 0,
+                        monthlyAmount REAL NOT NULL DEFAULT 0.0,
+                        startDate INTEGER NOT NULL DEFAULT 0,
+                        dueDay INTEGER NOT NULL DEFAULT 1,
+                        isIncludedInCalc INTEGER NOT NULL DEFAULT 1,
+                        isRecurringAnnual INTEGER NOT NULL DEFAULT 0,
+                        frequency TEXT NOT NULL DEFAULT 'MENSAL',
+                        notes TEXT NOT NULL DEFAULT '',
+                        isPaid INTEGER NOT NULL DEFAULT 0,
+                        createdAt INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+            }
+        }
+
         fun getInstance(context: Context): FinanceDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -312,7 +376,7 @@ abstract class FinanceDatabase : RoomDatabase() {
                     FinanceDatabase::class.java,
                     "ngb_finance_db"
                 )
-                .addMigrations(MIGRATION_2_3)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                 // Fallback apenas para migração de versão 1 (primeira instalação antiga)
                 .fallbackToDestructiveMigrationFrom(1)
                 // Removido allowMainThreadQueries — todas as queries são suspend/Flow (item 6.2)

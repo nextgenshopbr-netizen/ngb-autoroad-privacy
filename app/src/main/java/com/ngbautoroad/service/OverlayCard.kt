@@ -66,7 +66,8 @@ fun OverlayCard(
     val bgColor = Color(card?.backgroundColor ?: 0xFF101830)
     val textColor = Color(card?.textColor ?: 0xFFFFFFFF)
     val accentColor = Color(card?.accentColor ?: 0xFF4F6BFF)
-    val borderColor = Color(card?.borderColor ?: 0xFF4F6BFF)
+    // BORDA DINÂMICA: cor muda conforme o score (verde/amarelo/laranja/vermelho)
+    val borderColor = totalScoreColor
     val borderRadius = (card?.borderRadius ?: 12).dp
     val showBorder = card?.showBorder ?: true
 

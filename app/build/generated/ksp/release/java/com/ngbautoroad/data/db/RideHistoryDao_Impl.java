@@ -1124,6 +1124,90 @@ public final class RideHistoryDao_Impl implements RideHistoryDao {
   }
 
   @Override
+  public Object getRidesByPeriodSync(final long start, final long end,
+      final Continuation<? super List<RideHistoryEntity>> $completion) {
+    final String _sql = "SELECT * FROM ride_history WHERE timestamp BETWEEN ? AND ? ORDER BY timestamp DESC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 2);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, start);
+    _argIndex = 2;
+    _statement.bindLong(_argIndex, end);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<RideHistoryEntity>>() {
+      @Override
+      @NonNull
+      public List<RideHistoryEntity> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfPlatform = CursorUtil.getColumnIndexOrThrow(_cursor, "platform");
+          final int _cursorIndexOfRideValue = CursorUtil.getColumnIndexOrThrow(_cursor, "rideValue");
+          final int _cursorIndexOfRideDuration = CursorUtil.getColumnIndexOrThrow(_cursor, "rideDuration");
+          final int _cursorIndexOfPickupDistance = CursorUtil.getColumnIndexOrThrow(_cursor, "pickupDistance");
+          final int _cursorIndexOfDropoffDistance = CursorUtil.getColumnIndexOrThrow(_cursor, "dropoffDistance");
+          final int _cursorIndexOfPassengerRating = CursorUtil.getColumnIndexOrThrow(_cursor, "passengerRating");
+          final int _cursorIndexOfIntermediateStops = CursorUtil.getColumnIndexOrThrow(_cursor, "intermediateStops");
+          final int _cursorIndexOfPickupNeighborhood = CursorUtil.getColumnIndexOrThrow(_cursor, "pickupNeighborhood");
+          final int _cursorIndexOfDropoffNeighborhood = CursorUtil.getColumnIndexOrThrow(_cursor, "dropoffNeighborhood");
+          final int _cursorIndexOfScore = CursorUtil.getColumnIndexOrThrow(_cursor, "score");
+          final int _cursorIndexOfStatus = CursorUtil.getColumnIndexOrThrow(_cursor, "status");
+          final int _cursorIndexOfTimestamp = CursorUtil.getColumnIndexOrThrow(_cursor, "timestamp");
+          final int _cursorIndexOfScoreBreakdown = CursorUtil.getColumnIndexOrThrow(_cursor, "scoreBreakdown");
+          final int _cursorIndexOfCriteriaUsed = CursorUtil.getColumnIndexOrThrow(_cursor, "criteriaUsed");
+          final int _cursorIndexOfTotalCriteria = CursorUtil.getColumnIndexOrThrow(_cursor, "totalCriteria");
+          final int _cursorIndexOfHasViolations = CursorUtil.getColumnIndexOrThrow(_cursor, "hasViolations");
+          final List<RideHistoryEntity> _result = new ArrayList<RideHistoryEntity>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final RideHistoryEntity _item;
+            final long _tmpId;
+            _tmpId = _cursor.getLong(_cursorIndexOfId);
+            final String _tmpPlatform;
+            _tmpPlatform = _cursor.getString(_cursorIndexOfPlatform);
+            final double _tmpRideValue;
+            _tmpRideValue = _cursor.getDouble(_cursorIndexOfRideValue);
+            final double _tmpRideDuration;
+            _tmpRideDuration = _cursor.getDouble(_cursorIndexOfRideDuration);
+            final double _tmpPickupDistance;
+            _tmpPickupDistance = _cursor.getDouble(_cursorIndexOfPickupDistance);
+            final double _tmpDropoffDistance;
+            _tmpDropoffDistance = _cursor.getDouble(_cursorIndexOfDropoffDistance);
+            final double _tmpPassengerRating;
+            _tmpPassengerRating = _cursor.getDouble(_cursorIndexOfPassengerRating);
+            final int _tmpIntermediateStops;
+            _tmpIntermediateStops = _cursor.getInt(_cursorIndexOfIntermediateStops);
+            final String _tmpPickupNeighborhood;
+            _tmpPickupNeighborhood = _cursor.getString(_cursorIndexOfPickupNeighborhood);
+            final String _tmpDropoffNeighborhood;
+            _tmpDropoffNeighborhood = _cursor.getString(_cursorIndexOfDropoffNeighborhood);
+            final double _tmpScore;
+            _tmpScore = _cursor.getDouble(_cursorIndexOfScore);
+            final String _tmpStatus;
+            _tmpStatus = _cursor.getString(_cursorIndexOfStatus);
+            final long _tmpTimestamp;
+            _tmpTimestamp = _cursor.getLong(_cursorIndexOfTimestamp);
+            final String _tmpScoreBreakdown;
+            _tmpScoreBreakdown = _cursor.getString(_cursorIndexOfScoreBreakdown);
+            final int _tmpCriteriaUsed;
+            _tmpCriteriaUsed = _cursor.getInt(_cursorIndexOfCriteriaUsed);
+            final int _tmpTotalCriteria;
+            _tmpTotalCriteria = _cursor.getInt(_cursorIndexOfTotalCriteria);
+            final boolean _tmpHasViolations;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfHasViolations);
+            _tmpHasViolations = _tmp != 0;
+            _item = new RideHistoryEntity(_tmpId,_tmpPlatform,_tmpRideValue,_tmpRideDuration,_tmpPickupDistance,_tmpDropoffDistance,_tmpPassengerRating,_tmpIntermediateStops,_tmpPickupNeighborhood,_tmpDropoffNeighborhood,_tmpScore,_tmpStatus,_tmpTimestamp,_tmpScoreBreakdown,_tmpCriteriaUsed,_tmpTotalCriteria,_tmpHasViolations);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Object getByPlatform(final String platform, final int limit,
       final Continuation<? super List<RideHistoryEntity>> $completion) {
     final String _sql = "SELECT * FROM ride_history WHERE platform = ? ORDER BY timestamp DESC LIMIT ?";

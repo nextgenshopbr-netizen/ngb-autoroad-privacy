@@ -66,6 +66,7 @@ class FinanceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val db = FinanceDatabase.getInstance(applicationContext)
+        val appDb = AppDatabase.getInstance(applicationContext)
         val prefsManager = com.ngbautoroad.data.prefs.PrefsManager(applicationContext)
         setContent {
             NGBAutoRoadTheme {
@@ -75,6 +76,9 @@ class FinanceActivity : ComponentActivity() {
                     reminderDao = db.reminderDao(),
                     vehicleConfigDao = db.vehicleConfigDao(),
                     financialGoalDao = db.financialGoalDao(),
+                    vehicleProfileDao = db.vehicleProfileDao(),
+                    individualExpenseDao = db.individualExpenseDao(),
+                    rideHistoryDao = appDb.rideHistoryDao(),
                     prefsManager = prefsManager,
                     onBack = { finish() }
                 )
@@ -90,11 +94,14 @@ fun FinanceScreen(
     reminderDao: ReminderDao,
     vehicleConfigDao: VehicleConfigDao,
     financialGoalDao: FinancialGoalDao,
+    vehicleProfileDao: VehicleProfileDao? = null,
+    individualExpenseDao: IndividualExpenseDao? = null,
+    rideHistoryDao: RideHistoryDao? = null,
     prefsManager: com.ngbautoroad.data.prefs.PrefsManager? = null,
     onBack: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Resumo", "Ganhos", "Gastos", "Veículo", "Metas")
+    val tabs = listOf("Resumo", "Ganhos", "Gastos", "Veículos", "Despesas", "Projeção", "Metas")
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
@@ -128,8 +135,10 @@ fun FinanceScreen(
                 0 -> FinanceSummaryTab(expenseDao, earningDao, financialGoalDao)
                 1 -> EarningsTab(earningDao, prefsManager, snackbarHostState)
                 2 -> ExpensesTab(expenseDao, snackbarHostState)
-                3 -> VehicleTab(vehicleConfigDao, snackbarHostState)
-                4 -> GoalsTab(earningDao, expenseDao, financialGoalDao, snackbarHostState)
+                3 -> VehicleProfilesTab(vehicleProfileDao, snackbarHostState)
+                4 -> IndividualExpensesTab(individualExpenseDao, vehicleProfileDao, snackbarHostState)
+                5 -> ProjectionTab(earningDao, vehicleProfileDao, individualExpenseDao, rideHistoryDao)
+                6 -> GoalsTab(earningDao, expenseDao, financialGoalDao, snackbarHostState)
             }
         }
     }

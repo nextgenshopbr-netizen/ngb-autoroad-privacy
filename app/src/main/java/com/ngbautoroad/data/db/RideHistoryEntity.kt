@@ -94,6 +94,10 @@ interface RideHistoryDao {
     @Query("SELECT * FROM ride_history WHERE timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
     fun getBetweenDatesFlow(start: Long, end: Long): Flow<List<RideHistoryEntity>>
 
+    // v4.3.0 — Para Projeção Inteligente
+    @Query("SELECT * FROM ride_history WHERE timestamp BETWEEN :start AND :end ORDER BY timestamp DESC")
+    suspend fun getRidesByPeriodSync(start: Long, end: Long): List<RideHistoryEntity>
+
     @Query("SELECT * FROM ride_history WHERE platform = :platform ORDER BY timestamp DESC LIMIT :limit")
     suspend fun getByPlatform(platform: String, limit: Int = 50): List<RideHistoryEntity>
 
