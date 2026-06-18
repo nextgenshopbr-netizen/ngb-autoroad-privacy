@@ -278,7 +278,7 @@ class PrefsManager(private val context: Context) {
 
     suspend fun saveOverlayFontScale(scale: Float) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_OVERLAY_FONT_SCALE] = scale.coerceIn(0.7f, 2.0f)
+            prefs[KEY_OVERLAY_FONT_SCALE] = scale.coerceIn(1.0f, 2.5f)
         }
     }
 

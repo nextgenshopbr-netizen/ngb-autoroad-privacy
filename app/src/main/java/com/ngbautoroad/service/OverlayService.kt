@@ -371,7 +371,12 @@ class OverlayService : Service(),
                             score = score,
                             galleryCard = currentGalleryCard,
                             fontScale = currentFontScale,
-                            onDismiss = { hideOverlay() }
+                            onDismiss = { hideOverlay() },
+                            onFontScaleChange = { newScale ->
+                                currentFontScale = newScale
+                                serviceScope.launch { prefsManager.saveOverlayFontScale(newScale) }
+                                updateOverlayContent()
+                            }
                         )
                     }
                 }
@@ -466,7 +471,12 @@ class OverlayService : Service(),
                         score = score,
                         galleryCard = currentGalleryCard,
                         fontScale = currentFontScale,
-                        onDismiss = { hideOverlay() }
+                        onDismiss = { hideOverlay() },
+                        onFontScaleChange = { newScale ->
+                            currentFontScale = newScale
+                            serviceScope.launch { prefsManager.saveOverlayFontScale(newScale) }
+                            updateOverlayContent()
+                        }
                     )
                 }
             }

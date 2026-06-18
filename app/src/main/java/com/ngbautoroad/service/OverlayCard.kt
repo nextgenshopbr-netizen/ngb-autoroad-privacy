@@ -129,7 +129,7 @@ fun OverlayCard(
                         modifier = Modifier
                             .size(18.dp)
                             .clickable {
-                                val newScale = (fontScale - 0.1f).coerceIn(0.7f, 2.0f)
+                                val newScale = (fontScale - 0.1f).coerceIn(1.0f, 2.5f)
                                 onFontScaleChange(newScale)
                             }
                     )
@@ -141,7 +141,7 @@ fun OverlayCard(
                         modifier = Modifier
                             .size(18.dp)
                             .clickable {
-                                val newScale = (fontScale + 0.1f).coerceIn(0.7f, 2.0f)
+                                val newScale = (fontScale + 0.1f).coerceIn(1.0f, 2.5f)
                                 onFontScaleChange(newScale)
                             }
                     )
