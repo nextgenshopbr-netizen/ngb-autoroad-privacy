@@ -64,3 +64,18 @@
 | UI | FinanceActivity.kt | Controle financeiro (abas) |
 | UI | FinanceExtTabs.kt | Abas: Veículos, Despesas, Projeção |
 | Prefs | PrefsManager.kt | DataStore com PIN, critérios, thresholds |
+
+### 2026-06-18 13:14 — v4.3.3 (Simulador Real + Teste de Card Flutuante)
+- **Simulador Admin agora dispara overlay REAL:**
+  - Ao clicar Boa/Média/Ruim/Aleatória, o OverlayService é iniciado
+  - RideData real é enviado via `OverlayService.onRideDetected?.invoke(rideData)`
+  - O card de análise aparece flutuante na tela exatamente como aconteceria com corrida real
+  - Fluxo end-to-end: dados simulados → RideScorer → OverlayCard real
+  - Removido UberStyleCard estático (agora é o overlay real que aparece)
+  - SimulationDetailsCard mantido para ver dados internos
+- **Botão "Testar Real" no editor de cards:**
+  - Gera corrida aleatória e dispara overlay flutuante real
+  - Motorista pode testar drag, pinch, posição, tamanho do card
+  - Funciona exatamente como GigU no preview de cards
+- **Função toRideData()** adicionada ao SimulationResult para conversão
+- Versão 4.3.3 (versionCode 51)

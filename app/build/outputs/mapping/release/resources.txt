@@ -448,6 +448,7 @@ minFaceSize
 TextDecoration.
 InteroperabilityIndex
 FocalPlaneYResolution
+Simular
 Fundo
 ဈ ဉ
 CODE_SCANNER_PIPELINE_INFERENCE_ERROR
@@ -1245,8 +1246,8 @@ com.google.protobuf.GeneratedExtensio...
 ဉ
 Monitorando
 givenName
-Filled.Collections
 _handled
+Filled.Collections
 DROPOFF_NEIGHBORHOOD
 version
 SetSelection
@@ -1644,6 +1645,7 @@ $this$measure
 showsUserInterface
 mRecreateDisplayList
 durationMs
+Filled.OpenInNew
 SceneType
 expensesByCategory
 vehicleName
@@ -3009,6 +3011,7 @@ Outro
 Completo
 CM_SAMPLE_BUFFER_REF
 EmojiCompat.MetadataRepo.create
+Testar
 onClick
 $this$null
 KEY_COMPONENT_ACTIVITY_PENDING_RESULT
@@ -3177,9 +3180,9 @@ ShuttingDown
 com.google.android.gms.mlkit_image_ca...
 ဉ ခဌဇ
 PasteText
+4.3.3
 ON_DEVICE_IMAGE_CAPTIONING_CREATE
 DESC
-4.3.2
 FontFamily.Default
 slotName
 $
@@ -3269,6 +3272,7 @@ NO_THREAD_ELEMENTS
 maxPerObjectLabelCount
 Visible
 URI_EXPIRED
+com.ngbautoroad.ui.admin.AdminActivit...
 DOUBLE
 event
 uberdrive
@@ -3361,8 +3365,8 @@ TestTag
 Serviço
 resources
 c8b5934abbd19e9b7c30b6adf32d3a0d
-Parcela/Financiamento
 Filled.Settings
+Parcela/Financiamento
 int
 REMOTE_EXCEPTION
 stages
@@ -4223,6 +4227,7 @@ dest
 pairs
 frequency
 com.ngbautoroad.data.prefs.PrefsManag...
+com.ngbautoroad.ui.card.CardTabKt$Car...
 UNKNOWN_FORMAT
 networkConnectionInfo
 com.ngbautoroad.ui.settings.SettingsT...

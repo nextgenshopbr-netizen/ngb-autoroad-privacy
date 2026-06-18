@@ -18,6 +18,8 @@ package com.ngbautoroad.ui.admin
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.ui.platform.LocalContext
+import com.ngbautoroad.service.OverlayService
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -199,6 +201,7 @@ fun AdminPanel(
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var simulationResult by remember { mutableStateOf<SimulationResult?>(null) }
     var showChangePinDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
@@ -318,11 +321,21 @@ fun AdminPanel(
                 )
             }
 
-            // Card visual idêntico ao overlay real (como GigU)
+            // Dispara o overlay REAL quando simulação é executada
             simulationResult?.let { result ->
+                // Disparar overlay real end-to-end
+                LaunchedEffect(result) {
+                    // Garantir que o OverlayService está rodando
+                    OverlayService.start(context)
+                    // Pequeno delay para garantir que o serviço iniciou
+                    kotlinx.coroutines.delay(300)
+                    // Enviar RideData real para o overlay (exatamente como AccessibilityService faz)
+                    val rideData = result.toRideData()
+                    OverlayService.onRideDetected?.invoke(rideData)
+                }
+
                 Spacer(modifier = Modifier.height(16.dp))
-                UberStyleCard(result)
-                Spacer(modifier = Modifier.height(12.dp))
+                // Detalhes da simulação (dados internos)
                 SimulationDetailsCard(result)
             }
 
@@ -353,7 +366,7 @@ fun AdminPanel(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    InfoRow("Versão", "4.3.2")
+                    InfoRow("Versão", "4.3.3")
                     InfoRow("Build", "release")
                     InfoRow("Package", "com.ngbautoroad")
                     InfoRow("SDK Target", "34")
@@ -743,7 +756,33 @@ data class SimulationResult(
     val thresholdRatePerKm: Double,
     val thresholdRatePerHour: Double,
     val thresholdRating: Double
-)
+) {
+    /**
+     * Converte SimulationResult em RideData real para disparar o overlay
+     * exatamente como o AccessibilityService faria com uma corrida real.
+     */
+    fun toRideData(): RideData {
+        val platformEnum = when (platform) {
+            "Uber" -> Platform.UBER
+            "99" -> Platform.NINETY_NINE
+            "inDrive" -> Platform.INDRIVE
+            else -> Platform.CABIFY
+        }
+        val rideTypeEnum = RideType.fromBadgeText(rideType, platformEnum)
+        return RideData(
+            platform = platformEnum,
+            rideType = rideTypeEnum,
+            rideValue = value,
+            rideDuration = estimatedMinutes.toDouble(),
+            pickupDistance = pickupDistance,
+            dropoffDistance = distance,
+            passengerRating = passengerRating,
+            intermediateStops = 0,
+            pickupNeighborhood = pickupNeighborhood,
+            dropoffNeighborhood = dropoffNeighborhood
+        )
+    }
+}
 
 private val platforms = listOf("Uber", "99", "inDrive", "Cabify")
 private val uberTypes = listOf("UberX", "Comfort", "Black", "Flash", "Green")

@@ -50,8 +50,10 @@ import androidx.compose.ui.platform.LocalContext
 import com.ngbautoroad.data.model.*
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.domain.RideScorer
+import com.ngbautoroad.service.OverlayService
 import com.ngbautoroad.ui.editor.CardEditorActivity
 import com.ngbautoroad.ui.theme.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
@@ -200,16 +202,43 @@ fun CardTab(prefsManager: PrefsManager) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Button(
-            onClick = { showPreview = true },
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.secondary
-            )
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(Icons.Default.Visibility, contentDescription = "Ícone")
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Simular Card")
+            Button(
+                onClick = { showPreview = true },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
+                )
+            ) {
+                Icon(Icons.Default.Visibility, contentDescription = "Ícone")
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Simular")
+            }
+
+            // Botão que abre o overlay flutuante REAL na tela
+            Button(
+                onClick = {
+                    scope.launch {
+                        // Gerar corrida aleatória
+                        val ride = generateRandomRide()
+                        // Iniciar OverlayService e disparar corrida real
+                        OverlayService.start(context)
+                        delay(300)
+                        OverlayService.onRideDetected?.invoke(ride)
+                    }
+                },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ScoreGreen
+                )
+            ) {
+                Icon(Icons.Default.OpenInNew, contentDescription = "Testar")
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Testar Real")
+            }
         }
     }
 

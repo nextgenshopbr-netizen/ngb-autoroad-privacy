@@ -11,8 +11,8 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 50,
-      "versionName": "4.3.2",
+      "versionCode": 51,
+      "versionName": "4.3.3",
       "outputFile": "resources-release-stripped.ap_"
     }
   ],
