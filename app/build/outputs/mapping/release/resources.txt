@@ -204,7 +204,6 @@ N
 result
 Litros
 S
-Copacabana
 W
 X
 NumberPassword
@@ -276,7 +275,6 @@ THROTTLE_ALWAYS
 CLOUD_LOGO_DETECT
 osmdroid.TileDownloaderFollowRedirects
 hasViolations
-Recreio
 PAGE_DOWN
 unsupported
 provider
@@ -370,7 +368,6 @@ android.view.accessibility.extra.DATA...
 Plus
 sessionTotalInferenceDurationMs
 lat
-SIMULAÇÃO
 com.ngbautoroad.ui.map.ZoneMapData
 IWLAN
 service_enabled
@@ -378,7 +375,6 @@ service_enabled
 REMOTE_MODEL_DELETE_ON_DEVICE
 monthlyFixedCosts
 languageIdentificationOptionalModuleL...
-Grajaú
 OPTIONAL_MODULE_BARCODE_DETECTION
 android.car.EXTENSIONS
 $this$surfaceColorAtElevation
@@ -395,7 +391,6 @@ displayCutout
 com.google.android.gms.mlkit_docscan_...
 SSLv3
 SFIXED64_LIST_PACKED
-Laranjeiras
 DEAD_CLIENT
 ဌ ဂ
 $this$composed
@@ -445,7 +440,6 @@ minFaceSize
 TextDecoration.
 InteroperabilityIndex
 FocalPlaneYResolution
-Simular
 Fundo
 ဈ ဉ
 CODE_SCANNER_PIPELINE_INFERENCE_ERROR
@@ -548,7 +542,6 @@ short
 Sentences
 MINUTES
 faceDetectionOptionalModuleLogEvent
-com.ngbautoroad.ui.admin.AdminActivit...
 Strategy.Unspecified
 paradas
 MOBILE_MMS
@@ -644,7 +637,6 @@ format
 http://localhost
 com.google.android.gms.signin
 SELECT_LEFT_WORD
-Leblon
 WrongConstant
 Cor:
 ဉ ဉဉ
@@ -655,6 +647,7 @@ ModelDownloadManager
 getUri
 CLOSED
 JsonPrimitive
+CBF
 sqlcache
 isContainer
 LocalFocusManager
@@ -669,6 +662,7 @@ com.ngbautoroad.service.OverlayServic...
 temp
 next_request_ms
 TODAY
+Paraíso
 Filled.PlayCircle
 classificationMode
 LEFT_WORD
@@ -697,6 +691,7 @@ STOPS
 CLOUD_WEB_SEARCH_DETECT
 ON_ANY
 CUSTOM_IMAGE_LABEL_DETECT
+Nota
 င ငဇငငဇဉ
 USGS
 ON_PAUSE
@@ -712,8 +707,8 @@ invokeSuspend
 ON_DEVICE_IMAGE_LABEL_CREATE
 Recomposer:animation
 cache.db
-Wrap
 getEmojiConsistencySet
+Wrap
 getResPackage
 Sex
 AGGREGATED_CUSTOM_OBJECT_INFERENCE
@@ -724,6 +719,7 @@ com.google.android.gms.location.inter...
 Valor
 VALUE_PER_HOUR
 UNKNOWN_ERROR
+iDRV
 onBackInvokedDispatcher
 composition
 HSDPA
@@ -735,7 +731,9 @@ com.google.mlkit.internal
 common_google_play_services_restricte...
 ml_sdk_instance_id
 ISOSpeedRatings
+Média
 typeParams
+Aleatória
 com.ngbautoroad.ui.finance.FinanceAct...
 currentView
 right
@@ -867,7 +865,6 @@ compressedImageSize
 traversalIndex
 com.chrome.
 CancellableContinuation
-Filled.Casino
 map
 thresh_max_stops
 max
@@ -891,6 +888,7 @@ CLOUD_IMAGE_LABEL_DETECT
 bonus
 Luminosity
 com.google.android.gms.availability
+Boa
 eventName
 MissingPermission
 onBackStarted
@@ -915,7 +913,6 @@ entries
 newName
 null
 font_italic
-pinConfirm
 background
 androidx.datastore.preferences.protob...
 androidx.lifecycle.internal.SavedStat...
@@ -950,6 +947,7 @@ collectionItemInfo
 admin_pin
 TRANSLATE
 OPTIONAL_MODULE_DOCUMENT_ENHANCE_RELEASE
+Lucro/hr
 RESUME_TOKEN
 /L
 OSMPublicTransport
@@ -1002,7 +1000,6 @@ getBoolean
 langid
 OPTIONAL_MODULE_IMAGE_QUALITY_ANALYSI...
 34
-Lapa
 GooglePlayServicesErrorDialog
 Favoritos
 kotlin.UInt
@@ -1049,7 +1046,6 @@ CIRCLE
 name_sleep_segment_request
 ON_DEVICE_TEXT_CLOSE
 profileInstalled
-com.ngbautoroad.ui.admin.AdminActivit...
 semanticAction
 _next
 Compose:applyChanges
@@ -1059,7 +1055,6 @@ ColorBurn
 NINETY_NINE
 INVALID_ACCOUNT
 common
-Ipanema
 pokeByte
 authenticationResultCode
 com.ngbautoroad.ui.history.HistoryTab...
@@ -1121,8 +1116,8 @@ _availablePermits
 COPY
 ဈ
 kotlin.ULong
+Esplanada
 TransferFunction
-com.ngbautoroad.ui.admin.AdminActivit...
 workGroupSizes
 Tab
 ဉ
@@ -1148,6 +1143,7 @@ com.ngbautoroad
 $this$layout
 com.ngbautoroad.data.prefs.PrefsManag...
 StopInput
+com.ngbautoroad.ui.admin.AdminActivit...
 DATA
 Galeria
 androidx.core.view.inputmethod.Editor...
@@ -1228,6 +1224,7 @@ detectionType
 ModelLoader
 aggregatedOnDeviceImageCaptioningInfe...
 REMOTE_CONFIG_ACTIVATE
+250696
 kotlinx.coroutines.scheduler.default....
 com.ngbautoroad.data.prefs.PrefsManag...
 onMenuKeyEvent
@@ -1379,7 +1376,6 @@ UTC
 android.intent.action.MEDIA_MOUNTED
 OPTIONAL_MODULE_LANGUAGE_ID_INFERENCE
 paneTitle
-Flamengo
 onToggleProtection
 onLabelMeasured
 onDeviceDocumentDetectionCreateLogEvent
@@ -1404,7 +1400,6 @@ cn.google
 MES
 ImageDescription
 VOID
-Catete
 FLOAT
 handleLifecycleEvent
 Indeterminate
@@ -1427,7 +1422,6 @@ ON_DEVICE_TRANSLATOR_CLOSE
 transport
 ON_DEVICE_TRANSLATOR_LOAD
 pipelineIdentifier
-147258
 acceptedConfigurations
 weight_duration
 documentDetectionOptionalModuleLogEvent
@@ -1558,6 +1552,7 @@ com.ngbautoroad.ui.editor.CardEditorA...
 androidx.view.accessibility.Accessibi...
 statement
 thisRef
+Ruim
 ᔁ ᔁᔁᔁခဂ
 FUEL_ENERGY
 SUSPEND_NO_WAITER
@@ -1567,8 +1562,8 @@ LibraryVersion
 cloudDocumentTextDetectionLogEvent
 ဈ ဉဉ
 interactionSource
-.lck
 Filled.Delete
+.lck
 https://tiles.openseamap.org/seamark/
 HOURS
 com.ngbautoroad.data.prefs.PrefsManag...
@@ -1857,6 +1852,7 @@ Ready
 columnsMap.values
 criteriaName
 kotlin.jvm.internal.
+Resetar
 Map
 MAPQUEST_ACCESS_TOKEN
 set_mock_location_with_callback
@@ -1988,6 +1984,7 @@ RESULT_CANCELED
 activity
 MICROSECONDS
 rw
+Efapi
 TransportRuntime.
 INT32
 LocalLifecycleOwner
@@ -2029,8 +2026,8 @@ createdAt
 SERVICE_MISSING_PERMISSION
 ဉ ဈဉ
 ReusedSlotId
-REMOTE_CONFIG_FRC_FETCH
 Filled.Lock
+REMOTE_CONFIG_FRC_FETCH
 Filled.Accessibility
 putBoolean
 us
@@ -2091,7 +2088,6 @@ get_current_location
 cont
 yMin
 bodyLarge
-Penha
 refHolder
 deserializer
 ACTION_ARGUMENT_SELECTION_START_INT
@@ -2173,7 +2169,6 @@ EXPIRED
 GPSSatellites
 failing_client_id
 aa8a852a1ab9de2f465400286f3632cc
-Jacarepaguá
 com.machfrankfurt.android
 onPinChanged
 GPSDestLatitude
@@ -2181,7 +2176,6 @@ CopyText
 DateTimeOriginal
 sqLiteQuery
 CUSTOM_OBJECT_INFERENCE
-Madureira
 mlkit.ocr.common
 rotationDegrees
 highestConfidence
@@ -2237,6 +2231,7 @@ MODULE_VERSION
 notnull
 TileStates
 HEREWEGO_APPCODE
+Eldorado
 CloudMadeStandardTiles
 contentPadding
 displayName
@@ -2327,6 +2322,7 @@ navigationBars
 jobscheduler
 OPTIONAL_MODULE_DOCUMENT_ENHANCE_PROCESS
 deqIdx
+Admin
 compose:lazylist:prefetch:measure
 GPSImgDirection
 TOXICITY_DETECTION_CREATE_EVENT
@@ -2345,7 +2341,6 @@ custom_ica
 com.ngbautoroad.ui.editor.CardEditorA...
 ON_DEVICE_EXPLICIT_CONTENT_DETECT
 fixups
-Andaraí
 MODEL_NOT_DOWNLOADED
 InactivePendingWork
 Adicionar
@@ -2356,8 +2351,8 @@ TYPE_THICK
 ImageWidth
 SERVICE_MISSING
 model.tflite
-Filled.Check
 fullPackage
+Filled.Check
 write
 StateDescription
 customErrors
@@ -2454,8 +2449,8 @@ DATA_TYPE_ERROR
 TYPE_UNKNOWN
 REAL
 StructuralEqualityPolicy
-imageByteSize
 Versão
+imageByteSize
 _id
 kotlin.Throwable
 com.ngbautoroad.data.prefs.PrefsManag...
@@ -2512,7 +2507,6 @@ violations
 $tmp0
 GPSImgDirectionRef
 input
-Glória
 remoteInputs
 isStandaloneMlkit
 %s%s%s%s
@@ -2521,6 +2515,7 @@ GPSDestDistanceRef
 ဈ $$
 copyMemory
 on_delete
+4.2.1
 GetTextLayoutResult
 ဂ
 com.ngbautoroad.ui.settings.SettingsT...
@@ -2540,19 +2535,21 @@ Filled.DirectionsCar
 setRemoveOnCancelPolicy
 receive
 PHONE_HOLDER
+2.6.1
 aggregatedOnDeviceImageLabelDetection...
 ON_DEVICE_SMART_REPLY_CREATE
 dflt_value
 Assertive
 httpResponseCode
-ϫ ဈ ᐉϪϫ
 Filled.History
+ϫ ဈ ᐉϪϫ
 Ondina
 PaneTitle
 HISTORY
 arrayIndexScale
 SDK_BUILT_IN
 Hint
+Seminário
 ဈ
 $dbRef
 existingFields
@@ -2603,7 +2600,6 @@ ON_DEVICE_SMART_REPLY_DETECT
 https://
 SEALED
 com.ngbautoroad.STOP_SERVICE
-Bangu
 NO_OWNER
 SIGNED
 isSuccessful
@@ -2623,6 +2619,7 @@ generic
 pts
 weight_value_per_km
 BOOL_LIST
+com.ngbautoroad.ui.admin.AdminActivit...
 BOOL
 com.google.android.gms.signin.interna...
 ANDROID_MEDIA_IMAGE
@@ -2682,7 +2679,6 @@ CFAPattern
 hostState
 ACTION_DRAG_START
 serverAuthCode
-com.ngbautoroad.ui.admin.AdminActivit...
 SQLiteFullException
 Road
 keep_screen_on
@@ -2752,7 +2748,6 @@ loadDurationMs
 padding
 LocalDensity
 process
-debug
 ActiveParent
 ACTION_SHOW_TOOLTIP
 jClass
@@ -2870,6 +2865,7 @@ com.google.protobuf.GeneratedMessage
 unusedTag
 java.lang.Boolean
 maxImages
+Room
 Semana
 GSM
 owner
@@ -2935,8 +2931,8 @@ CAMERA1_SOURCE_NO_SUITABLE_FPS_ERROR
 zoom_level
 mVisibleInsets
 ContinueTraversal
-find
 Build
+find
 onActivate
 selected
 DecoupledTextDelegate
@@ -3059,6 +3055,7 @@ id/bubble_title
 zbz
 ဉ ခ
 ACTION_PAGE_DOWN
+Trevo
 classes_to_restore
 isTraversalGroup
 mlkit.image.caption
@@ -3227,7 +3224,6 @@ textDetectionOptions
 LOW_POWER
 Softlight
 SERVICE_INVALID
-Méier
 MODEL_INFO_DOWNLOAD_NO_HASH
 Content
 ThumbnailImage
@@ -3322,6 +3318,7 @@ onCancel
 com.ngbautoroad.service.OverlayService
 EmojiCompat.EmojiCompatInitializer.run
 CLOUD_IMAGE_LABEL_CREATE
+Universitário
 RESULT_PARSE_EXCEPTION
 resourceSets
 Compose:recompose
@@ -3357,6 +3354,7 @@ nextRequestWaitMillis
 add
 isAccelerated
 com.ngbautoroad.ui.finance.FinanceAct...
+Administração
 com.ngbautoroad.data.prefs.PrefsManag...
 TypefaceCompatUtil
 GoogleApiActivity
@@ -3393,6 +3391,7 @@ com.ngbautoroad.data.prefs.PrefsManag...
 ImeAction
 downloadStatus
 ROOM
+Palmital
 UNDEFINED
 Filled.EditLocation
 isShowingTextSubstitution
@@ -3490,6 +3489,7 @@ ON_DEVICE_LANGUAGE_IDENTIFICATION_CREATE
 COMPLETING_ALREADY
 osmdroid.ExpirationOverride
 POLY_OBJ
+Alvorada
 flp_debug_updates
 java.lang.Iterable
 AGGREGATED_CUSTOM_IMAGE_LABEL_DETECTION
@@ -3517,6 +3517,7 @@ Main
 reason
 CLOUD_LANDMARK_CLOSE
 င ငငဇခ
+R$/Km
 tableName
 FabPosition.End
 GoogleApiHandler
@@ -3564,7 +3565,6 @@ blockingTasksInBuffer
 onDeviceDocumentEnhancementCreateLogE...
 sessionId
 kotlin.Char
-com.ngbautoroad.ui.admin.AdminActivit...
 SrcOver
 _decisionAndIndex
 navigationIcon
@@ -3625,6 +3625,7 @@ osmdroid.cachePath
 GoogleApiManager
 $command
 dataStore
+Belvedere
 com.ngbautoroad.data.prefs.PrefsManag...
 MainContent
 Imbuí
@@ -3644,7 +3645,6 @@ documentPresenceConfidence
 ExposureTime
 ConnectionStatusConfig
 inputState
-com.ngbautoroad.ui.admin.AdminActivit...
 SINT64_LIST
 SFIXED64
 OPTIONAL_MODULE_TEXT_RELEASE
@@ -3687,6 +3687,7 @@ osmdroid.enforceTileSystemBounds
 isRecurring
 LOWER_RIGHT_CORNER
 UNIX_LINES
+com.ngbautoroad.ui.admin.AdminActivit...
 /100
 ဉ ဉဉ
 extra_download_id
@@ -3759,7 +3760,6 @@ externalSdCard
 SensorBottomBorder
 Flash
 Filled.Cancel
-3.2.0
 ACTION_PREVIOUS_HTML_ELEMENT
 amount
 CLOB
@@ -3927,14 +3927,13 @@ hts/frbslgigp.ogepscmv/ieo/eaybtho
 intrinsicMeasurable
 extras
 Gastos
+Filled.Favorite
 plate
 PASSENGER_RATING
-Filled.Favorite
 ACTION_POINTER_INDEX_SHIFT
 ON_DEVICE_SMART_REPLY_LOAD
 cycle
 parentExpenseId
-Botafogo
 bundle
 OPTIONAL_MODULE_DOCUMENT_DETECT_INIT
 ON_DEVICE_DOCUMENT_CROP_LOAD
@@ -4114,6 +4113,7 @@ PREV_PARAGRAPH
 removeObserver
 CLOUD_LANDMARK_DETECT
 cabify
+Líder
 FLOAT_LIST
 MlKitCleaner
 OsmDroid
@@ -4156,7 +4156,6 @@ km/
 textField
 android.hardware.type.iot
 Avaliação
-onConfirmChange
 FocalPlaneResolutionUnit
 children
 BingMaps
@@ -4181,6 +4180,7 @@ com.ngbautoroad.data.prefs.PrefsManag...
 PreviewImageLength
 android.support.text.emoji.emojiCompa...
 logEvent
+com.ngbautoroad.ui.admin.AdminActivit...
 Borda
 Modelo
 ခ င
@@ -4244,7 +4244,6 @@ innerTextField
 RESULT_UNSUPPORTED_ART_VERSION
 ACTION_COPY
 inputLength
-Tijuca
 controlState
 Active
 kotlin.collections.Iterable

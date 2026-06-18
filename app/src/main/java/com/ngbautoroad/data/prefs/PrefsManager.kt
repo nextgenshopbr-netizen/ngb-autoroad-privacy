@@ -447,7 +447,7 @@ class PrefsManager(private val context: Context) {
     private val KEY_ADMIN_PIN = stringPreferencesKey("admin_pin")
 
     val adminPinFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[KEY_ADMIN_PIN] ?: "147258"
+        prefs[KEY_ADMIN_PIN] ?: "250696"
     }
 
     suspend fun saveAdminPin(pin: String) {

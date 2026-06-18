@@ -1,10 +1,26 @@
 package com.ngbautoroad.ui.admin
 
+// ============================================================================
+// ARQUIVO: AdminActivity.kt
+// RESPONSABILIDADE: Área administrativa oculta com simulador de corridas
+// ACESSO: Tocar 7x na versão do app → PIN 250696 (padrão fixo)
+// BLOCOS:
+//   - AdminScreen (L60): Controle de autenticação por PIN
+//   - PinScreen (L130): Tela de digitação do PIN
+//   - AdminPanel (L200): Painel principal com simulador e controles
+//   - UberStyleCard (L420): Card visual idêntico ao overlay real (como GigU)
+//   - simulateRide (L580): Geração de dados simulados com score real
+// DEPENDÊNCIAS:
+//   - domain/RideScorer.kt → cálculo de score real
+//   - data/prefs/PrefsManager.kt → critérios e thresholds do motorista
+// ============================================================================
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -14,35 +30,22 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ngbautoroad.data.model.*
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.domain.RideScorer
-import com.ngbautoroad.domain.ScoringThresholds
 import com.ngbautoroad.ui.theme.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-/**
- * Área Administrativa oculta
- *
- * Acesso: Tocar 7x na versão do app em Configurações
- * Proteção: PIN de 6 dígitos (padrão: 147258)
- *
- * Funcionalidades:
- * - Simular corridas com dados aleatórios
- * - Ver logs internos do sistema
- * - Forçar estados do overlay
- * - Resetar configurações
- * - Testar OCR e Accessibility
- * - Estatísticas internas
- */
 class AdminActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +60,11 @@ class AdminActivity : ComponentActivity() {
     }
 }
 
+// ============================================================================
+// BLOCO: AdminScreen — Controle de autenticação por PIN
+// PIN padrão fixo: 250696
+// Se o usuário nunca alterou, usa o padrão. Se alterou, usa o salvo.
+// ============================================================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminScreen(
@@ -66,68 +74,37 @@ fun AdminScreen(
     val scope = rememberCoroutineScope()
     var isAuthenticated by remember { mutableStateOf(false) }
     var pinInput by remember { mutableStateOf("") }
-    var pinConfirm by remember { mutableStateOf("") }
     var pinError by remember { mutableStateOf(false) }
-    var adminPin by remember { mutableStateOf("") }
-    var isFirstAccess by remember { mutableStateOf(true) }
-    var isSettingPin by remember { mutableStateOf(false) }
-    var pinMismatch by remember { mutableStateOf(false) }
+    var adminPin by remember { mutableStateOf("250696") } // PIN padrão fixo
 
-    // Carregar PIN salvo
+    // Carregar PIN salvo (se o usuário alterou)
     LaunchedEffect(Unit) {
         val savedPin = prefsManager.adminPinFlow.first()
         if (savedPin.isNotBlank()) {
             adminPin = savedPin
-            isFirstAccess = false
         } else {
-            isFirstAccess = true
-            isSettingPin = true
+            // Primeiro acesso: salvar PIN padrão
+            prefsManager.saveAdminPin("250696")
         }
     }
 
     if (!isAuthenticated) {
-        if (isSettingPin) {
-            // Tela de CRIAR PIN (primeiro acesso)
-            CreatePinScreen(
-                pinInput = pinInput,
-                pinConfirm = pinConfirm,
-                pinMismatch = pinMismatch,
-                onPinChange = { pinInput = it; pinMismatch = false },
-                onConfirmChange = { pinConfirm = it; pinMismatch = false },
-                onSubmit = {
-                    if (pinInput == pinConfirm && pinInput.length == 6) {
-                        adminPin = pinInput
-                        scope.launch { prefsManager.saveAdminPin(pinInput) }
-                        isAuthenticated = true
-                        isSettingPin = false
-                        isFirstAccess = false
-                    } else {
-                        pinMismatch = true
-                        pinConfirm = ""
-                    }
-                },
-                onBack = onBack
-            )
-        } else {
-            // Tela de DIGITAR PIN (acessos seguintes)
-            PinScreen(
-                pinInput = pinInput,
-                pinError = pinError,
-                onPinChange = { pinInput = it; pinError = false },
-                onSubmit = {
-                    if (pinInput == adminPin) {
-                        isAuthenticated = true
-                        pinError = false
-                    } else {
-                        pinError = true
-                        pinInput = ""
-                    }
-                },
-                onBack = onBack
-            )
-        }
+        PinScreen(
+            pinInput = pinInput,
+            pinError = pinError,
+            onPinChange = { pinInput = it; pinError = false },
+            onSubmit = {
+                if (pinInput == adminPin) {
+                    isAuthenticated = true
+                    pinError = false
+                } else {
+                    pinError = true
+                    pinInput = ""
+                }
+            },
+            onBack = onBack
+        )
     } else {
-        // Tela Admin
         AdminPanel(
             prefsManager = prefsManager,
             currentPin = adminPin,
@@ -140,6 +117,9 @@ fun AdminScreen(
     }
 }
 
+// ============================================================================
+// BLOCO: PinScreen — Tela de digitação do PIN
+// ============================================================================
 @Composable
 fun PinScreen(
     pinInput: String,
@@ -158,7 +138,7 @@ fun PinScreen(
     ) {
         Icon(
             Icons.Default.AdminPanelSettings,
-            contentDescription = "Ícone",
+            contentDescription = "Admin",
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary
         )
@@ -206,86 +186,10 @@ fun PinScreen(
     }
 }
 
-@Composable
-fun CreatePinScreen(
-    pinInput: String,
-    pinConfirm: String,
-    pinMismatch: Boolean,
-    onPinChange: (String) -> Unit,
-    onConfirmChange: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onBack: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            Icons.Default.AdminPanelSettings,
-            contentDescription = "Ícone",
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            "Primeiro Acesso",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            "Crie um PIN de 6 dígitos para proteger a área administrativa",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-
-        OutlinedTextField(
-            value = pinInput,
-            onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) onPinChange(it) },
-            label = { Text("Novo PIN (6 dígitos)") },
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(0.7f)
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedTextField(
-            value = pinConfirm,
-            onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) onConfirmChange(it) },
-            label = { Text("Confirme o PIN") },
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-            isError = pinMismatch,
-            supportingText = if (pinMismatch) {{ Text("PINs não coincidem", color = ScoreRed) }} else null,
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(0.7f)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = onSubmit,
-            enabled = pinInput.length == 6 && pinConfirm.length == 6,
-            modifier = Modifier.fillMaxWidth(0.7f)
-        ) {
-            Text("Criar PIN e Entrar")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextButton(onClick = onBack) {
-            Text("Cancelar")
-        }
-    }
-}
-
+// ============================================================================
+// BLOCO: AdminPanel — Painel principal
+// Contém: Simulador de corridas, botão Alterar PIN, controles do sistema
+// ============================================================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminPanel(
@@ -295,7 +199,6 @@ fun AdminPanel(
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    var selectedSection by remember { mutableIntStateOf(0) }
     var simulationResult by remember { mutableStateOf<SimulationResult?>(null) }
     var showChangePinDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
@@ -303,19 +206,17 @@ fun AdminPanel(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Admin Panel", fontWeight = FontWeight.Bold) },
+                title = { Text("Administração", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
                 },
-                actions = {
-                    IconButton(onClick = { showChangePinDialog = true }) {
-                        Icon(Icons.Default.Lock, contentDescription = "Alterar PIN")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF1A1A2E)
+                    containerColor = Color(0xFF1A1A2E),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
                 )
             )
         }
@@ -327,17 +228,56 @@ fun AdminPanel(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // === SEÇÃO: SIMULAÇÃO DE CORRIDAS ===
-            AdminSectionHeader("Simulação de Corridas", Icons.Default.PlayArrow)
-            Spacer(modifier = Modifier.height(8.dp))
+            // === BOTÃO ALTERAR PIN (sempre visível no topo) ===
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("PIN de Acesso", fontWeight = FontWeight.Bold)
+                        Text(
+                            "Atual: ${"•".repeat(currentPin.length)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Button(
+                        onClick = { showChangePinDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(Icons.Default.Lock, contentDescription = "Alterar PIN", modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Alterar PIN")
+                    }
+                }
+            }
 
-            // Botões de simulação rápida
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // === SEÇÃO: SIMULAÇÃO DE CORRIDAS ===
+            AdminSectionHeader("Simulador de Corridas", Icons.Default.PlayArrow)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "Simula corridas com dados realistas e mostra o card exatamente como aparece no overlay",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Botões de simulação
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SimulationButton(
-                    text = "Corrida Boa",
+                    text = "Boa",
                     color = ScoreGreen,
                     modifier = Modifier.weight(1f),
                     onClick = {
@@ -347,7 +287,7 @@ fun AdminPanel(
                     }
                 )
                 SimulationButton(
-                    text = "Corrida Média",
+                    text = "Média",
                     color = ScoreYellow,
                     modifier = Modifier.weight(1f),
                     onClick = {
@@ -357,7 +297,7 @@ fun AdminPanel(
                     }
                 )
                 SimulationButton(
-                    text = "Corrida Ruim",
+                    text = "Ruim",
                     color = ScoreRed,
                     modifier = Modifier.weight(1f),
                     onClick = {
@@ -366,28 +306,24 @@ fun AdminPanel(
                         }
                     }
                 )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        simulationResult = simulateRide(prefsManager, RideQuality.RANDOM)
+                SimulationButton(
+                    text = "Aleatória",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        scope.launch {
+                            simulationResult = simulateRide(prefsManager, RideQuality.RANDOM)
+                        }
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Icon(Icons.Default.Casino, contentDescription = "Simular")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Simular Corrida Aleatória")
+                )
             }
 
-            // Resultado da simulação
+            // Card visual idêntico ao overlay real (como GigU)
             simulationResult?.let { result ->
+                Spacer(modifier = Modifier.height(16.dp))
+                UberStyleCard(result)
                 Spacer(modifier = Modifier.height(12.dp))
-                SimulationResultCard(result)
+                SimulationDetailsCard(result)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -396,30 +332,12 @@ fun AdminPanel(
             AdminSectionHeader("Controles do Sistema", Icons.Default.Settings)
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Forçar overlay
-            OutlinedButton(
-                onClick = {
-                    scope.launch {
-                        simulationResult = simulateRide(prefsManager, RideQuality.RANDOM)
-                        // Enviar intent para OverlayService com dados simulados
-                        // Isso será implementado via broadcast
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Layers, contentDescription = "Ícone")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Forçar Exibição do Overlay")
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             OutlinedButton(
                 onClick = { showResetDialog = true },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = ScoreRed)
             ) {
-                Icon(Icons.Default.DeleteForever, contentDescription = "Limpar")
+                Icon(Icons.Default.DeleteForever, contentDescription = "Resetar")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Resetar Todas as Configurações")
             }
@@ -435,12 +353,12 @@ fun AdminPanel(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    InfoRow("Versão", "3.2.0")
-                    InfoRow("Build", "debug")
+                    InfoRow("Versão", "4.2.1")
+                    InfoRow("Build", "release")
                     InfoRow("Package", "com.ngbautoroad")
-                    InfoRow("PIN Admin", currentPin)
                     InfoRow("SDK Target", "34")
                     InfoRow("Compose BOM", "2024.01.00")
+                    InfoRow("Room", "2.6.1")
                 }
             }
         }
@@ -485,10 +403,216 @@ fun AdminPanel(
     }
 }
 
+// ============================================================================
+// BLOCO: UberStyleCard — Card visual IDÊNTICO ao overlay real
+// Layout baseado na imagem do GigU:
+//   ┌─────────────────────────────────────────────┐
+//   │  R$/Km    R$/Hora   Lucro/hr    Nota        │
+//   │  |1,11    |30,60    |1,11       |4,95       │  (barras de cor)
+//   │  [UBER] 0h19m • 8.70km                     │
+//   └─────────────────────────────────────────────┘
+// Borda: vermelha (ruim), amarela (média), verde (boa)
+// ============================================================================
+@Composable
+fun UberStyleCard(result: SimulationResult) {
+    val scoreColor = when {
+        result.score >= 70 -> ScoreGreen
+        result.score >= 50 -> ScoreYellow
+        result.score >= 30 -> ScoreOrange
+        else -> ScoreRed
+    }
+
+    // Calcular lucro/hora (valor - custo estimado por km * distância) / tempo * 60
+    val lucroHora = result.ratePerHour * 0.7 // Estimativa de lucro líquido (70% do bruto)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(3.dp, scoreColor),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            // Linha principal com métricas (como GigU)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                MetricColumn(
+                    label = "R$/Km",
+                    value = "%.2f".format(result.ratePerKm),
+                    threshold = result.thresholdRatePerKm,
+                    actual = result.ratePerKm
+                )
+                MetricColumn(
+                    label = "R$/Hora",
+                    value = "%.2f".format(result.ratePerHour),
+                    threshold = result.thresholdRatePerHour,
+                    actual = result.ratePerHour
+                )
+                MetricColumn(
+                    label = "Lucro/hr",
+                    value = "%.2f".format(lucroHora),
+                    threshold = result.thresholdRatePerHour * 0.7,
+                    actual = lucroHora
+                )
+                MetricColumn(
+                    label = "Nota",
+                    value = "%.1f".format(result.passengerRating),
+                    threshold = result.thresholdRating,
+                    actual = result.passengerRating
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Linha inferior com plataforma, tempo e distância
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF5F5F5), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Logo da plataforma (badge)
+                Box(
+                    modifier = Modifier
+                        .background(
+                            when (result.platform) {
+                                "Uber" -> Color.Black
+                                "99" -> Color(0xFF00B74F)
+                                "inDrive" -> Color(0xFF6C3FBF)
+                                else -> Color(0xFF7B2FF7)
+                            },
+                            RoundedCornerShape(4.dp)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = when (result.platform) {
+                            "Uber" -> "UBER"
+                            "99" -> "99"
+                            "inDrive" -> "iDRV"
+                            else -> "CBF"
+                        },
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Tempo e distância
+                Text(
+                    text = "${result.estimatedMinutes / 60}h${result.estimatedMinutes % 60}m • %.2fkm".format(result.distance),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF333333)
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Score badge
+                Box(
+                    modifier = Modifier
+                        .background(scoreColor, CircleShape)
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = "${result.score.toInt()}",
+                        color = Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// BLOCO: MetricColumn — Coluna individual de métrica no card
+// Mostra: label, barra de cor (verde se acima do threshold, vermelho se abaixo), valor
+// ============================================================================
+@Composable
+fun MetricColumn(label: String, value: String, threshold: Double, actual: Double) {
+    val isGood = actual >= threshold
+    val barColor = if (isGood) ScoreGreen else ScoreRed
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(70.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            color = Color(0xFF888888),
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Barra de cor indicadora
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height(24.dp)
+                    .background(barColor, RoundedCornerShape(2.dp))
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = value,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1A1A1A)
+            )
+        }
+    }
+}
+
+// ============================================================================
+// BLOCO: SimulationDetailsCard — Detalhes expandidos da simulação
+// Mostra dados internos: bairros, surge, violações
+// ============================================================================
+@Composable
+fun SimulationDetailsCard(result: SimulationResult) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text("Detalhes da Simulação", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            Spacer(modifier = Modifier.height(6.dp))
+            Divider()
+            Spacer(modifier = Modifier.height(6.dp))
+
+            InfoRow("Valor da corrida", "R$ %.2f".format(result.value))
+            InfoRow("Distância total", "%.1f km".format(result.distance))
+            InfoRow("Dist. até embarque", "%.1f km".format(result.pickupDistance))
+            InfoRow("Tempo estimado", "${result.estimatedMinutes} min")
+            InfoRow("Embarque", result.pickupNeighborhood)
+            InfoRow("Destino", result.dropoffNeighborhood)
+            InfoRow("Avaliação passageiro", "★ %.2f".format(result.passengerRating))
+            InfoRow("Surge/Dinâmica", "%.1fx".format(result.surgeMultiplier))
+            InfoRow("Score final", "${result.score.toInt()} pontos")
+
+            if (result.violations.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("⚠️ Violações de threshold:", color = ScoreOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                result.violations.forEach { violation ->
+                    Text("  • $violation", color = ScoreOrange, fontSize = 11.sp)
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
+// BLOCO: Componentes auxiliares
+// ============================================================================
 @Composable
 fun AdminSectionHeader(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = "Ícone", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Icon(icon, contentDescription = title, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         Spacer(modifier = Modifier.width(8.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
     }
@@ -501,75 +625,9 @@ fun SimulationButton(text: String, color: Color, modifier: Modifier, onClick: ()
         modifier = modifier,
         colors = ButtonDefaults.buttonColors(containerColor = color),
         shape = RoundedCornerShape(8.dp),
-        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp)
+        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 12.dp)
     ) {
-        Text(text, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun SimulationResultCard(result: SimulationResult) {
-    val scoreColor = when {
-        result.score >= 70 -> ScoreGreen
-        result.score >= 50 -> ScoreYellow
-        result.score >= 30 -> ScoreOrange
-        else -> ScoreRed
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF0D1B2A)),
-        border = BorderStroke(2.dp, scoreColor)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("SIMULAÇÃO", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text(
-                    "${result.score.toInt()} pts",
-                    color = scoreColor,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Divider(color = Color.White.copy(alpha = 0.2f))
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SimResultRow("Plataforma", result.platform)
-            SimResultRow("Valor", "R$ %.2f".format(result.value))
-            SimResultRow("Distância", "%.1f km".format(result.distance))
-            SimResultRow("R$/km", "%.2f".format(result.ratePerKm))
-            SimResultRow("Tempo estimado", "${result.estimatedMinutes} min")
-            SimResultRow("R$/hora", "%.2f".format(result.ratePerHour))
-            SimResultRow("Embarque", result.pickupNeighborhood)
-            SimResultRow("Destino", result.dropoffNeighborhood)
-            SimResultRow("Surge/Dinâmica", "%.1fx".format(result.surgeMultiplier))
-
-            if (result.violations.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("⚠️ Violações:", color = ScoreOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                result.violations.forEach { violation ->
-                    Text("  • $violation", color = ScoreOrange, fontSize = 11.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SimResultRow(label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
-        Text(value, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        Text(text, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
     }
 }
 
@@ -581,7 +639,7 @@ fun InfoRow(label: String, value: String) {
             .padding(vertical = 2.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, style = MaterialTheme.typography.bodySmall)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
     }
 }
@@ -601,22 +659,31 @@ fun ChangePinDialog(
         title = { Text("Alterar PIN") },
         text = {
             Column {
+                Text(
+                    "Digite o novo PIN de 6 dígitos",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
                     value = newPin,
                     onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) newPin = it },
                     label = { Text("Novo PIN") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                    singleLine = true
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = confirmPin,
                     onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) confirmPin = it },
-                    label = { Text("Confirmar PIN") },
+                    label = { Text("Confirmar novo PIN") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                    singleLine = true
+                    isError = error.isNotBlank(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 if (error.isNotBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
@@ -641,7 +708,11 @@ fun ChangePinDialog(
     )
 }
 
-// === SIMULAÇÃO DE CORRIDAS ===
+// ============================================================================
+// BLOCO: Simulação de corridas
+// Gera dados realistas baseados na qualidade selecionada
+// Usa o RideScorer REAL com os critérios configurados pelo motorista
+// ============================================================================
 
 enum class RideQuality { GOOD, AVERAGE, BAD, RANDOM }
 
@@ -649,51 +720,58 @@ data class SimulationResult(
     val platform: String,
     val value: Double,
     val distance: Double,
+    val pickupDistance: Double,
     val ratePerKm: Double,
     val estimatedMinutes: Int,
     val ratePerHour: Double,
     val pickupNeighborhood: String,
     val dropoffNeighborhood: String,
+    val passengerRating: Double,
     val surgeMultiplier: Double,
     val score: Double,
-    val violations: List<String>
+    val violations: List<String>,
+    // Thresholds do motorista para comparação visual no card
+    val thresholdRatePerKm: Double,
+    val thresholdRatePerHour: Double,
+    val thresholdRating: Double
 )
 
 private val platforms = listOf("Uber", "99", "inDrive", "Cabify")
 private val neighborhoods = listOf(
-    "Centro", "Copacabana", "Ipanema", "Botafogo", "Tijuca",
-    "Barra da Tijuca", "Méier", "Madureira", "Penha", "Bangu",
-    "Campo Grande", "Santa Cruz", "Jacarepaguá", "Recreio",
-    "Flamengo", "Laranjeiras", "Leblon", "Lapa", "São Cristóvão",
-    "Vila Isabel", "Grajaú", "Andaraí", "Catete", "Glória"
+    "Centro", "Líder", "Vila Real", "Eldorado", "Belvedere",
+    "Efapi", "Passo dos Fortes", "São Cristóvão", "Jardim Itália",
+    "Presidente Médici", "Santa Maria", "Seminário", "Universitário",
+    "Palmital", "Parque das Palmeiras", "Maria Goretti", "Bela Vista",
+    "Esplanada", "Quedas do Palmital", "Trevo", "Alvorada",
+    "Jardim América", "São Pedro", "Paraíso"
 )
 
 suspend fun simulateRide(prefsManager: PrefsManager, quality: RideQuality): SimulationResult {
     val random = Random(System.currentTimeMillis())
 
     // Gerar dados baseados na qualidade
-    val (valueRange, distanceRange, surgeRange) = when (quality) {
-        RideQuality.GOOD -> Triple(25.0..80.0, 5.0..20.0, 1.2..2.5)
-        RideQuality.AVERAGE -> Triple(12.0..30.0, 3.0..12.0, 1.0..1.5)
-        RideQuality.BAD -> Triple(5.0..15.0, 1.0..8.0, 1.0..1.0)
-        RideQuality.RANDOM -> Triple(5.0..100.0, 1.0..30.0, 1.0..3.0)
+    val (valueRange, distanceRange, surgeRange, ratingRange) = when (quality) {
+        RideQuality.GOOD -> Quadruple(20.0..60.0, 4.0..15.0, 1.2..2.5, 4.7..5.0)
+        RideQuality.AVERAGE -> Quadruple(10.0..25.0, 3.0..10.0, 1.0..1.3, 4.3..4.8)
+        RideQuality.BAD -> Quadruple(5.0..12.0, 1.0..5.0, 1.0..1.0, 3.5..4.5)
+        RideQuality.RANDOM -> Quadruple(5.0..80.0, 1.0..25.0, 1.0..3.0, 3.5..5.0)
     }
 
     val value = random.nextDouble(valueRange.start, valueRange.endInclusive)
     val distance = random.nextDouble(distanceRange.start, distanceRange.endInclusive)
     val surge = random.nextDouble(surgeRange.start, surgeRange.endInclusive)
+    val rating = random.nextDouble(ratingRange.start, ratingRange.endInclusive)
     val ratePerKm = value / distance
-    val estimatedMinutes = (distance * random.nextDouble(2.5, 5.0)).toInt()
+    val estimatedMinutes = (distance * random.nextDouble(2.0, 4.0)).toInt().coerceAtLeast(3)
     val ratePerHour = (value / estimatedMinutes) * 60
-    val pickupDist = random.nextDouble(0.5, 5.0)
-    val rating = random.nextDouble(3.5, 5.0)
+    val pickupDist = random.nextDouble(0.5, 4.0)
     val stops = if (quality == RideQuality.BAD) random.nextInt(0, 3) else 0
 
     val platform = platforms[random.nextInt(platforms.size)]
     val pickup = neighborhoods[random.nextInt(neighborhoods.size)]
     val dropoff = neighborhoods[random.nextInt(neighborhoods.size)]
 
-    // Calcular score usando o RideScorer real com critérios do motorista
+    // Calcular score usando o RideScorer real
     val rideData = RideData(
         platform = when (platform) {
             "Uber" -> Platform.UBER
@@ -716,7 +794,6 @@ suspend fun simulateRide(prefsManager: PrefsManager, quality: RideQuality): Simu
     val blockedPickup = prefsManager.blockedPickupFlow.first()
     val blockedDropoff = prefsManager.blockedDropoffFlow.first()
 
-    // Converter bairros bloqueados para BlockedNeighborhood
     val blockedNeighborhoods = blockedPickup.map { BlockedNeighborhood(it.first, NeighborhoodType.PICKUP, it.second) } +
         blockedDropoff.map { BlockedNeighborhood(it.first, NeighborhoodType.DROPOFF, it.second) }
 
@@ -735,15 +812,23 @@ suspend fun simulateRide(prefsManager: PrefsManager, quality: RideQuality): Simu
         platform = platform,
         value = value,
         distance = distance,
+        pickupDistance = pickupDist,
         ratePerKm = ratePerKm,
         estimatedMinutes = estimatedMinutes,
         ratePerHour = ratePerHour,
         pickupNeighborhood = pickup,
         dropoffNeighborhood = dropoff,
+        passengerRating = rating,
         surgeMultiplier = surge,
         score = scoreResult.totalScore,
-        violations = violations
+        violations = violations,
+        thresholdRatePerKm = thresholds.minValuePerKm,
+        thresholdRatePerHour = thresholds.minValuePerHour,
+        thresholdRating = thresholds.minPassengerRating
     )
 }
+
+// Helper para destructuring de 4 valores
+private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
 private fun Double.format(): String = "%.2f".format(this)
