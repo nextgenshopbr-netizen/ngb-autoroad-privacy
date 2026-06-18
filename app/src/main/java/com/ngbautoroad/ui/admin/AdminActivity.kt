@@ -158,7 +158,7 @@ fun PinScreen(
     ) {
         Icon(
             Icons.Default.AdminPanelSettings,
-            contentDescription = null,
+            contentDescription = "Ícone",
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary
         )
@@ -226,7 +226,7 @@ fun CreatePinScreen(
     ) {
         Icon(
             Icons.Default.AdminPanelSettings,
-            contentDescription = null,
+            contentDescription = "Ícone",
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary
         )
@@ -379,7 +379,7 @@ fun AdminPanel(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Icon(Icons.Default.Casino, contentDescription = null)
+                Icon(Icons.Default.Casino, contentDescription = "Simular")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Simular Corrida Aleatória")
             }
@@ -407,7 +407,7 @@ fun AdminPanel(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.Default.Layers, contentDescription = null)
+                Icon(Icons.Default.Layers, contentDescription = "Ícone")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Forçar Exibição do Overlay")
             }
@@ -419,7 +419,7 @@ fun AdminPanel(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = ScoreRed)
             ) {
-                Icon(Icons.Default.DeleteForever, contentDescription = null)
+                Icon(Icons.Default.DeleteForever, contentDescription = "Limpar")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Resetar Todas as Configurações")
             }
@@ -488,7 +488,7 @@ fun AdminPanel(
 @Composable
 fun AdminSectionHeader(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Icon(icon, contentDescription = "Ícone", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         Spacer(modifier = Modifier.width(8.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
     }

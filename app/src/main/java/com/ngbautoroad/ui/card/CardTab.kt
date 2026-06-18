@@ -144,7 +144,7 @@ fun CardTab(prefsManager: PrefsManager) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Icon(
                         Icons.Default.Build,
-                        contentDescription = null,
+                        contentDescription = "Ícone",
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -207,7 +207,7 @@ fun CardTab(prefsManager: PrefsManager) {
                 containerColor = MaterialTheme.colorScheme.secondary
             )
         ) {
-            Icon(Icons.Default.Visibility, contentDescription = null)
+            Icon(Icons.Default.Visibility, contentDescription = "Ícone")
             Spacer(modifier = Modifier.width(8.dp))
             Text("Simular Card")
         }
@@ -294,7 +294,7 @@ fun CardSlotItem(
                 } else {
                     Icon(
                         Icons.Default.RadioButtonUnchecked,
-                        contentDescription = null,
+                        contentDescription = "Ícone",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
@@ -698,7 +698,7 @@ fun PreviewDialog(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     OutlinedButton(onClick = { randomRide = generateRandomRide() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Refresh, contentDescription = "Atualizar", modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Nova Simulação")
                     }

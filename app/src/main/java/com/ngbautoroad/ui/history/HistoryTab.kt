@@ -132,7 +132,7 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 label = { Text("Buscar por bairro") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
                 trailingIcon = {
                     if (searchQuery.isNotBlank()) {
                         IconButton(onClick = { searchQuery = "" }) {
@@ -231,7 +231,7 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         Icons.Default.History,
-                        contentDescription = null,
+                        contentDescription = "Ícone",
                         modifier = Modifier.size(64.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )

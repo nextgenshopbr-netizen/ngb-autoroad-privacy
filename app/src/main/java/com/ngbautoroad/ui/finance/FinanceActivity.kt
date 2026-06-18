@@ -95,8 +95,10 @@ fun FinanceScreen(
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Resumo", "Ganhos", "Gastos", "Veículo", "Metas")
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Controle Financeiro", fontWeight = FontWeight.Bold) },
@@ -124,10 +126,10 @@ fun FinanceScreen(
 
             when (selectedTab) {
                 0 -> FinanceSummaryTab(expenseDao, earningDao, financialGoalDao)
-                1 -> EarningsTab(earningDao, prefsManager)
-                2 -> ExpensesTab(expenseDao)
-                3 -> VehicleTab(vehicleConfigDao)
-                4 -> GoalsTab(earningDao, expenseDao, financialGoalDao)
+                1 -> EarningsTab(earningDao, prefsManager, snackbarHostState)
+                2 -> ExpensesTab(expenseDao, snackbarHostState)
+                3 -> VehicleTab(vehicleConfigDao, snackbarHostState)
+                4 -> GoalsTab(earningDao, expenseDao, financialGoalDao, snackbarHostState)
             }
         }
     }
@@ -292,7 +294,7 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
 // === ABA GANHOS ===
 
 @Composable
-fun EarningsTab(earningDao: EarningDao, prefsManager: com.ngbautoroad.data.prefs.PrefsManager? = null) {
+fun EarningsTab(earningDao: EarningDao, prefsManager: com.ngbautoroad.data.prefs.PrefsManager? = null, snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }) {
     val scope = rememberCoroutineScope()
     val allEarnings by earningDao.getAllEarnings().collectAsState(initial = emptyList())
     var showAddDialog by remember { mutableStateOf(false) }
@@ -328,7 +330,7 @@ fun EarningsTab(earningDao: EarningDao, prefsManager: com.ngbautoroad.data.prefs
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 4.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = null)
+            Icon(Icons.Default.Add, contentDescription = "Ícone")
             Spacer(modifier = Modifier.width(8.dp))
             Text("Registrar Ganho")
         }
@@ -342,7 +344,7 @@ fun EarningsTab(earningDao: EarningDao, prefsManager: com.ngbautoroad.data.prefs
                 EarningCard(
                     earning = earning,
                     onEdit = { editingEarning = earning },
-                    onDelete = { scope.launch { earningDao.delete(earning) } }
+                    onDelete = { scope.launch { earningDao.delete(earning); snackbarHostState.showSnackbar("Ganho excluído") } }
                 )
             }
         }
@@ -356,6 +358,7 @@ fun EarningsTab(earningDao: EarningDao, prefsManager: com.ngbautoroad.data.prefs
                 scope.launch {
                     earningDao.insert(earning)
                     showAddDialog = false
+                    snackbarHostState.showSnackbar("Ganho salvo ✓")
                 }
             }
         )
@@ -559,7 +562,7 @@ fun AddEarningDialog(existingEarning: EarningEntity?, onDismiss: () -> Unit, onC
 // === ABA GASTOS ===
 
 @Composable
-fun ExpensesTab(expenseDao: ExpenseDao) {
+fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }) {
     val scope = rememberCoroutineScope()
     val allExpenses by expenseDao.getAllExpenses().collectAsState(initial = emptyList())
     var showAddDialog by remember { mutableStateOf(false) }
@@ -571,7 +574,7 @@ fun ExpensesTab(expenseDao: ExpenseDao) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = null)
+            Icon(Icons.Default.Add, contentDescription = "Ícone")
             Spacer(modifier = Modifier.width(8.dp))
             Text("Registrar Gasto")
         }
@@ -613,7 +616,7 @@ fun ExpensesTab(expenseDao: ExpenseDao) {
         ) {
             items(allExpenses, key = { it.id }) { expense ->
                 ExpenseCard(expense) {
-                    scope.launch { expenseDao.delete(expense) }
+                    scope.launch { expenseDao.delete(expense); snackbarHostState.showSnackbar("Gasto excluído") }
                 }
             }
         }
@@ -625,6 +628,7 @@ fun ExpensesTab(expenseDao: ExpenseDao) {
             onConfirm = { expense ->
                 scope.launch {
                     expenseDao.insert(expense)
+                    snackbarHostState.showSnackbar("Gasto salvo ✓")
                     showAddDialog = false
                 }
             }
@@ -830,7 +834,7 @@ fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) 
 // === ABA VEÍCULO ===
 
 @Composable
-fun VehicleTab(vehicleConfigDao: VehicleConfigDao) {
+fun VehicleTab(vehicleConfigDao: VehicleConfigDao, snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }) {
     val scope = rememberCoroutineScope()
     val savedConfig by vehicleConfigDao.getConfig().collectAsState(initial = null)
 
@@ -1026,11 +1030,12 @@ fun VehicleTab(vehicleConfigDao: VehicleConfigDao) {
                         isOwned = isOwned,
                         rentalCost = rentalCost.replace(",",".").trim().toDoubleOrNull() ?: 0.0
                     ))
+                    snackbarHostState.showSnackbar("Veículo salvo ✓")
                 }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(Icons.Default.Check, contentDescription = null)
+            Icon(Icons.Default.Check, contentDescription = "Ícone")
             Spacer(modifier = Modifier.width(8.dp))
             Text("Salvar Configuração")
         }
@@ -1040,7 +1045,7 @@ fun VehicleTab(vehicleConfigDao: VehicleConfigDao) {
 // === ABA METAS ===
 
 @Composable
-fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao, financialGoalDao: FinancialGoalDao) {
+fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao, financialGoalDao: FinancialGoalDao, snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }) {
     val scope = rememberCoroutineScope()
     val activeGoals by financialGoalDao.getActiveGoals().collectAsState(initial = emptyList())
     var showAddGoal by remember { mutableStateOf(false) }
@@ -1108,7 +1113,7 @@ fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao, financialGoalDao: F
                             fontWeight = FontWeight.Bold
                         )
                         IconButton(
-                            onClick = { scope.launch { financialGoalDao.delete(goal) } },
+                            onClick = { scope.launch { financialGoalDao.delete(goal); snackbarHostState.showSnackbar("Meta excluída") } },
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(Icons.Default.Delete, contentDescription = "Excluir", modifier = Modifier.size(16.dp))
@@ -1134,6 +1139,7 @@ fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao, financialGoalDao: F
             onConfirm = { goal ->
                 scope.launch {
                     financialGoalDao.insert(goal)
+                    snackbarHostState.showSnackbar("Meta criada ✓")
                     showAddGoal = false
                 }
             }

@@ -235,12 +235,12 @@ fun CardEditorScreen(
                     IconButton(onClick = {
                         layout = layout.copy(cardWidth = (layout.cardWidth - 20).coerceIn(200, 500))
                     }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Remove, contentDescription = "Diminuir", modifier = Modifier.size(16.dp))
                     }
                     IconButton(onClick = {
                         layout = layout.copy(cardWidth = (layout.cardWidth + 20).coerceIn(200, 500))
                     }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, contentDescription = "Aumentar", modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -256,12 +256,12 @@ fun CardEditorScreen(
                     IconButton(onClick = {
                         layout = layout.copy(cardHeight = (layout.cardHeight - 20).coerceIn(100, 400))
                     }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Remove, contentDescription = "Diminuir", modifier = Modifier.size(16.dp))
                     }
                     IconButton(onClick = {
                         layout = layout.copy(cardHeight = (layout.cardHeight + 20).coerceIn(100, 400))
                     }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, contentDescription = "Aumentar", modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -277,12 +277,12 @@ fun CardEditorScreen(
                     IconButton(onClick = {
                         layout = layout.copy(borderRadius = (layout.borderRadius - 2).coerceIn(0, 30))
                     }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Remove, contentDescription = "Diminuir", modifier = Modifier.size(16.dp))
                     }
                     IconButton(onClick = {
                         layout = layout.copy(borderRadius = (layout.borderRadius + 2).coerceIn(0, 30))
                     }, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Add, contentDescription = "Aumentar", modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -330,7 +330,7 @@ fun CardEditorScreen(
                 onClick = { showRealPreview = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.Default.Visibility, contentDescription = null)
+                Icon(Icons.Default.Visibility, contentDescription = "Preview")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Ver Card Real (com dados)")
             }
@@ -370,7 +370,7 @@ fun CardEditorScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = ScoreGreen)
             ) {
-                Icon(Icons.Default.Save, contentDescription = null)
+                Icon(Icons.Default.Save, contentDescription = "Salvar")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Salvar Layout")
             }
@@ -504,12 +504,12 @@ fun FieldPropertiesPanel(
                     IconButton(onClick = {
                         onUpdate(field.copy(fontSize = (field.fontSize - 1).coerceIn(8, 32)))
                     }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.TextDecrease, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.TextDecrease, contentDescription = "Diminuir fonte", modifier = Modifier.size(14.dp))
                     }
                     IconButton(onClick = {
                         onUpdate(field.copy(fontSize = (field.fontSize + 1).coerceIn(8, 32)))
                     }, modifier = Modifier.size(28.dp)) {
-                        Icon(Icons.Default.TextIncrease, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.TextIncrease, contentDescription = "Aumentar fonte", modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -583,7 +583,7 @@ fun AddFieldDialog(
                             .padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Add, contentDescription = "Aumentar", modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(field.label, style = MaterialTheme.typography.bodyMedium)
                     }

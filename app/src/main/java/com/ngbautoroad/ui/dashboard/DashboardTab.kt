@@ -133,12 +133,49 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
                 containerColor = MaterialTheme.colorScheme.primary
             )
         ) {
-            Icon(Icons.Default.AccountBalance, contentDescription = null)
+            Icon(Icons.Default.AccountBalance, contentDescription = "Financeiro")
             Spacer(modifier = Modifier.width(8.dp))
             Text("Controle Financeiro")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Estado vazio: sem corridas
+        if (dashData.totalRidesToday == 0 && dashData.totalRidesWeek == 0) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.DirectionsCar,
+                        contentDescription = "Sem corridas",
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Nenhuma corrida registrada",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        "Ative o servi\u00e7o e comece a dirigir. Os dados aparecer\u00e3o aqui automaticamente.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         // Ganhos do dia
         EarningsCard(dashData)
@@ -221,7 +258,7 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
                 ) {
                     Icon(
                         Icons.Default.Star,
-                        contentDescription = null,
+                        contentDescription = "Ícone",
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -404,7 +441,7 @@ fun StatusBar(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     if (serviceActive) Icons.Default.PlayCircle else Icons.Default.PauseCircle,
-                    contentDescription = null,
+                    contentDescription = "Ícone",
                     tint = if (serviceActive)
                         MaterialTheme.colorScheme.onPrimaryContainer
                     else
@@ -538,7 +575,7 @@ fun StatCard(
                 .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(icon, contentDescription = null, tint = color)
+            Icon(icon, contentDescription = label, tint = color)
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 value,

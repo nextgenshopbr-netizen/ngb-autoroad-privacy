@@ -91,7 +91,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.Brightness7,
-                        contentDescription = null,
+                        contentDescription = "Ícone",
                         tint = if (keepScreenOn) ScoreYellow else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -138,7 +138,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.Shield,
-                            contentDescription = null,
+                            contentDescription = "Ícone",
                             tint = if (protectionEnabled) ScoreGreen else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -214,12 +214,18 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     Switch(
                         checked = serviceEnabled,
                         onCheckedChange = { enabled ->
-                            scope.launch {
-                                prefsManager.setServiceEnabled(enabled)
-                                if (enabled) {
-                                    OverlayService.start(context)
-                                } else {
-                                    OverlayService.stop(context)
+                            if (enabled && !Settings.canDrawOverlays(context)) {
+                                Toast.makeText(context, "Permissão de overlay necessária", Toast.LENGTH_LONG).show()
+                                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                                context.startActivity(intent)
+                            } else {
+                                scope.launch {
+                                    prefsManager.setServiceEnabled(enabled)
+                                    if (enabled) {
+                                        OverlayService.start(context)
+                                    } else {
+                                        OverlayService.stop(context)
+                                    }
                                 }
                             }
                         }
@@ -245,12 +251,19 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     Switch(
                         checked = ocrEnabled,
                         onCheckedChange = { enabled ->
-                            scope.launch {
-                                prefsManager.setOcrEnabled(enabled)
-                                if (enabled) {
-                                    OcrCaptureService.start(context)
-                                } else {
-                                    OcrCaptureService.stop(context)
+                            if (enabled && !Settings.canDrawOverlays(context)) {
+                                Toast.makeText(context, "Permissão de overlay necessária para captura OCR", Toast.LENGTH_LONG).show()
+                                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                                context.startActivity(intent)
+                            } else {
+                                scope.launch {
+                                    prefsManager.setOcrEnabled(enabled)
+                                    if (enabled) {
+                                        OcrCaptureService.start(context)
+                                        Toast.makeText(context, "OCR ativado", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        OcrCaptureService.stop(context)
+                                    }
                                 }
                             }
                         }
@@ -343,7 +356,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Default.Accessibility, contentDescription = null)
+                    Icon(Icons.Default.Accessibility, contentDescription = "Acessibilidade")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Acessibilidade")
                 }
@@ -360,7 +373,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Default.Layers, contentDescription = null)
+                    Icon(Icons.Default.Layers, contentDescription = "Overlay")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Sobreposição de Tela")
                 }
@@ -381,7 +394,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Map, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Default.Map, contentDescription = "Mapa", tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Zonas Bloqueadas",
@@ -413,7 +426,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Icon(Icons.Default.EditLocation, contentDescription = null)
+                    Icon(Icons.Default.EditLocation, contentDescription = "Editar zona")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Abrir Mapa de Zonas")
                 }

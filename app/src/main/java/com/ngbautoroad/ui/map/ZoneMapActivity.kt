@@ -372,7 +372,7 @@ fun ZoneMapScreen(prefsManager: PrefsManager, activity: ComponentActivity) {
                     ) {
                         Icon(
                             Icons.Default.Draw,
-                            contentDescription = null,
+                            contentDescription = "Ícone",
                             tint = androidx.compose.ui.graphics.Color.White,
                             modifier = Modifier.size(18.dp)
                         )
