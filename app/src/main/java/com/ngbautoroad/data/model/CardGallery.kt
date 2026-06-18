@@ -403,7 +403,7 @@ object CardGallery {
             id = 22, name = "Mini Valor + Destino",
             description = "Valor + Bairro destino — saber quanto e pra onde",
             category = CardCategory.MINIMAL,
-            fields = listOf(CardField.SCORE, CardField.RIDE_VALUE, CardField.DROPOFF_NEIGHBORHOOD),
+            fields = listOf(CardField.SCORE, CardField.RIDE_TYPE, CardField.RIDE_VALUE, CardField.DROPOFF_NEIGHBORHOOD),
             backgroundColor = 0xFF1A237E, textColor = 0xFFFFFFFF,
             accentColor = 0xFFFFEB3B, borderColor = 0x00000000,
             borderRadius = 16, fontSize = 18, compactMode = true, showBorder = false
@@ -421,7 +421,7 @@ object CardGallery {
             id = 24, name = "Mini Semáforo",
             description = "Apenas score com barra — verde aceita, vermelho recusa",
             category = CardCategory.MINIMAL,
-            fields = listOf(CardField.SCORE, CardField.SCORE_BAR),
+            fields = listOf(CardField.SCORE, CardField.RIDE_TYPE, CardField.SCORE_BAR),
             backgroundColor = 0xFF1A1A1A, textColor = 0xFFFFFFFF,
             accentColor = 0xFFFFFFFF, borderColor = 0x00000000,
             borderRadius = 24, fontSize = 28, compactMode = true, showBorder = false

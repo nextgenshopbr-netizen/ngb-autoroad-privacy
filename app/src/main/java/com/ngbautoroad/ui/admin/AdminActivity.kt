@@ -353,7 +353,7 @@ fun AdminPanel(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    InfoRow("Versão", "4.3.1")
+                    InfoRow("Versão", "4.3.2")
                     InfoRow("Build", "release")
                     InfoRow("Package", "com.ngbautoroad")
                     InfoRow("SDK Target", "34")
@@ -596,9 +596,9 @@ fun SimulationDetailsCard(result: SimulationResult) {
             InfoRow("Valor da corrida", "R$ %.2f".format(result.value))
             InfoRow("Distância total", "%.1f km".format(result.distance))
             InfoRow("Dist. até embarque", "%.1f km".format(result.pickupDistance))
-            InfoRow("Tempo estimado", "${result.estimatedMinutes} min")
-            InfoRow("Embarque", result.pickupNeighborhood)
-            InfoRow("Destino", result.dropoffNeighborhood)
+            InfoRow("Duração", "${result.estimatedMinutes} min")
+            InfoRow("Bairro Embarque", result.pickupNeighborhood)
+            InfoRow("Bairro Destino", result.dropoffNeighborhood)
             InfoRow("Avaliação passageiro", "★ %.2f".format(result.passengerRating))
             InfoRow("Surge/Dinâmica", "%.1fx".format(result.surgeMultiplier))
             InfoRow("Score final", "${result.score.toInt()} pontos")
