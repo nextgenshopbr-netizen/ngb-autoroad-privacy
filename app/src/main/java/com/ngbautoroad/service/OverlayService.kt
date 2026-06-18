@@ -55,6 +55,9 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import com.ngbautoroad.R
 import com.ngbautoroad.data.model.*
 import com.ngbautoroad.data.prefs.PrefsManager
@@ -76,12 +79,15 @@ import com.ngbautoroad.data.db.RideHistoryEntity
  */
 class OverlayService : Service(),
     LifecycleOwner,
-    SavedStateRegistryOwner {
+    SavedStateRegistryOwner,
+    ViewModelStoreOwner {
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
+    private val _viewModelStore = ViewModelStore()
     override val lifecycle: Lifecycle get() = lifecycleRegistry
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
+    override val viewModelStore: ViewModelStore get() = _viewModelStore
 
     private var windowManager: WindowManager? = null
     private var overlayView: ComposeView? = null
@@ -187,6 +193,7 @@ class OverlayService : Service(),
         hideOverlay()
         onRideDetected = null
         serviceScope.cancel()
+        _viewModelStore.clear()
         super.onDestroy()
     }
 
@@ -431,6 +438,8 @@ class OverlayService : Service(),
             }
         }
 
+        // Registrar ViewModelStoreOwner para Compose (necessário no Compose 1.5+)
+        view.setViewTreeViewModelStoreOwner(this@OverlayService)
         windowManager?.addView(view, params)
         overlayView = view
         isOverlayVisible = true
