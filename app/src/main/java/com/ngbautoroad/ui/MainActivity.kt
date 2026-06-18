@@ -100,6 +100,16 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        com.ngbautoroad.service.BubbleService.setAppInForeground(true)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        com.ngbautoroad.service.BubbleService.setAppInForeground(false)
+    }
 }
 
 enum class TabItem(val title: String, val icon: ImageVector) {

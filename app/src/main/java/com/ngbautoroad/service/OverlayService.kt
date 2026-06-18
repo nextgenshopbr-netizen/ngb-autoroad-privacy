@@ -37,6 +37,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
@@ -125,6 +126,8 @@ class OverlayService : Service(),
         fun resizeFromOutside(newWidth: Int) {
             instance?.resizeOverlay(newWidth)
         }
+
+        fun isRunning(): Boolean = instance != null
     }
 
     override fun onCreate() {
@@ -170,7 +173,11 @@ class OverlayService : Service(),
             stopSelf()
             return START_NOT_STICKY
         }
-        startForeground(NOTIFICATION_ID, createNotification())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, createNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(NOTIFICATION_ID, createNotification())
+        }
         lifecycleRegistry.currentState = Lifecycle.State.STARTED
         return START_STICKY
     }

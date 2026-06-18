@@ -788,6 +788,7 @@ fun ShiftDashboardCard(
                                     prefsManager.setServiceEnabled(true)
                                     prefsManager.setProtectionEnabled(true)
                                     try { OverlayService.start(context) } catch (_: Exception) {}
+                                    try { com.ngbautoroad.service.BubbleService.start(context) } catch (_: Exception) {}
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(
@@ -984,7 +985,7 @@ fun ShiftDashboardCard(
                     ) {
                         Icon(Icons.Default.Stop, contentDescription = "Encerrar", tint = Color.White)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Finalizar", color = Color.White)
+                        Text("Fim", color = Color.White, maxLines = 1, fontSize = 13.sp)
                     }
                 }
             }

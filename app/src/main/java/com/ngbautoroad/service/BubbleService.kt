@@ -22,6 +22,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
@@ -65,6 +66,14 @@ class BubbleService : Service() {
             context.stopService(Intent(context, BubbleService::class.java))
         }
 
+        fun setAppInForeground(inForeground: Boolean) {
+            if (inForeground) {
+                instance?.setBubbleVisible(false)
+            } else {
+                instance?.setBubbleVisible(true)
+            }
+        }
+
         fun updateVisibility(visible: Boolean) {
             instance?.setBubbleVisible(visible)
         }
@@ -91,7 +100,11 @@ class BubbleService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(NOTIFICATION_ID, createNotification())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, createNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(NOTIFICATION_ID, createNotification())
+        }
         return START_STICKY
     }
 
@@ -116,15 +129,14 @@ class BubbleService : Service() {
             val sizePx = (bubbleSize * density).toInt()
 
             val imageView = ImageView(this@BubbleService).apply {
-                setImageResource(android.R.drawable.ic_menu_compass)
-                setBackgroundResource(android.R.drawable.dialog_holo_dark_frame)
+                setImageResource(R.mipmap.ic_launcher_round)
+                // Sem background - usar ícone do app diretamente
                 alpha = opacity
                 scaleType = ImageView.ScaleType.CENTER_INSIDE
                 setPadding(8, 8, 8, 8)
             }
 
-            val gravity = if (side == "left") Gravity.START or Gravity.CENTER_VERTICAL
-                          else Gravity.END or Gravity.CENTER_VERTICAL
+            val gravity = Gravity.TOP or Gravity.START
 
             val params = WindowManager.LayoutParams(
                 sizePx,
@@ -143,23 +155,34 @@ class BubbleService : Service() {
                 y = 0
             }
 
-            // Touch listener para abrir o app e permitir arrastar
+            // Touch listener para abrir o app e permitir arrastar livremente (X e Y)
+            var initialX = 0
             var initialY = 0
+            var initialTouchX = 0f
             var initialTouchY = 0f
             var moved = false
+
+            // Posição inicial: lado direito, centro vertical
+            val displayMetrics = resources.displayMetrics
+            params.x = displayMetrics.widthPixels - sizePx - (8 * density).toInt()
+            params.y = displayMetrics.heightPixels / 3
 
             imageView.setOnTouchListener { view, event ->
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
+                        initialX = params.x
                         initialY = params.y
+                        initialTouchX = event.rawX
                         initialTouchY = event.rawY
                         moved = false
                         true
                     }
                     MotionEvent.ACTION_MOVE -> {
+                        val deltaX = (event.rawX - initialTouchX).toInt()
                         val deltaY = (event.rawY - initialTouchY).toInt()
-                        if (Math.abs(deltaY) > 10) {
+                        if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
                             moved = true
+                            params.x = initialX + deltaX
                             params.y = initialY + deltaY
                             try {
                                 windowManager?.updateViewLayout(view, params)
@@ -225,7 +248,7 @@ class BubbleService : Service() {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("NGB AutoRoad")
             .setContentText("Botão flutuante ativo")
-            .setSmallIcon(android.R.drawable.ic_menu_compass)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
             .build()

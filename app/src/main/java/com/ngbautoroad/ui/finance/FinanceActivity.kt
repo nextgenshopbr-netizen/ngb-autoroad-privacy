@@ -38,8 +38,10 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -85,6 +87,14 @@ class FinanceActivity : ComponentActivity() {
             }
         }
     }
+    override fun onResume() {
+        super.onResume()
+        com.ngbautoroad.service.BubbleService.setAppInForeground(true)
+    }
+    override fun onPause() {
+        super.onPause()
+        com.ngbautoroad.service.BubbleService.setAppInForeground(false)
+    }
 }
 
 @Composable
@@ -100,7 +110,7 @@ fun FinanceScreen(
     prefsManager: com.ngbautoroad.data.prefs.PrefsManager? = null,
     onBack: () -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by rememberSaveable { mutableStateOf(0) }
     val tabs = listOf("Resumo", "Ganhos", "Gastos", "Veículos", "Despesas", "Projeção", "Metas")
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -575,6 +585,8 @@ fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = r
     val scope = rememberCoroutineScope()
     val allExpenses by expenseDao.getAllExpenses().collectAsState(initial = emptyList())
     var showAddDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editingExpense by remember { mutableStateOf<ExpenseEntity?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Button(
@@ -624,9 +636,16 @@ fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = r
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(allExpenses, key = { it.id }) { expense ->
-                ExpenseCard(expense) {
-                    scope.launch { expenseDao.delete(expense); snackbarHostState.showSnackbar("Gasto excluído") }
-                }
+                ExpenseCard(
+                    expense = expense,
+                    onEdit = {
+                        editingExpense = expense
+                        showEditDialog = true
+                    },
+                    onDelete = {
+                        scope.launch { expenseDao.delete(expense); snackbarHostState.showSnackbar("Gasto excluído") }
+                    }
+                )
             }
         }
     }
@@ -637,8 +656,24 @@ fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = r
             onConfirm = { expense ->
                 scope.launch {
                     expenseDao.insert(expense)
-                    snackbarHostState.showSnackbar("Gasto salvo ✓")
+                    snackbarHostState.showSnackbar("Gasto salvo \u2713")
                     showAddDialog = false
+                }
+            }
+        )
+    }
+
+    // Dialog de edição de gasto
+    if (showEditDialog && editingExpense != null) {
+        EditExpenseDialog(
+            expense = editingExpense!!,
+            onDismiss = { showEditDialog = false; editingExpense = null },
+            onConfirm = { updated ->
+                scope.launch {
+                    expenseDao.update(updated)
+                    snackbarHostState.showSnackbar("Gasto atualizado \u2713")
+                    showEditDialog = false
+                    editingExpense = null
                 }
             }
         )
@@ -646,7 +681,7 @@ fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = r
 }
 
 @Composable
-fun ExpenseCard(expense: ExpenseEntity, onDelete: () -> Unit) {
+fun ExpenseCard(expense: ExpenseEntity, onEdit: () -> Unit, onDelete: () -> Unit) {
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     val category = try { ExpenseCategory.valueOf(expense.category) } catch (e: Exception) { ExpenseCategory.OTHER }
 
@@ -681,6 +716,9 @@ fun ExpenseCard(expense: ExpenseEntity, onDelete: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 color = ScoreRed
             )
+            IconButton(onClick = onEdit, modifier = Modifier.size(24.dp)) {
+                Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+            }
             IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
                 Icon(Icons.Default.Delete, contentDescription = "Excluir", modifier = Modifier.size(16.dp))
             }
@@ -689,23 +727,24 @@ fun ExpenseCard(expense: ExpenseEntity, onDelete: () -> Unit) {
 }
 
 @Composable
-fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) {
-    var selectedCategory by remember { mutableStateOf(ExpenseCategory.FUEL) }
-    var amount by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var isRecurring by remember { mutableStateOf(false) }
-    var recurringDay by remember { mutableStateOf("1") }
-    var recurringDuration by remember { mutableStateOf("") }
-    var selectedDays by remember { mutableStateOf(setOf<Int>()) }
-    var liters by remember { mutableStateOf("") }
-    var pricePerLiter by remember { mutableStateOf("") }
+fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit, existingExpense: ExpenseEntity? = null) {
+    val existingCat = existingExpense?.let { try { ExpenseCategory.valueOf(it.category) } catch (_: Exception) { ExpenseCategory.FUEL } }
+    var selectedCategory by remember { mutableStateOf(existingCat ?: ExpenseCategory.FUEL) }
+    var amount by remember { mutableStateOf(existingExpense?.amount?.let { "%.2f".format(it) } ?: "") }
+    var description by remember { mutableStateOf(existingExpense?.description ?: "") }
+    var isRecurring by remember { mutableStateOf(existingExpense?.isRecurring ?: false) }
+    var recurringDay by remember { mutableStateOf(existingExpense?.recurringDay?.toString() ?: "1") }
+    var recurringDuration by remember { mutableStateOf(existingExpense?.recurringDuration?.let { if (it > 0) it.toString() else "" } ?: "") }
+    var selectedDays by remember { mutableStateOf(existingExpense?.recurringDays?.split(",")?.mapNotNull { it.trim().toIntOrNull() }?.toSet() ?: setOf<Int>()) }
+    var liters by remember { mutableStateOf(existingExpense?.liters?.let { "%.1f".format(it) } ?: "") }
+    var pricePerLiter by remember { mutableStateOf(existingExpense?.pricePerLiter?.let { "%.2f".format(it) } ?: "") }
     var showCategoryPicker by remember { mutableStateOf(false) }
 
     val weekDays = listOf("Seg" to 1, "Ter" to 2, "Qua" to 3, "Qui" to 4, "Sex" to 5, "Sáb" to 6, "Dom" to 7)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Registrar Gasto") },
+        title = { Text(if (existingExpense != null) "Editar Gasto" else "Registrar Gasto") },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -781,22 +820,36 @@ fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) 
                 }
 
                 if (isRecurring) {
-                    // Dias da semana
+                    // Dias da semana - visual calendário
                     Text("Dias que se repete:", fontSize = 12.sp, color = Color.Gray)
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         weekDays.forEach { (name, day) ->
-                            FilterChip(
-                                selected = selectedDays.contains(day),
-                                onClick = {
-                                    selectedDays = if (selectedDays.contains(day))
-                                        selectedDays - day else selectedDays + day
-                                },
-                                label = { Text(name, fontSize = 9.sp) },
-                                modifier = Modifier.weight(1f)
-                            )
+                            val isSelected = selectedDays.contains(day)
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (isSelected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                    .clickable {
+                                        selectedDays = if (isSelected)
+                                            selectedDays - day else selectedDays + day
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    name.take(1),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) Color.White
+                                        else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
 
@@ -820,6 +873,7 @@ fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) 
                 onClick = {
                     if (parsedExpenseAmount <= 0.0) return@TextButton // Validação: valor obrigatório
                     onConfirm(ExpenseEntity(
+                        id = existingExpense?.id ?: 0,
                         category = selectedCategory.name,
                         amount = parsedExpenseAmount,
                         description = description.trim(),
@@ -828,7 +882,8 @@ fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) 
                         recurringDays = selectedDays.sorted().joinToString(","),
                         recurringDuration = recurringDuration.trim().toIntOrNull()?.coerceAtLeast(0) ?: 0,
                         liters = liters.toDoubleLocaleOrNull()?.coerceAtLeast(0.0),
-                        pricePerLiter = pricePerLiter.toDoubleLocaleOrNull()?.coerceAtLeast(0.0)
+                        pricePerLiter = pricePerLiter.toDoubleLocaleOrNull()?.coerceAtLeast(0.0),
+                        date = existingExpense?.date ?: System.currentTimeMillis()
                     ))
                 },
                 enabled = parsedExpenseAmount > 0.0
@@ -1266,4 +1321,9 @@ fun getPeriodRange(period: FinancePeriod): Pair<Long, Long> {
     }
 
     return Pair(cal.timeInMillis, end)
+}
+
+@Composable
+fun EditExpenseDialog(expense: ExpenseEntity, onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) {
+    AddExpenseDialog(onDismiss = onDismiss, onConfirm = onConfirm, existingExpense = expense)
 }

@@ -433,28 +433,8 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Lado:", style = MaterialTheme.typography.bodyMedium)
-                    Row {
-                        FilterChip(
-                            selected = bubbleSide == "left",
-                            onClick = { scope.launch { prefsManager.setBubbleSide("left") } },
-                            label = { Text("Esquerdo") }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        FilterChip(
-                            selected = bubbleSide == "right",
-                            onClick = { scope.launch { prefsManager.setBubbleSide("right") } },
-                            label = { Text("Direito") }
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("Arraste o botão livremente pela tela", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -589,22 +569,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
 
-                // v5.1.0: Botão Verificar Permissões (abre config do app)
-                OutlinedButton(
-                    onClick = {
-                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = android.net.Uri.parse("package:${context.packageName}")
-                        }
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Security, contentDescription = "Verificar")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Verificar Permissões do App")
-                }
             }
         }
 

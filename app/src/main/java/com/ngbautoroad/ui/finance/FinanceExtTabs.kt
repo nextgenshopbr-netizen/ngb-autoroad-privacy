@@ -34,6 +34,8 @@ import com.ngbautoroad.domain.ProjectionEngine
 import com.ngbautoroad.ui.theme.*
 import com.ngbautoroad.util.toDoubleLocale
 import com.ngbautoroad.util.toDoubleLocaleOrNull
+import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 // ============================================================================
@@ -254,9 +256,17 @@ fun AddVehicleProfileDialog(
                     OutlinedTextField(value = brakepadCost, onValueChange = { brakepadCost = it }, label = { Text("Pastilha (R$)") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = oilChangeKm, onValueChange = { oilChangeKm = it }, label = { Text("Óleo (km)") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                    OutlinedTextField(value = oilChangeCost, onValueChange = { oilChangeCost = it }, label = { Text("Óleo (R$)") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                if (vehicleType == "ELECTRIC") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(value = oilChangeKm, onValueChange = { oilChangeKm = it }, label = { Text("Revisão (km)") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        OutlinedTextField(value = oilChangeCost, onValueChange = { oilChangeCost = it }, label = { Text("Revisão (R$)") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    }
+                    Text("Revisão a cada 20.000 km ou 1 ano", fontSize = 10.sp, color = Color.Gray)
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(value = oilChangeKm, onValueChange = { oilChangeKm = it }, label = { Text("Óleo (km)") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        OutlinedTextField(value = oilChangeCost, onValueChange = { oilChangeCost = it }, label = { Text("Óleo (R$)") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    }
                 }
             }
         },
@@ -370,7 +380,8 @@ fun IndividualExpensesTab(
                     showAddDialog = false
                     snackbarHostState.showSnackbar("Despesa cadastrada!")
                 }
-            }
+            },
+            vehicleProfileDao = vehicleProfileDao
         )
     }
 }
@@ -430,7 +441,8 @@ fun IndividualExpenseCard(
 @Composable
 fun AddIndividualExpenseDialog(
     onDismiss: () -> Unit,
-    onSave: (IndividualExpenseEntity) -> Unit
+    onSave: (IndividualExpenseEntity) -> Unit,
+    vehicleProfileDao: VehicleProfileDao? = null
 ) {
     var title by rememberSaveable { mutableStateOf("") }
     var category by rememberSaveable { mutableStateOf(ExpenseCategories.IPVA) }
@@ -439,6 +451,9 @@ fun AddIndividualExpenseDialog(
     var frequency by rememberSaveable { mutableStateOf("MENSAL") }
     var includeInCalc by rememberSaveable { mutableStateOf(true) }
     var expanded by remember { mutableStateOf(false) }
+    var selectedVehicleId by rememberSaveable { mutableStateOf(0L) }
+    val vehicles = vehicleProfileDao?.getAllVehicles()?.collectAsState(initial = emptyList())?.value ?: emptyList()
+    val vehicleCategories = setOf(ExpenseCategories.IPVA, ExpenseCategories.SEGURO, ExpenseCategories.PARCELA, ExpenseCategories.MANUTENCAO, ExpenseCategories.LICENCIAMENTO)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -465,6 +480,40 @@ fun AddIndividualExpenseDialog(
                                 onClick = { category = cat; expanded = false }
                             )
                         }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Seletor de veículo para categorias de carro
+                if (category in vehicleCategories && vehicles.isNotEmpty()) {
+                    Text("Vincular ao veículo:", fontSize = 12.sp, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                        FilterChip(
+                            selected = selectedVehicleId == 0L,
+                            onClick = { selectedVehicleId = 0L },
+                            label = { Text("Geral", fontSize = 10.sp) }
+                        )
+                        vehicles.forEach { v ->
+                            FilterChip(
+                                selected = selectedVehicleId == v.id,
+                                onClick = { selectedVehicleId = v.id },
+                                label = { Text("${v.brand} ${v.model}".trim().ifBlank { "Veículo ${v.id}" }, fontSize = 10.sp) }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+
+                // Frequência/Recorrência
+                Text("Frequência:", fontSize = 12.sp, color = Color.Gray)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf("UNICA" to "Única", "MENSAL" to "Mensal", "ANUAL" to "Anual").forEach { (key, label) ->
+                        FilterChip(
+                            selected = frequency == key,
+                            onClick = { frequency = key },
+                            label = { Text(label, fontSize = 10.sp) }
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -509,7 +558,8 @@ fun AddIndividualExpenseDialog(
                     monthlyAmount = monthly,
                     frequency = frequency,
                     isIncludedInCalc = includeInCalc,
-                    isRecurringAnnual = isAnnual
+                    isRecurringAnnual = isAnnual,
+                    vehicleId = selectedVehicleId
                 )
                 onSave(expense)
             }, enabled = title.isNotBlank() && (totalAmount.toDoubleLocaleOrNull() ?: 0.0) > 0) {
@@ -555,20 +605,28 @@ fun ProjectionTab(
         isLoading = true
         errorMessage = null
         try {
+            kotlinx.coroutines.delay(100) // Aguardar composição estabilizar
             val result = engine.projectFinances(selectedPeriod)
+            if (!coroutineContext.isActive) return@LaunchedEffect
             val whatIf = engine.simulateWhatIf(selectedPeriod)
+            if (!coroutineContext.isActive) return@LaunchedEffect
             projection = result
             whatIfResults = whatIf
             if (result.projectedEarnings == 0.0 && result.projectedRides == 0) {
                 errorMessage = "Sem dados suficientes. Registre corridas e ganhos para gerar projeções."
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e // Não capturar CancellationException
+            throw e
         } catch (e: Exception) {
-            errorMessage = "Erro ao calcular projeção: ${e.message ?: "desconhecido"}"
-            android.util.Log.e("ProjectionTab", "Erro projeção", e)
+            if (coroutineContext.isActive) {
+                errorMessage = "Erro ao calcular projeção: ${e.message ?: "desconhecido"}"
+                android.util.Log.e("ProjectionTab", "Erro projeção", e)
+            }
+        } finally {
+            if (coroutineContext.isActive) {
+                isLoading = false
+            }
         }
-        isLoading = false
     }
 
     Column(

@@ -28,6 +28,14 @@ class FeaturesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent { NGBAutoRoadTheme { FeaturesScreen() } }
     }
+    override fun onResume() {
+        super.onResume()
+        com.ngbautoroad.service.BubbleService.setAppInForeground(true)
+    }
+    override fun onPause() {
+        super.onPause()
+        com.ngbautoroad.service.BubbleService.setAppInForeground(false)
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

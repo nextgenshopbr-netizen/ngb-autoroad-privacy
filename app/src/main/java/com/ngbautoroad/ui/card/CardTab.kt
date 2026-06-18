@@ -228,15 +228,25 @@ fun CardTab(prefsManager: PrefsManager) {
                                 android.widget.Toast.makeText(context, "Permissão de overlay necessária. Ative nas configurações.", android.widget.Toast.LENGTH_LONG).show()
                                 return@launch
                             }
+                            // Verificar permissão de notificação (necessária para foreground service no Android 13+)
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                val notifPerm = android.Manifest.permission.POST_NOTIFICATIONS
+                                if (context.checkSelfPermission(notifPerm) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                    android.widget.Toast.makeText(context, "Ative a permissão de Notificações nas configurações.", android.widget.Toast.LENGTH_LONG).show()
+                                    return@launch
+                                }
+                            }
                             // Gerar corrida aleatória
                             val ride = generateRandomRide()
-                            // v5.2.0: Iniciar OverlayService com proteção extra
-                            try {
-                                OverlayService.start(context)
-                            } catch (e: Exception) {
-                                android.util.Log.e("CardTab", "Falha ao iniciar serviço", e)
-                                android.widget.Toast.makeText(context, "Falha ao iniciar serviço: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
-                                return@launch
+                            // v5.2.1: Iniciar OverlayService apenas se não está rodando
+                            if (!OverlayService.isRunning()) {
+                                try {
+                                    OverlayService.start(context)
+                                } catch (e: Exception) {
+                                    android.util.Log.e("CardTab", "Falha ao iniciar serviço", e)
+                                    android.widget.Toast.makeText(context, "Falha ao iniciar serviço: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                                    return@launch
+                                }
                             }
                             // Aguardar até 3 tentativas (3x800ms = 2.4s máx)
                             var retries = 0
@@ -271,7 +281,7 @@ fun CardTab(prefsManager: PrefsManager) {
             ) {
                 Icon(Icons.Default.OpenInNew, contentDescription = "Testar")
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Testar Real")
+                Text("Testar")
             }
         }
     }
@@ -594,6 +604,20 @@ fun RenameDialog(
     )
 }
 
+
+// v5.2.1: Cores dinâmicas por critério (verde/amarelo/laranja/vermelho)
+private fun getCriteriaScoreColor(value: Double, threshold: Double, isMinimum: Boolean, accentColor: Color): Color {
+    if (threshold <= 0.0) return accentColor // Critério desativado
+    val ratio = if (isMinimum) value / threshold else threshold / value
+    return when {
+        ratio >= 1.2 -> ScoreGreen    // Muito acima do mínimo / muito abaixo do máximo
+        ratio >= 1.0 -> ScoreGreen    // Atende o critério
+        ratio >= 0.8 -> ScoreYellow   // Quase atende (80-100%)
+        ratio >= 0.6 -> ScoreOrange   // Abaixo (60-80%)
+        else -> ScoreRed              // Muito abaixo (<60%)
+    }
+}
+
 @Composable
 fun PreviewDialog(
     activeSlot: Int,
@@ -605,6 +629,8 @@ fun PreviewDialog(
 ) {
     // Gerar corrida aleatória
     var randomRide by remember { mutableStateOf(generateRandomRide()) }
+    var previewFontScale by remember { mutableFloatStateOf(1.0f) }
+    var previewWidth by remember { mutableFloatStateOf(1f) }
 
     // Calcular score com os critérios reais do motorista
     val scorer = remember(weights, thresholds) {
@@ -650,13 +676,13 @@ fun PreviewDialog(
 
                 // Card Preview
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(previewWidth),
                     shape = RoundedCornerShape((activeCard?.borderRadius ?: 12).dp),
                     colors = CardDefaults.cardColors(
                         containerColor = Color(activeCard?.backgroundColor ?: 0xFF101830)
                     ),
                     border = if (activeCard?.showBorder != false)
-                        BorderStroke(2.dp, Color(activeCard?.borderColor ?: 0xFF4F6BFF))
+                        BorderStroke(2.dp, scoreColor)
                     else null
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
@@ -674,8 +700,27 @@ fun PreviewDialog(
                             Text(
                                 String.format("%.0f", result.totalScore),
                                 color = scoreColor,
-                                style = MaterialTheme.typography.headlineMedium,
+                                style = MaterialTheme.typography.headlineMedium.copy(fontSize = (24 * previewFontScale).sp),
                                 fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            // Acessibilidade A-/A+
+                            Icon(
+                                Icons.Default.TextDecrease,
+                                contentDescription = "Diminuir fonte",
+                                tint = Color(activeCard?.textColor ?: 0xFFFFFFFF).copy(alpha = 0.6f),
+                                modifier = Modifier.size(18.dp).clickable {
+                                    previewFontScale = (previewFontScale - 0.1f).coerceIn(0.7f, 2.0f)
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                Icons.Default.TextIncrease,
+                                contentDescription = "Aumentar fonte",
+                                tint = Color(activeCard?.textColor ?: 0xFFFFFFFF).copy(alpha = 0.6f),
+                                modifier = Modifier.size(18.dp).clickable {
+                                    previewFontScale = (previewFontScale + 0.1f).coerceIn(0.7f, 2.0f)
+                                }
                             )
                         }
 
@@ -690,36 +735,36 @@ fun PreviewDialog(
                         cardFields.forEach { field ->
                             when (field) {
                                 CardGallery.CardField.RIDE_VALUE -> {
-                                    val color = if (thresholds.isRideValueActive() && randomRide.rideValue < thresholds.minRideValue) ScoreRed else accentColor
+                                    val color = if (thresholds.isRideValueActive()) getCriteriaScoreColor(randomRide.rideValue, thresholds.minRideValue, true, accentColor) else accentColor
                                     PreviewField("Valor", String.format("R$ %.2f", randomRide.rideValue), textColor, color)
                                 }
                                 CardGallery.CardField.VALUE_PER_KM -> {
-                                    val color = if (thresholds.isValuePerKmActive() && randomRide.valuePerKm < thresholds.minValuePerKm) ScoreRed else accentColor
+                                    val color = if (thresholds.isValuePerKmActive()) getCriteriaScoreColor(randomRide.valuePerKm, thresholds.minValuePerKm, true, accentColor) else accentColor
                                     PreviewField("R$/KM", String.format("R$ %.2f", randomRide.valuePerKm), textColor, color)
                                 }
                                 CardGallery.CardField.VALUE_PER_HOUR -> {
-                                    val color = if (thresholds.isValuePerHourActive() && randomRide.valuePerHour < thresholds.minValuePerHour) ScoreRed else accentColor
+                                    val color = if (thresholds.isValuePerHourActive()) getCriteriaScoreColor(randomRide.valuePerHour, thresholds.minValuePerHour, true, accentColor) else accentColor
                                     PreviewField("R$/Hora", String.format("R$ %.2f", randomRide.valuePerHour), textColor, color)
                                 }
                                 CardGallery.CardField.PICKUP_DISTANCE -> {
-                                    val color = if (thresholds.isPickupDistanceActive() && randomRide.pickupDistance > thresholds.maxPickupDistance) ScoreRed else accentColor
+                                    val color = if (thresholds.isPickupDistanceActive()) getCriteriaScoreColor(randomRide.pickupDistance, thresholds.maxPickupDistance, false, accentColor) else accentColor
                                     PreviewField("Embarque", String.format("%.1f km", randomRide.pickupDistance), textColor, color)
                                 }
                                 CardGallery.CardField.DROPOFF_DISTANCE -> {
                                     PreviewField("Destino", String.format("%.1f km", randomRide.dropoffDistance), textColor, accentColor)
                                 }
                                 CardGallery.CardField.DURATION -> {
-                                    val color = if (thresholds.isDurationActive() && randomRide.rideDuration > thresholds.maxDuration) ScoreRed else accentColor
+                                    val color = if (thresholds.isDurationActive()) getCriteriaScoreColor(randomRide.rideDuration, thresholds.maxDuration, false, accentColor) else accentColor
                                     PreviewField("Duração", String.format("%.0f min", randomRide.rideDuration), textColor, color)
                                 }
                                 CardGallery.CardField.PASSENGER_RATING -> {
                                     if (randomRide.passengerRating > 0) {
-                                        val color = if (thresholds.isPassengerRatingActive() && randomRide.passengerRating < thresholds.minPassengerRating) ScoreRed else accentColor
+                                        val color = if (thresholds.isPassengerRatingActive()) getCriteriaScoreColor(randomRide.passengerRating, thresholds.minPassengerRating, true, accentColor) else accentColor
                                         PreviewField("Aval.", String.format("%.1f ★", randomRide.passengerRating), textColor, color)
                                     }
                                 }
                                 CardGallery.CardField.STOPS -> {
-                                    val color = if (thresholds.isStopsActive() && randomRide.intermediateStops > thresholds.maxStops) ScoreRed else accentColor
+                                    val color = if (thresholds.isStopsActive()) getCriteriaScoreColor(randomRide.intermediateStops.toDouble(), thresholds.maxStops.toDouble(), false, accentColor) else accentColor
                                     PreviewField("Paradas", "${randomRide.intermediateStops}", textColor, color)
                                 }
                                 CardGallery.CardField.PICKUP_NEIGHBORHOOD -> {
@@ -751,13 +796,17 @@ fun PreviewDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Cores nos campos já comunicam violações visualmente
-                // Campos em vermelho = abaixo do mínimo desejado
-
-                Spacer(modifier = Modifier.height(12.dp))
-
+                                Spacer(modifier = Modifier.height(8.dp))
+                // Controle de largura (resize)
+                Text("Largura do card", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Slider(
+                    value = previewWidth,
+                    onValueChange = { previewWidth = it },
+                    valueRange = 0.6f..1f,
+                    steps = 3,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 // Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
