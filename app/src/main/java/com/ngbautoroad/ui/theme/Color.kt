@@ -1,3 +1,11 @@
+// ============================================================================
+// ARQUIVO: Color.kt
+// LOCALIZAÇÃO: ui/theme/Color.kt
+// RESPONSABILIDADE: Paleta de cores do app
+//   - Cores de score (verde, amarelo, laranja, vermelho)
+//   - Cores de plataforma (Uber, 99, inDrive, Cabify)
+// DEPENDÊNCIAS: Nenhuma
+// ============================================================================
 package com.ngbautoroad.ui.theme
 
 import androidx.compose.ui.graphics.Color

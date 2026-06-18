@@ -366,7 +366,7 @@ fun AdminPanel(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    InfoRow("Versão", "4.3.3")
+                    InfoRow("Versão", "4.4.0")
                     InfoRow("Build", "release")
                     InfoRow("Package", "com.ngbautoroad")
                     InfoRow("SDK Target", "34")
@@ -671,6 +671,7 @@ fun ChangePinDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
+    var currentPinInput by remember { mutableStateOf("") }
     var newPin by remember { mutableStateOf("") }
     var confirmPin by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
@@ -681,11 +682,21 @@ fun ChangePinDialog(
         text = {
             Column {
                 Text(
-                    "Digite o novo PIN de 6 dígitos",
+                    "Confirme o PIN atual e digite o novo PIN de 6 dígitos",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = currentPinInput,
+                    onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) currentPinInput = it },
+                    label = { Text("PIN Atual") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = newPin,
                     onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) newPin = it },
@@ -715,8 +726,10 @@ fun ChangePinDialog(
         confirmButton = {
             TextButton(onClick = {
                 when {
-                    newPin.length != 6 -> error = "PIN deve ter 6 dígitos"
+                    currentPinInput != currentPin -> error = "PIN atual incorreto"
+                    newPin.length != 6 -> error = "Novo PIN deve ter 6 dígitos"
                     newPin != confirmPin -> error = "PINs não conferem"
+                    newPin == currentPin -> error = "Novo PIN deve ser diferente do atual"
                     else -> onConfirm(newPin)
                 }
             }) {
@@ -779,7 +792,8 @@ data class SimulationResult(
             passengerRating = passengerRating,
             intermediateStops = 0,
             pickupNeighborhood = pickupNeighborhood,
-            dropoffNeighborhood = dropoffNeighborhood
+            dropoffNeighborhood = dropoffNeighborhood,
+            isSimulation = true  // Não salvar no histórico/financeiro
         )
     }
 }

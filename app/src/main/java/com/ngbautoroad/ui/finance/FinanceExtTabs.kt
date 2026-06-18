@@ -180,6 +180,8 @@ fun AddVehicleProfileDialog(
     var model by rememberSaveable { mutableStateOf(existing?.model ?: "") }
     var year by rememberSaveable { mutableStateOf(existing?.year?.toString() ?: "") }
     var plate by rememberSaveable { mutableStateOf(existing?.plate ?: "") }
+    var vehicleType by rememberSaveable { mutableStateOf(existing?.vehicleType ?: "COMBUSTION") }
+    var fuelType by rememberSaveable { mutableStateOf(existing?.fuelType ?: "FLEX") }
     var consumption by rememberSaveable { mutableStateOf(existing?.averageConsumption?.toString() ?: "") }
     var fuelPrice by rememberSaveable { mutableStateOf(existing?.fuelPrice?.toString() ?: "") }
     var purchaseValue by rememberSaveable { mutableStateOf(existing?.purchaseValue?.toString() ?: "") }
@@ -203,10 +205,40 @@ fun AddVehicleProfileDialog(
                     OutlinedTextField(value = year, onValueChange = { year = it }, label = { Text("Ano") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                     OutlinedTextField(value = plate, onValueChange = { plate = it }, label = { Text("Placa") }, modifier = Modifier.weight(1f))
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Tipo de Veículo", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf("COMBUSTION" to "Combustão", "HYBRID" to "Híbrido", "ELECTRIC" to "Elétrico").forEach { (key, label) ->
+                        FilterChip(
+                            selected = vehicleType == key,
+                            onClick = {
+                                vehicleType = key
+                                if (key == "ELECTRIC") fuelType = "ELECTRIC"
+                                else if (fuelType == "ELECTRIC") fuelType = "FLEX"
+                            },
+                            label = { Text(label, fontSize = 11.sp) }
+                        )
+                    }
+                }
+                if (vehicleType != "ELECTRIC") {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Combustível", fontSize = 12.sp, color = Color.Gray)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        listOf("FLEX" to "Flex", "GASOLINE" to "Gasolina", "ETHANOL" to "Etanol", "DIESEL" to "Diesel").forEach { (key, label) ->
+                            FilterChip(
+                                selected = fuelType == key,
+                                onClick = { fuelType = key },
+                                label = { Text(label, fontSize = 10.sp) }
+                            )
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(4.dp))
+                val consumptionLabel = if (vehicleType == "ELECTRIC") "km/kWh" else "km/L"
+                val priceLabel = if (vehicleType == "ELECTRIC") "R$/kWh" else "R$/L"
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = consumption, onValueChange = { consumption = it }, label = { Text("km/L") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-                    OutlinedTextField(value = fuelPrice, onValueChange = { fuelPrice = it }, label = { Text("R$/L") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    OutlinedTextField(value = consumption, onValueChange = { consumption = it }, label = { Text(consumptionLabel) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    OutlinedTextField(value = fuelPrice, onValueChange = { fuelPrice = it }, label = { Text(priceLabel) }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 OutlinedTextField(value = purchaseValue, onValueChange = { purchaseValue = it }, label = { Text("Valor de compra (R$)") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
@@ -238,6 +270,8 @@ fun AddVehicleProfileDialog(
                     model = model,
                     year = year.toIntOrNull() ?: 0,
                     plate = plate,
+                    vehicleType = vehicleType,
+                    fuelType = fuelType,
                     averageConsumption = cons,
                     fuelPrice = fp,
                     costPerKm = cpk,
@@ -356,6 +390,12 @@ fun IndividualExpenseCard(
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Ícone da categoria
+                Text(
+                    ExpenseCategories.icons[expense.category] ?: "📦",
+                    fontSize = 24.sp,
+                    modifier = Modifier.padding(end = 10.dp)
+                )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(expense.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Text(
@@ -502,13 +542,21 @@ fun ProjectionTab(
         ProjectionEngine(earningDao, vehicleProfileDao, individualExpenseDao, rideHistoryDao)
     }
 
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
     // Carregar projeção ao mudar período
     LaunchedEffect(selectedPeriod) {
         isLoading = true
+        errorMessage = null
         try {
             projection = engine.projectFinances(selectedPeriod)
             whatIfResults = engine.simulateWhatIf(selectedPeriod)
-        } catch (_: Exception) {}
+            if (projection?.projectedEarnings == 0.0 && projection?.projectedRides == 0) {
+                errorMessage = "Sem dados suficientes. Registre corridas e ganhos para gerar projeções."
+            }
+        } catch (e: Exception) {
+            errorMessage = "Erro ao calcular projeção: ${e.message ?: "desconhecido"}"
+        }
         isLoading = false
     }
 
@@ -538,6 +586,17 @@ fun ProjectionTab(
         if (isLoading) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
+            }
+        } else if (errorMessage != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = ScoreYellow.copy(alpha = 0.1f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("⚠️ Atenção", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(errorMessage!!, fontSize = 12.sp, color = Color.Gray)
+                }
             }
         } else if (projection != null) {
             val proj = projection!!

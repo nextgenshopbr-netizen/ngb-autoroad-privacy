@@ -1,3 +1,13 @@
+// ============================================================================
+// ARQUIVO: Theme.kt
+// LOCALIZAÇÃO: ui/theme/Theme.kt
+// RESPONSABILIDADE: Tema Material3 do app
+//   - Dark/Light theme
+//   - NGBAutoRoadTheme composable
+// DEPENDÊNCIAS:
+//   - ui/theme/Color.kt
+//   - ui/theme/Typography.kt
+// ============================================================================
 package com.ngbautoroad.ui.theme
 
 import android.app.Activity

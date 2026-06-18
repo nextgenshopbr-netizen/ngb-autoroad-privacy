@@ -60,13 +60,29 @@ class MainActivity : ComponentActivity() {
             startActivity(intent)
         }
 
-        // Keep screen on
+        // Keep screen on (aplicação inicial)
         val keepScreenOn = runBlocking { prefsManager.keepScreenOnFlow.first() }
         if (keepScreenOn) {
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
 
+        // Auto-iniciar OverlayService se o serviço estava habilitado
+        val serviceEnabled = runBlocking { prefsManager.serviceEnabledFlow.first() }
+        if (serviceEnabled && Settings.canDrawOverlays(this)) {
+            com.ngbautoroad.service.OverlayService.start(this)
+        }
+
         setContent {
+            // Observar mudanças no keepScreenOn em tempo real
+            val keepScreenState = prefsManager.keepScreenOnFlow.collectAsState(initial = keepScreenOn)
+            LaunchedEffect(keepScreenState.value) {
+                if (keepScreenState.value) {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+
             NGBAutoRoadTheme {
                 MainScreen(prefsManager = prefsManager, database = database)
             }
@@ -92,7 +108,7 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text("NGB AutoRoad v4.3.3")
+                    Text("NGB AutoRoad v4.4.0")
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,

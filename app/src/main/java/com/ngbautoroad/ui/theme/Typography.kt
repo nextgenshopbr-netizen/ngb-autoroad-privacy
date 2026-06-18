@@ -1,3 +1,11 @@
+// ============================================================================
+// ARQUIVO: Typography.kt
+// LOCALIZAÇÃO: ui/theme/Typography.kt
+// RESPONSABILIDADE: Tipografia do app
+//   - Fontes e tamanhos padrão
+//   - Material3 Typography
+// DEPENDÊNCIAS: Nenhuma
+// ============================================================================
 package com.ngbautoroad.ui.theme
 
 import androidx.compose.material3.Typography

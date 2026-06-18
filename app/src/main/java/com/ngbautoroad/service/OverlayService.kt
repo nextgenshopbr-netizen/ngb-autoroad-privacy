@@ -216,8 +216,9 @@ class OverlayService : Service(),
         currentScore = scorer.calculateScore(ride)
 
         // Salvar no histórico com scoreBreakdown e criteriaUsed (item 5.2, 1.3)
+        // PROTEÇÃO: Não salvar corridas simuladas no banco de dados
         val scoreResult = currentScore
-        if (scoreResult != null) {
+        if (scoreResult != null && !ride.isSimulation) {
             withContext(Dispatchers.IO) {
                 try {
                     val appDb = AppDatabase.getInstance(applicationContext)

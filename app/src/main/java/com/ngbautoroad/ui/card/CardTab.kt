@@ -222,12 +222,21 @@ fun CardTab(prefsManager: PrefsManager) {
             Button(
                 onClick = {
                     scope.launch {
-                        // Gerar corrida aleatória
-                        val ride = generateRandomRide()
-                        // Iniciar OverlayService e disparar corrida real
-                        OverlayService.start(context)
-                        delay(300)
-                        OverlayService.onRideDetected?.invoke(ride)
+                        try {
+                            // Verificar permissão de overlay antes de tentar
+                            if (!android.provider.Settings.canDrawOverlays(context)) {
+                                android.widget.Toast.makeText(context, "Permissão de overlay necessária. Ative nas configurações.", android.widget.Toast.LENGTH_LONG).show()
+                                return@launch
+                            }
+                            // Gerar corrida aleatória
+                            val ride = generateRandomRide()
+                            // Iniciar OverlayService e disparar corrida real
+                            OverlayService.start(context)
+                            delay(500) // Delay maior para garantir que o serviço iniciou
+                            OverlayService.onRideDetected?.invoke(ride)
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(context, "Erro ao testar: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                        }
                     }
                 },
                 modifier = Modifier.weight(1f),
@@ -777,6 +786,7 @@ fun generateRandomRide(): RideData {
         passengerRating = Random.nextDouble(3.5, 5.0),
         intermediateStops = if (Random.nextFloat() < 0.3f) Random.nextInt(1, 3) else 0,
         pickupNeighborhood = neighborhoods.random(),
-        dropoffNeighborhood = neighborhoods.random()
+        dropoffNeighborhood = neighborhoods.random(),
+        isSimulation = true  // Não salvar no histórico/financeiro
     )
 }

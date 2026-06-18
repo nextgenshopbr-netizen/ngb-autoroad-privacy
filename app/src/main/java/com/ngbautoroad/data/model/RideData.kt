@@ -40,6 +40,7 @@ data class RideData(
     val intermediateStops: Int = 0,       // Número de paradas intermediárias
     val pickupNeighborhood: String = "",  // Bairro de embarque (extraído por regex)
     val dropoffNeighborhood: String = "", // Bairro de destino (extraído por regex)
+    val isSimulation: Boolean = false,    // Flag: true = dados simulados (não salvar no histórico)
     val timestamp: Long = System.currentTimeMillis()
 ) {
     // Propriedade calculada: R$/km (protegida contra divisão por zero)

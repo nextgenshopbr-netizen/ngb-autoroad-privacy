@@ -1,3 +1,12 @@
+// ============================================================================
+// ARQUIVO: CardGalleryActivity.kt
+// LOCALIZAÇÃO: ui/gallery/CardGalleryActivity.kt
+// RESPONSABILIDADE: Galeria de cards pré-definidos
+//   - Exibe todos os 35 cards disponíveis
+//   - Permite selecionar e aplicar cards
+// DEPENDÊNCIAS:
+//   - data/model/CardGallery.kt → CardGallery.allCards
+// ============================================================================
 package com.ngbautoroad.ui.gallery
 
 import android.app.Activity

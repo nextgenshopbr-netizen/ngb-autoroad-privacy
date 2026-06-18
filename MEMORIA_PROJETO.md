@@ -79,3 +79,19 @@
   - Funciona exatamente como GigU no preview de cards
 - **Função toRideData()** adicionada ao SimulationResult para conversão
 - Versão 4.3.3 (versionCode 51)
+
+### 2026-06-18 14:42 — v4.4.0 (Correções de Bugs + Melhorias de Segurança)
+- **Correções de Bugs Críticos:**
+  1. Simulação não computa dados reais — campo `isSimulation` no RideData, OverlayService verifica antes de salvar
+  2. Crash ao Testar Real no CardTab — try-catch + verificação `canDrawOverlays`
+  3. Tela ligada não funciona em tempo real — `keepScreenOnFlow` observado reativamente com `collectAsState`
+  4. Overlay auto-iniciar — MainActivity inicia OverlayService automaticamente se habilitado
+  5. Crash na Projeção sem dados — mensagem amigável em vez de crash
+- **Melhorias:**
+  1. ChangePinDialog com validação de PIN atual (3 campos: atual, novo, confirmar)
+  2. Tipo de veículo no cadastro (Combustão/Híbrido/Elétrico) + tipo combustível
+  3. Ícones por categoria de despesa (IPVA=Receipt, Seguro=Shield, etc.)
+  4. Proteção contra engenharia reversa (ProGuard/R8 rules completas)
+  5. Cabeçalhos em CardEditorActivity.kt e CardGalleryActivity.kt
+  6. Warning do parâmetro `currentPin` corrigido
+- Versão 4.4.0 (versionCode 52)

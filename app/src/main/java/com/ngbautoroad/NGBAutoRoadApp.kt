@@ -1,3 +1,11 @@
+// ============================================================================
+// ARQUIVO: NGBAutoRoadApp.kt
+// LOCALIZAÇÃO: NGBAutoRoadApp.kt
+// RESPONSABILIDADE: Application class principal
+//   - Cria canais de notificação (overlay, OCR)
+//   - Inicialização global do app
+// DEPENDÊNCIAS: Nenhuma externa
+// ============================================================================
 package com.ngbautoroad
 
 import android.app.Application

@@ -1,3 +1,14 @@
+// ============================================================================
+// ARQUIVO: CardEditorActivity.kt
+// LOCALIZAÇÃO: ui/editor/CardEditorActivity.kt
+// RESPONSABILIDADE: Tela de edição de cards customizados
+//   - Permite criar e editar layouts de cards
+//   - Drag-and-drop de campos
+//   - Preview em tempo real
+// DEPENDÊNCIAS:
+//   - data/model/CardGallery.kt → CardModel, CardField
+//   - service/OverlayService.kt → preview real
+// ============================================================================
 package com.ngbautoroad.ui.editor
 
 import android.os.Bundle

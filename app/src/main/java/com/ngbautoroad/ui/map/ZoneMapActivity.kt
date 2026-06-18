@@ -1,3 +1,13 @@
+// ============================================================================
+// ARQUIVO: ZoneMapActivity.kt
+// LOCALIZAÇÃO: ui/map/ZoneMapActivity.kt
+// RESPONSABILIDADE: Mapa de zonas e bairros bloqueados
+//   - Exibe mapa OSM com áreas de pickup/dropoff
+//   - Permite marcar bairros como bloqueados
+// DEPENDÊNCIAS:
+//   - data/prefs/PrefsManager.kt → bairros bloqueados
+//   - org.osmdroid → mapa
+// ============================================================================
 package com.ngbautoroad.ui.map
 
 import android.Manifest

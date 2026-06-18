@@ -226,4 +226,17 @@ object ExpenseCategories {
         ACESSORIO to "Acessório",
         OUTRO to "Outro"
     )
+
+    // Ícones por categoria (emoji unicode para exibição simples)
+    val icons = mapOf(
+        IPVA to "💰",          // Dinheiro
+        SEGURO to "🛡️",       // Escudo
+        PARCELA to "💳",       // Cartão
+        MANUTENCAO to "🔧",   // Chave
+        MULTA to "🚨",         // Sirene
+        LICENCIAMENTO to "📄", // Documento
+        DOCUMENTACAO to "📝",  // Nota
+        ACESSORIO to "🛠️",    // Ferramentas
+        OUTRO to "📦"          // Caixa
+    )
 }
