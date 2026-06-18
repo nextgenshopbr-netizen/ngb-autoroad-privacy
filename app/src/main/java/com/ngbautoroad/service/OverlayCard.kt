@@ -93,7 +93,7 @@ fun OverlayCard(
             .padding(12.dp)
     ) {
         Column {
-            // Header: Platform + Score + A+/A- + Close
+            // Header: Platform + Score (linha 1)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -109,54 +109,63 @@ fun OverlayCard(
                     )
                 }
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Score
-                    if (fields.contains(CardField.SCORE)) {
-                        Text(
-                            text = "${score.totalScore.toInt()}",
-                            color = totalScoreColor,
-                            fontSize = scaledTitle,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                    }
-
-                    // Acessibilidade A- / A+
-                    Icon(
-                        Icons.Default.TextDecrease,
-                        contentDescription = "Diminuir fonte",
-                        tint = textColor.copy(alpha = 0.5f),
-                        modifier = Modifier
-                            .size(18.dp)
-                            .clickable {
-                                val newScale = (fontScale - 0.1f).coerceIn(1.0f, 2.5f)
-                                onFontScaleChange(newScale)
-                            }
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        Icons.Default.TextIncrease,
-                        contentDescription = "Aumentar fonte",
-                        tint = textColor.copy(alpha = 0.5f),
-                        modifier = Modifier
-                            .size(18.dp)
-                            .clickable {
-                                val newScale = (fontScale + 0.1f).coerceIn(1.0f, 2.5f)
-                                onFontScaleChange(newScale)
-                            }
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    // Close
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Fechar",
-                        tint = textColor.copy(alpha = 0.6f),
-                        modifier = Modifier
-                            .size(18.dp)
-                            .clickable { onDismiss() }
+                // Score
+                if (fields.contains(CardField.SCORE)) {
+                    Text(
+                        text = "${score.totalScore.toInt()}",
+                        color = totalScoreColor,
+                        fontSize = scaledTitle,
+                        fontWeight = FontWeight.Bold
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Barra de controles: A- / A+ / X (linha 2 — separada e espaçada)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // A-
+                Text(
+                    text = "A-",
+                    color = textColor.copy(alpha = 0.75f),
+                    fontSize = scaledSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable {
+                            val newScale = (fontScale - 0.1f).coerceIn(1.0f, 2.5f)
+                            onFontScaleChange(newScale)
+                        }
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                // A+
+                Text(
+                    text = "A+",
+                    color = textColor.copy(alpha = 0.75f),
+                    fontSize = scaledSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable {
+                            val newScale = (fontScale + 0.1f).coerceIn(1.0f, 2.5f)
+                            onFontScaleChange(newScale)
+                        }
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                // X
+                Text(
+                    text = "✕",
+                    color = textColor.copy(alpha = 0.8f),
+                    fontSize = scaledSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable { onDismiss() }
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(6.dp))
