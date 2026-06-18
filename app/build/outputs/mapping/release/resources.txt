@@ -1,4 +1,3 @@
-Marking id:hide_in_inspector_tag:2131034180 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:tag_unhandled_key_listeners:2131034216 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking string:tab:2131296389 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking string:switch_role:2131296388 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
@@ -41,12 +40,12 @@ Marking string:selected:2131296378 reachable: referenced from /home/ubuntu/NGBAu
 Marking string:not_selected:2131296368 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking string:template_percent:2131296390 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking string:in_progress:2131296358 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:pooling_container_listener_holder_tag:2131034198 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:tag_unhandled_key_event_manager:2131034215 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:wrapped_composition_tag:2131034228 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:view_tree_saved_state_registry_owner:2131034225 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:view_tree_lifecycle_owner:2131034223 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking style:DialogWindowTheme:2131361792 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:compose_view_saveable_id_tag:2131034169 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:view_tree_view_model_store_owner:2131034226 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:inspection_slot_table_set:2131034185 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:androidx_compose_ui_view_composition_context:2131034153 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:tag_screen_reader_focusable:2131034212 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:tag_accessibility_heading:2131034207 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
@@ -58,30 +57,10 @@ Marking id:tag_accessibility_clickable_spans:2131034206 reachable: referenced fr
 Marking id:view_tree_on_back_pressed_dispatcher_owner:2131034224 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:tag_on_apply_window_listener:2131034209 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:tag_window_insets_animation_callback:2131034217 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:report_drawn:2131034199 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:wrapped_composition_tag:2131034228 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:tag_unhandled_key_event_manager:2131034215 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking string:androidx_startup:2131296259 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_unknown_issue:2131296296 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking drawable:common_full_open_on_phone:2130968579 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:view_tree_lifecycle_owner:2131034223 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:view_tree_saved_state_registry_owner:2131034225 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:is_pooling_container_tag:2131034186 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_enable_button:2131296288 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_update_button:2131296298 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_install_button:2131296291 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_notification_ticker:2131296295 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_open_on_phone:2131296303 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_notification_channel_name:2131296294 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_updating_text:2131296301 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_unsupported_text:2131296297 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_enable_text:2131296289 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_wear_update_text:2131296302 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_update_text:2131296299 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_install_text:2131296292 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_enable_title:2131296290 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_update_title:2131296300 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_install_title:2131296293 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:default_popup_window_title:2131296340 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:inspection_slot_table_set:2131034185 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:report_drawn:2131034199 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking string:navigation_menu:2131296367 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking string:close_drawer:2131296285 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking string:close_sheet:2131296286 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
@@ -145,12 +124,33 @@ Marking string:time_picker_minute:2131296397 reachable: referenced from /home/ub
 Marking string:time_picker_hour_text_field:2131296396 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking string:time_picker_minute_text_field:2131296400 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking string:tooltip_pane_description:2131296406 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:pooling_container_listener_holder_tag:2131034198 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking drawable:common_full_open_on_phone:2130968579 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:is_pooling_container_tag:2131034186 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:default_popup_window_title:2131296340 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:hide_in_inspector_tag:2131034180 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:consume_window_insets_tag:2131034170 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_unknown_issue:2131296296 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_updating_text:2131296301 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_unsupported_text:2131296297 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_enable_text:2131296289 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_wear_update_text:2131296302 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_update_text:2131296299 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_install_text:2131296292 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_enable_title:2131296290 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_update_title:2131296300 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_install_title:2131296293 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_enable_button:2131296288 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_update_button:2131296298 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_install_button:2131296291 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_notification_ticker:2131296295 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_open_on_phone:2131296303 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_notification_channel_name:2131296294 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 android.content.res.Resources#getIdentifier present: true
 Web content present: false
 Referenced Strings:
-attemptNumber
 THROTTLE_NEVER
+attemptNumber
 num_attempts
 င ငငငင
 http://
@@ -171,8 +171,8 @@ osmdroid.ExpirationExtendedDuration
 optionalModuleVersion
 Compose:abandons
 Filled.Add
-$
 java.lang.CharSequence
+$
 STOP
 com.google.protobuf.MapFieldSchemaFull
 prefsManager
@@ -190,8 +190,8 @@ OPTIONAL_MODULE_LANGUAGE_ID_CREATE
 6
 7
 OPTIONAL_MODULE_IMAGE_CAPTIONING_RELEASE
-Strategy.HighQuality
 object
+Strategy.HighQuality
 B
 S_RESUMING_BY_RCV
 role
@@ -206,8 +206,8 @@ Litros
 S
 Copacabana
 W
-X
 NumberPassword
+X
 Y
 https://overlay.openstreetmap.nl/roads/
 constructor.parameterTypes
@@ -216,18 +216,19 @@ _
 a
 b
 Center
-c
 address
+c
 ACTION_CLEAR_ACCESSIBILITY_FOCUS
 d
 Infinity
 modelFile
 Compose:unobserve
 logSource
+rideHistoryId
 h
 truncated
-j
 effectiveDirectAddress
+j
 RESUMING_BY_EB
 m
 OnClick
@@ -241,11 +242,10 @@ TypefaceCompatApi26Impl
 v
 x
 y
-ခ ငခ
 requestTimeMs
+ခ ငခ
 ProgressBarRangeInfo
 logEventKey
-com.ngbautoroad.service.OverlayServic...
 mlkit:vision
 င ခဈဈ
 THUNDERFOREST_MAPID
@@ -274,6 +274,7 @@ tfliteSchemaVersion
 THROTTLE_ALWAYS
 CLOUD_LOGO_DETECT
 osmdroid.TileDownloaderFollowRedirects
+hasViolations
 Recreio
 PAGE_DOWN
 unsupported
@@ -281,8 +282,8 @@ provider
 card3_border_color
 OptionalModuleUtils
 https://tiles.wmflabs.org/hikebike/
-onDismiss
 allowManualInput
+onDismiss
 kotlin.collections.List
 appName
 remoteModelOptions
@@ -324,8 +325,8 @@ TFLITE_UNKNOWN_ERROR
 NEW_LINE
 Modulate
 defaultGoogleSignInAccount
-getPointerId
 XResolution
+getPointerId
 onBackInvoked
 EXPLICITLY_REQUESTED
 onDeviceImageQualityAnalysisLogEvent
@@ -339,8 +340,8 @@ recognizerOptions
 Executor
 ACTION_PAGE_UP
 Período
-FloatAnimation
 optionsType
+FloatAnimation
 aggregatedOnDeviceBarcodeDetectionLog...
 remoteConfigValueForAcceleration
 MAXIMUM_OPTIMIZATION
@@ -348,6 +349,7 @@ product
 HIGH_ACCURACY
 OPTIONAL_MODULE_NLCLASSIFIER_INFERENCE
 pricePerLiter
+Filled.Search
 invisible_actions
 nautical
 ᔄ ᔄᔄᔄခဉ
@@ -384,8 +386,8 @@ numSamples
 BYTES_LIST
 com.ngbautoroad.ui.editor.CardEditorA...
 Pausado
-Horizontal
 Ano
+Horizontal
 displayCutout
 com.google.android.gms.mlkit_docscan_...
 SSLv3
@@ -449,8 +451,8 @@ recurringDay
 CollectionInfo
 Licenciamento
 Rtl
-android.hardware.type.automotive
 currentPin
+android.hardware.type.automotive
 isManifestFile
 com.ngbautoroad.data.prefs.PrefsManag...
 OPTIONAL_MODULE_RELEASE_ERROR
@@ -491,10 +493,11 @@ Oklab
 ChartbundleENRL
 androidx.view.accessibility.Accessibi...
 markState
+Filled.Clear
 onDeviceObjectLoadLogEvent
 CrashUtils
-LATIN_AND_KOREAN
 ChartbundleENRH
+LATIN_AND_KOREAN
 $map
 tableIds
 UINT64
@@ -502,7 +505,9 @@ Barra
 DIAGNOSTIC_PROFILE_IS_COMPRESSED
 tmpfs
 peekByte
+$touchX
 herewego
+$touchY
 CLIENT_TELEMETRY
 com.google.android.gms.dynamite.IDyna...
 SCORE
@@ -516,8 +521,8 @@ ContentOrRtl
 TLSv1.2
 androidx.content.action.LOAD_EMOJI_FONT
 statuteMile
-ZOOM_THRESHOLD
 androidClientInfo
+ZOOM_THRESHOLD
 current_model_hash_%s
 ခ ခခဌဌခ
 SubfileType
@@ -532,8 +537,8 @@ com.google.android.gms.mlkit.langid
 PASTE
 manifest.json
 card3_layout_json
-Sentences
 short
+Sentences
 MINUTES
 faceDetectionOptionalModuleLogEvent
 com.ngbautoroad.ui.admin.AdminActivit...
@@ -567,8 +572,8 @@ onDelete
 common_google_play_services_api_unava...
 .apk
 CHANNEL_CLOSED
-Água/Bebidas
 SharingStarted.Lazily
+Água/Bebidas
 INCOMPATIBLE_TFLITE_VERSION
 Mensal
 ON_DEVICE_FACE_CREATE
@@ -580,9 +585,9 @@ OPTIONAL_MODULE_INIT_ERROR
 migrationContainer
 HYBRID_GAS
 ON_DEVICE_ENTITY_EXTRACTION_CLOSE
+undefined
 unknown
 VALUE_PER_KM
-undefined
 android.widget.SeekBar
 headlineMedium
 producerIndex
@@ -592,8 +597,8 @@ value.stringSet.stringsList
 com.google.android.gms.common.interna...
 labelSmall
 com.ngbautoroad.ui.card.CardTabKt$Car...
-.immediate
 TAB
+.immediate
 SecureOff
 com.ngbautoroad.ui.criteria.CriteriaT...
 None
@@ -607,6 +612,7 @@ RESULT_INSTALL_SUCCESS
 Send
 internalTransactionExecutor
 com.ngbautoroad.service.OverlayServic...
+com.ngbautoroad.service.OverlayServic...
 imageVector
 com.google.android.gms.common.interna...
 BoundReached
@@ -615,8 +621,8 @@ klass
 Desconhecido
 ဌ ဌ
 ALIGN_RIGHT
-com.google.android.gms.signin.interna...
 Uploader
+com.google.android.gms.signin.interna...
 CLOSE_HANDLER_INVOKED
 MODEL_NOT_REGISTERED
 /dev/mapper
@@ -647,6 +653,7 @@ AGGREGATED_ON_DEVICE_DOCUMENT_CROP_PR...
 SINT64_LIST_PACKED
 onDeviceFaceMeshLogEvent
 UBER
+com.ngbautoroad.service.OverlayServic...
 ဈ င
 temp
 next_request_ms
@@ -659,6 +666,8 @@ HSUPA
 insertInorderBarrier
 HANDLE_LEAKED
 ᐉ ခ
+$initialY
+$initialX
 onColorSelected
 Observação
 Button
@@ -699,8 +708,8 @@ Sex
 AGGREGATED_CUSTOM_OBJECT_INFERENCE
 disableStandaloneDynamiteLoader2
 ဈ ဇ
-com.google.android.gms.location.inter...
 ExitTransition.KeepUntilTransitionsFi...
+com.google.android.gms.location.inter...
 Valor
 VALUE_PER_HOUR
 UNKNOWN_ERROR
@@ -711,8 +720,8 @@ StripOffsets
 onDraw
 kotlin.Nothing
 com.google.android.gms.vision.dynamite
-common_google_play_services_restricte...
 com.google.mlkit.internal
+common_google_play_services_restricte...
 ml_sdk_instance_id
 ISOSpeedRatings
 typeParams
@@ -766,9 +775,9 @@ Embarq.
 DEADLINE_EXCEEDED
 %.2f
 title
+kotlin.collections.Map
 duration
 com.ngbautoroad.data.prefs.PrefsManag...
-kotlin.collections.Map
 RecordingIC
 load
 THEMED
@@ -779,8 +788,8 @@ com.ngbautoroad.data.prefs.PrefsManag...
 %d
 sdCard
 Leading
-classSimpleName
 strings_
+classSimpleName
 SELECT_DOWN
 location_updates_with_callback
 com.google.android.gms.vision.DEPENDE...
@@ -794,8 +803,8 @@ ON_DEVICE_IMAGE_CAPTIONING_CLOSE
 Filled
 NLCLASSIFIER_CLIENT_LIBRARY_CREATE
 OPTIONAL_MODULE_INFERENCE_ERROR
-on_update
 lenientToString
+on_update
 com.ngbautoroad.ui.criteria.CriteriaT...
 kotlin.collections.MutableIterable
 DEFAULT
@@ -827,9 +836,10 @@ $this$collectionSize
 ON_DEVICE_DOCUMENT_ENHANCE_CLOSE
 field
 TOP
+com.ngbautoroad.data.prefs.PrefsManag...
 TIMEOUT
-/%s.properties
 OPTIONAL_MODULE_TEXT_CREATE
+/%s.properties
 status
 Filled.TextIncrease
 OPTIONAL_MODULE_TEXT_INIT
@@ -846,8 +856,8 @@ CancellableContinuation
 Filled.Casino
 map
 thresh_max_stops
-AUTOML_IMAGE_LABELING_CREATE
 max
+AUTOML_IMAGE_LABELING_CREATE
 HEREWEGO_MAPID
 serviceResponseIntentKey
 ဇ ဉဉဇခခဇ
@@ -871,6 +881,7 @@ eventName
 MissingPermission
 onBackStarted
 EDGE
+Filled.FileDownload
 TopLeft
 combine
 card3_border_radius
@@ -897,16 +908,16 @@ androidx.lifecycle.internal.SavedStat...
 LambdaLast
 TFLITE_INTERNAL_ERROR
 Src
-CLOUD
 SubjectDistance
+CLOUD
 peekLong
 REFUSED
 Clear
 UINT32_LIST
 CustomRendered
 onDeviceDocumentDetectionLogEvent
-Inactive
 Round
+Inactive
 ETHERNET
 isWifiRequired
 /0
@@ -963,8 +974,8 @@ components
 com.ngbautoroad.ui.settings.SettingsT...
 /mnt/obb
 URATIONAL
-FACE_DETECTION
 long
+FACE_DETECTION
 PlanarConfiguration
 min
 kotlinx.coroutines.channels.defaultBu...
@@ -980,8 +991,8 @@ Lapa
 GooglePlayServicesErrorDialog
 kotlin.UInt
 Favoritos
-hasResult
 inputImageConstructionLogEvent
+hasResult
 mlkit.quality.technical
 landmarkMode
 DESEMBARQUE
@@ -1009,9 +1020,9 @@ PHONE_PLAN
 thresh_min_dropoff_distance
 snapshot.png
 androidx.profileinstaller.action.INST...
-APP_ASSET
-ON_START
 MOBILE_IA
+ON_START
+APP_ASSET
 KEY_COMPONENT_ACTIVITY_LAUNCHED_KEYS
 android.intent.action.DOWNLOAD_COMPLETE
 filearchive
@@ -1036,6 +1047,7 @@ common
 Ipanema
 pokeByte
 authenticationResultCode
+com.ngbautoroad.ui.history.HistoryTab...
 R$/kWh
 78
 registry
@@ -1044,6 +1056,7 @@ RESOURCE_EXHAUSTED
 mlkit_google_ocr_pipeline
 R$/km
 detectorOptions
+$this$LazyRow
 VisionKit
 င
 debug.layout
@@ -1055,8 +1068,8 @@ com.ngbautoroad.ui.settings.SettingsT...
 base
 dexopt/baseline.profm
 Operacional
-osmdroid.additionalHttpRequestProperty.
 kotlinx.coroutines.bufferedChannel.se...
+osmdroid.additionalHttpRequestProperty.
 modelLanguage
 DELETE_TO_LINE_END
 Filled.CreditCard
@@ -1106,8 +1119,8 @@ msg
 BLOB
 Characters
 eventCount
-Cursor
 float
+Cursor
 SCANNER_AUTO_ZOOM_START
 java.lang.Enum
 ဈ ဈဌ
@@ -1124,9 +1137,9 @@ Galeria
 androidx.core.view.inputmethod.Editor...
 Tabs
 SHOW_AND_FADEOUT
-putObject
 requestUptimeMs
 LTE
+putObject
 INSTALLATION_ID_FIS_GENERATE_AUTH_TOKEN
 configuration
 .font
@@ -1149,11 +1162,11 @@ command
 GPSDestLongitudeRef
 smart_reply
 androidx.activity.result.contract.act...
-Desfazer
 eventTimeMs
+Desfazer
 UNKNOWN_EVENT
-providers
 landscape
+providers
 Surge/Dinâmica
 Ter
 exception
@@ -1176,10 +1189,10 @@ R$/corrida
 ᔄ ᔄᔄᔄခ
 WordBreak.Unspecified
 Ȉ
-UNMETERED_ONLY
 VERY_LOW
-70a975983d454391df9276e0410fff27
+UNMETERED_ONLY
 WATER
+Status
 automlImageLabelingLoadLogEvent
 ဉ ဉ
 androidx.activity.result.contract.act...
@@ -1212,14 +1225,14 @@ MESSAGE
 com.google.common.base.Strings
 WIFI_P2P
 titleMedium
-CUSTOM
 : Л
+CUSTOM
 LocalInputManager
 indrive
 DIA
 $tables
-NLCLASSIFIER_CLIENT_LIBRARY_CLOSE
 mobileSubtype
+NLCLASSIFIER_CLIENT_LIBRARY_CLOSE
 Ativo
 ColorDodge
 AGGREGATED_ON_DEVICE_IMAGE_LABEL_DETE...
@@ -1255,8 +1268,8 @@ ELECTRIC
 LIST
 thresholdViolations
 com.google.android.gms.dynamic.IObjec...
-Lavagem
 kotlin.collections.MutableCollection
+Lavagem
 onDeviceFaceLoadLogEvent
 Em
 toxicityDetectionCreateEvent
@@ -1311,8 +1324,8 @@ MAP
 CommonUtils
 GRANULARITY_FINE
 URI
-CODE_SCANNER_UNAVAILABLE
 valueVector
+CODE_SCANNER_UNAVAILABLE
 manufacturer
 androidx$room$IMultiInstanceInvalidat...
 Revisão
@@ -1324,13 +1337,13 @@ androidx.view.accessibility.Accessibi...
 Style
 Completing
 _resumed
-android.settings.APPLICATION_DETAILS_...
 .tile
+android.settings.APPLICATION_DETAILS_...
 DynamiteLoaderClassLoader.class
 weight_value_per_hour
 overlay_width
-CLOUD_IMAGE_PROPERTIES_CLOSE
 gzip
+CLOUD_IMAGE_PROPERTIES_CLOSE
 FIXED64
 Lab
 onDeviceImageQualityAnalysisCreateLog...
@@ -1339,12 +1352,13 @@ anchor
 FILEPATH
 missingFields
 Km
+ngb_historico_
 OPTIONAL_MODULE_DOCUMENT_CROP_INIT
 SINGLE
 Fechar
 scaled
-UTC
 ExposureProgram
+UTC
 android.intent.action.MEDIA_MOUNTED
 OPTIONAL_MODULE_LANGUAGE_ID_INFERENCE
 paneTitle
@@ -1362,8 +1376,8 @@ ON_DEVICE_BARCODE_DETECT
 Filled.Stop
 ဌ ငင
 N:
-MetadataValueReader
 LocalAutofillTree
+MetadataValueReader
 getHistoricalPressure
 com.google.android.gms.chimera
 NA
@@ -1381,8 +1395,8 @@ serializer
 media
 Valor/KM
 AGGREGATED_ON_DEVICE_FACE_DETECTION
-GRANULARITY_PERMISSION_LEVEL
 Phone
+GRANULARITY_PERMISSION_LEVEL
 fuelPrice
 com.google.android.gms.vision.custom.ica
 isChargingRequired
@@ -1395,19 +1409,18 @@ arrayBaseOffset
 ON_DEVICE_TRANSLATOR_CLOSE
 transport
 ON_DEVICE_TRANSLATOR_LOAD
-pipelineIdentifier
 147258
+pipelineIdentifier
 weight_duration
 acceptedConfigurations
 documentDetectionOptionalModuleLogEvent
 layout_inflater
 Diesel
 aggregatedOnDeviceDocumentEnhancement...
-OPTIONAL_MODULE_IMAGE_CAPTIONING_INFE...
 BLUETOOTH
+OPTIONAL_MODULE_IMAGE_CAPTIONING_INFE...
 On
 LineHeightStyle.Alignment.Proportional
-com.ngbautoroad.service.OverlayServic...
 PT
 sqLiteDatabase
 layoutResult
@@ -1432,10 +1445,11 @@ modelType
 languageCode
 https://api.mapbox.com/v4/
 CLOUD_WEB_SEARCH_CLOSE
+Buscar
 GmsDynamite
 OPTIONAL_MODULE_SMART_REPLY_CREATE
-dbObj
 verticalScrollAxisRange
+dbObj
 targetVector
 Expires
 MAPBOX_ACCESS_TOKEN
@@ -1456,8 +1470,8 @@ ClientTelemetry.API
 objectFieldOffset
 outBundle
 UPPER_RIGHT_CORNER
-stageId
 timestamp
+stageId
 ComponentsConfiguration
 extraLarge
 metric
@@ -1470,15 +1484,15 @@ Seguro
 GarbageCollector
 inputsFormats
 onValueChange
-GPSAltitudeRef
 java.util.ListIterator
+GPSAltitudeRef
 bodySmall
-SUCCESS_CACHE
 Label
+SUCCESS_CACHE
 android.view.accessibility.extra.EXTR...
 overlay_height
-GoogleCertificates
 com.google.android.gms.location.ILoca...
+GoogleCertificates
 lifecycle
 Elétrico
 NewApi
@@ -1508,6 +1522,7 @@ SERVICE_VERSION_UPDATE_REQUIRED
 SceneCaptureType
 downloader
 getDescriptor
+next
 string
 AGGREGATED_ON_DEVICE_IMAGE_QUALITY_AN...
 kotlin.coroutines.jvm.internal.BaseCo...
@@ -1533,13 +1548,14 @@ TREAT_AS_VIEW_TREE_APPEARING
 LibraryVersion
 cloudDocumentTextDetectionLogEvent
 ဈ ဉဉ
-.lck
 interactionSource
 Filled.Delete
+.lck
 https://tiles.openseamap.org/seamark/
 HOURS
 com.ngbautoroad.data.prefs.PrefsManag...
 android.intent.action.VIEW
+$view
 window
 titleLarge
 $this$TextButton
@@ -1554,6 +1570,7 @@ mddDownloadErrorCodes
 RemoteModelLoader
 ခ ခခခခခ
 DialogRedirect
+.csv
 autoManageModelOnBackground
 EmptyCoroutineContext
 onEdit
@@ -1568,7 +1585,6 @@ double
 INSTANCE
 RelatedSoundFile
 event_metadata
-com.ngbautoroad.service.OverlayServic...
 $this$measure
 showsUserInterface
 mRecreateDisplayList
@@ -1579,8 +1595,8 @@ vehicleName
 deleteModelLogEvent
 Minimalista
 direct
-Acessibilidade
 CHAR
+Acessibilidade
 captionBarIgnoringVisibility
 Span
 kotlinx.coroutines.bufferedChannel.ex...
@@ -1590,7 +1606,6 @@ onDeviceTranslationLogEvent
 android.hardware.type.watch
 Recusadas
 internalOpenHelper
-com.ngbautoroad.ui.history.HistoryTab...
 sourceProduct
 reminderDao
 OPTIONAL_MODULE_BARCODE_DETECTION_INF...
@@ -1605,8 +1620,8 @@ indicator
 kotlinx.coroutines.fast.service.loader
 ON_DEVICE_LANGUAGE_IDENTIFICATION_CLOSE
 ScrollToIndex
-completedExpandBuffersAndPauseFlag
 EmojiCompatInitializer
+completedExpandBuffersAndPauseFlag
 KEY_COMPONENT_ACTIVITY_REGISTERED_RCS
 OPTIONAL_MODULE_IMAGE_QUALITY_ANALYSI...
 2
@@ -1637,6 +1652,7 @@ com.google.android.gms.signin.interna...
 COMPLETE
 Trailing
 ON_DEVICE_TRANSLATOR_CREATE
+Filled.SearchOff
 Size.Unspecified
 compose:lazylist:prefetch:compose
 pcampaignid
@@ -1681,8 +1697,9 @@ kotlinx.coroutines.scheduler.resoluti...
 MapTileArea:empty
 FocalLength
 getType
-SUCCEEDED
+Violações
 kotlin.jvm.internal.StringCompanionOb...
+SUCCEEDED
 /dev/block/vold/
 ACTION_CLICK
 ABORTED
@@ -1705,8 +1722,8 @@ osmdroid.mapViewRecycler
 CAMERA1_SOURCE_CANT_START_ERROR
 baseModel
 ACTION_IME_ENTER
-kotlinx.serialization.json.JsonObject
 Strictness.Strict
+kotlinx.serialization.json.JsonObject
 ဇဉ ခဇဌ
 mounted
 com.ngbautoroad.ui.criteria.CriteriaT...
@@ -1732,22 +1749,22 @@ MOBILE_HIPRI
 USHORT
 inefficientWriteStringNoTag
 imageType
-CODE_SCANNER_APP_NAME_UNAVAILABLE
 image
+CODE_SCANNER_APP_NAME_UNAVAILABLE
 com.ngbautoroad.data.prefs.PrefsManag...
 $this$outlineCutout
 Aceitas
 FIXED
 labelsFile
 en
-NonDisposableHandle
 com.google.android.gms.vision.text.Ch...
+NonDisposableHandle
 JobInfoScheduler
 PAGE_UP
 င ညဈခ
 detectedBarcodeFormats
-Dismiss
 com.google.android.gms.common.modulei...
+Dismiss
 END
 ACTION_ACCESSIBILITY_FOCUS
 frame
@@ -1756,17 +1773,18 @@ dims
 SignInCoordinator
 customModelInferenceLogEvent
 imageLabelOptionalModuleLogEvent
-origin
 MapQuest
+origin
 FAILED_PRECONDITION
 maxClientLibraryVersion
 ON_DEVICE_ENTITY_EXTRACTION_LOAD
 content
 random
+isGenerated
 CAMERA_SOURCE
 Number
-AVERAGE
 VPN
+AVERAGE
 com.ngbautoroad.ui.admin.AdminActivityKt
 json
 ZoomToSpanPoint
@@ -1781,8 +1799,8 @@ LINE_START
 getDeclaredMethod
 Filled.GppBad
 Sharpness
-PendingWork
 Middle
+PendingWork
 automlImageLabelingCreateLogEvent
 unauthenticated
 com.ngbautoroad.data.prefs.PrefsManag...
@@ -1810,8 +1828,10 @@ ENUM
 Dom
 com.google.android.clockwork.home.UPD...
 index
+Filled.Warning
 it
 UNDECIDED
+com.ngbautoroad.data.prefs.PrefsManag...
 IndexForKey
 Ready
 columnsMap.values
@@ -1821,6 +1841,7 @@ Map
 MAPQUEST_ACCESS_TOKEN
 set_mock_location_with_callback
 CUSTOM_MODEL_LOAD
+charset
 com.google.android.apps.docs.storage....
 Max
 INTERMEDIATE_STOPS
@@ -1830,8 +1851,8 @@ IMAGE_CAPTIONING
 delegate
 က ငငကက
 CLOUD_FACE_CLOSE
-OPTIONAL_MODULE_NLCLASSIFIER_CREATE
 RIGHT
+OPTIONAL_MODULE_NLCLASSIFIER_CREATE
 com.ngbautoroad.data.prefs.PrefsManag...
 km
 GROUP_LIST
@@ -1853,8 +1874,8 @@ DROPOFF
 com.google.android.gms.location.ILoca...
 com.ngbautoroad.data.prefs.PrefsManag...
 CRITERIA
-ON_DEVICE_DOCUMENT_DETECT_PROCESS
 kotlin.Number
+ON_DEVICE_DOCUMENT_DETECT_PROCESS
 $this$drawWithContent
 Dst
 ms
@@ -1891,31 +1912,31 @@ modelDownloadLogEvent
 baseKey
 pokeByteArray
 DOUBLE_LIST
-COROUTINE_SUSPENDED
 GPSDOP
+COROUTINE_SUSPENDED
 android.widget.Spinner
 resolvedCompositionContext
-kotlin.UByte
 Filled.Layers
+kotlin.UByte
 ᔁ ᔁᔁᔁ
 SELECT_ALL
 LineHeightStyle.Alignment.Top
 MEDIUM_OPTIMIZATION
-pk
 com.google.protobuf.ExtensionSchemaFull
-Divider
+pk
 DIGITAL_INK_SEGMENTATION
-sourceUnit
-com.google.firebase.components:
+Divider
 Filled.Speed
+com.google.firebase.components:
+sourceUnit
 loadDictionaryErrorCode
 contourMode
 MONTH
 createAsync
 SubSecTimeOriginal
 iterator
-freeze
 yMax
+freeze
 java.util.Map
 DOWNLOADING
 /data/misc/profiles/cur/0
@@ -1945,8 +1966,8 @@ RESULT_CANCELED
 activity
 MICROSECONDS
 rw
-INT32
 TransportRuntime.
+INT32
 LocalLifecycleOwner
 Dur.
 ENUM_LIST_PACKED
@@ -1954,13 +1975,13 @@ DELETE
 onDeviceImageCaptioningLoadLogEvent
 ACTION_SCROLL_TO_POSITION
 $this$$receiver
-NO_ERROR
 sp
+NO_ERROR
 rideValue
 email
-RESOURCE
 animator_duration_scale
 kotlin.Enum.Companion
+RESOURCE
 profileinstaller_profileWrittenFor_la...
 င ငငဇငဇင
 ACCELERATION_ALLOWLIST_GET
@@ -1997,8 +2018,8 @@ kotlinx.coroutines.flow.defaultConcur...
 OPTIONAL_MODULE_SMART_REPLY_RELEASE
 STEP_INIT
 FinanceActivity.kt
-LATIN
 clientInfo
+LATIN
 Filled.TextDecrease
 PreventUserInput
 thresh_min_value_per_hour
@@ -2008,12 +2029,12 @@ serviceActionBundleKey
 OPTIONAL_MODULE_BARCODE_DETECTION_REL...
 MULTILINE
 ON_DEVICE_BARCODE_CREATE
-ON_DESTROY
-NANOSECONDS
-changes
 destination
-ON_DEVICE_FACE_MESH_LOAD
+ON_DESTROY
+changes
+NANOSECONDS
 com.google.android.gms
+ON_DEVICE_FACE_MESH_LOAD
 abortCreation
 LocalContext
 serialName
@@ -2032,8 +2053,8 @@ location
 getInstance
 $this$TopAppBar
 Filled.PauseCircle
-NETWORK_UNMETERED
 GPSProcessingMethod
+NETWORK_UNMETERED
 onSubmit
 isAutoImported
 ImageConvertUtils
@@ -2050,16 +2071,16 @@ bodyLarge
 Penha
 refHolder
 deserializer
-onDeviceExplicitContentCreateLogEvent
 ACTION_ARGUMENT_SELECTION_START_INT
+onDeviceExplicitContentCreateLogEvent
 ShowKeyboard
+totalCriteria
 SpatialFrequencyResponse
 UMTS
 ANDROID_FIREBASE
-3b516c344bfb48bb0a7793791a0e5733
 _state
-OPTIONAL_TFLITE_MODULE_INIT_ERROR
 CV_PIXEL_BUFFER_REF
+OPTIONAL_TFLITE_MODULE_INIT_ERROR
 isEnabled
 NOT_CROSSED
 intermediateStops
@@ -2079,8 +2100,8 @@ https://wms.chartbundle.com/tms/v1.0/...
 socMetaBuildId
 blocked_pickup_neighborhoods
 Custom
-CREDIT_CARD
 Ϫ  ဈ ဈᐉϪဈ
+CREDIT_CARD
 DUMMY
 isBold
 android.view.accessibility.extra.DATA...
@@ -2105,15 +2126,15 @@ PERMISSION_DENIED
 kotlinx.serialization.json.pool.size
 NotReady
 LocalHapticFeedback
-TextMotion.Static
 kotlin.jvm.internal.EnumCompanionObject
+TextMotion.Static
 Ganhos
 LineHeightStyle.Trim.Both
 android.widget.TextView
 proto
-cameraSource
-onConfirm
 geofences_with_callback
+onConfirm
+cameraSource
 no_model_name
 CLOUD_SAFE_SEARCH_CLOSE
 Favorito
@@ -2124,8 +2145,9 @@ kotlin.collections.Map.Entry
 FaceAttributesClientBrainEmbedder
 line
 EXPIRED
-failing_client_id
 GPSSatellites
+failing_client_id
+aa8a852a1ab9de2f465400286f3632cc
 Jacarepaguá
 com.machfrankfurt.android
 onPinChanged
@@ -2149,8 +2171,8 @@ JPEGInterchangeFormatLength
 java.util.Iterator
 focusProperties
 ᐉ
-confidence
 https://wms.chartbundle.com/tms/v1.0/...
+confidence
 elapsedUs
 org.robolectric.Robolectric
 pinInput
@@ -2176,9 +2198,9 @@ unimplemented
 layoutDirection
 vehicleType
 requester_app_package
-identifyLanguageConfidenceThreshold
 firstQuartileMs
 CONNECTION_SUSPENDED_DURING_CALL
+identifyLanguageConfidenceThreshold
 optional
 Orientation
 textSelectionRange
@@ -2190,15 +2212,15 @@ MODULE_VERSION
 notnull
 TileStates
 HEREWEGO_APPCODE
-CloudMadeStandardTiles
 contentPadding
+CloudMadeStandardTiles
 displayName
 emoji2.text.DefaultEmojiConfig
 ImageLength
 nlClassifierOptionalModuleLogEvent
 Prefix
-SignInClientImpl
 targetVersion
+SignInClientImpl
 ဉ
 Etanol
 AccountAccessor
@@ -2229,8 +2251,8 @@ handledErrors
 SOURCE_UNKNOWN
 ACTION_SCROLL_FORWARD
 SIGN_IN_REQUIRED
-bufferEndSegment
 costPerKm
+bufferEndSegment
 Filled.ArrowBack
 intervalKm
 eventUptimeMs
@@ -2263,8 +2285,8 @@ locale
 OPTIONAL_MODULE_TEXT_INFERENCE
 firebaseProjectId
 RESULT_DELETE_SKIP_FILE_SUCCESS
-WordBreak.None
 SDK_INT
+WordBreak.None
 AGGREGATED_AUTO_ML_IMAGE_LABELING_INF...
 CLOUD_DOCUMENT_TEXT_CREATE
 osmdroid
@@ -2295,11 +2317,11 @@ com.ngbautoroad.data.prefs.PrefsManag...
 Filled.List
 custom_ica
 com.ngbautoroad.ui.editor.CardEditorA...
-InactivePendingWork
 ON_DEVICE_EXPLICIT_CONTENT_DETECT
-MODEL_NOT_DOWNLOADED
 fixups
 Andaraí
+InactivePendingWork
+MODEL_NOT_DOWNLOADED
 Adicionar
 androidx.profileinstaller.action.SAVE...
 onToggleService
@@ -2313,8 +2335,8 @@ Filled.Check
 write
 StateDescription
 customErrors
-Filled.TrendingUp
 COMBINED
+Filled.TrendingUp
 SensorLeftBorder
 GPSDestLatitudeRef
 period
@@ -2337,15 +2359,15 @@ foreignKeys
 ACTION_SCROLL_IN_DIRECTION
 MaxApertureValue
 GoogleApiAvailability
-LINE_RIGHT
 %s.%sParcelizer
+LINE_RIGHT
 pipeline_jni.cc
 ON_DEVICE_IMAGE_QUALITY_ANALYSIS_CREATE
 CUSTOM_IMAGE_LABELING
 loggingInitializationMs
 estimatedTotal
-ExifIFDPointer
 java.lang.String
+ExifIFDPointer
 AUTOML_IMAGE_LABELING_CLOSE
 kotlinx.serialization.json.JsonUnquot...
 ORANGE
@@ -2358,17 +2380,18 @@ zbai
 HorizontalScrollAxisRange
 zbaj
 zbak
-Unspecified
 zbal
+Unspecified
 zbam
 Default
 resultStatus
+com.ngbautoroad.ui.dashboard.Dashboar...
 zbaa
-BASE_ENTITY_EXTRACTION
 zbab
+BASE_ENTITY_EXTRACTION
 zbac
-GRANULARITY_COARSE
 zbad
+GRANULARITY_COARSE
 zbae
 Desembarque
 zbaf
@@ -2378,8 +2401,8 @@ zbah
 thresh_min_passenger_rating
 startZoomLevel
 AGGREGATED_ON_DEVICE_EXPLICIT_CONTENT...
-entity
 RemoteModel
+entity
 New
 Salvar
 downloadHttpResponseCode
@@ -2398,16 +2421,17 @@ GASOLINE
 mStableInsets
 _cur
 Funilaria/Pintura
+ganhos
 DATA_TYPE_ERROR
 TYPE_UNKNOWN
-StructuralEqualityPolicy
 REAL
+StructuralEqualityPolicy
 imageByteSize
 Versão
 _id
-OPTIONAL_MODULE_NLCLASSIFIER_INIT
-com.ngbautoroad.data.prefs.PrefsManag...
 kotlin.Throwable
+com.ngbautoroad.data.prefs.PrefsManag...
+OPTIONAL_MODULE_NLCLASSIFIER_INIT
 RequestFocus
 parkedWorkersStack
 NO_VALUE
@@ -2415,19 +2439,19 @@ LocationResult
 lightnessEnhancementParam
 kotlin.Annotation
 ON_DEVICE_DOCUMENT_DETECT_LOAD
-SkipSubtreeAndContinueTraversal
 com.google.android.gms.signin.interna...
+SkipSubtreeAndContinueTraversal
 GPSTrackRef
 REDO
 /dev/block/vold
-ᔀ ᔀကကဇကဈ
 WIMAX
-ACCELERATION_ALLOWLIST_FETCH
+ᔀ ᔀကကဇကဈ
 Invalid
+ACCELERATION_ALLOWLIST_FETCH
 buttons
 BITMAP
-MEDIAPIPE_ERROR
 SubjectLocation
+MEDIAPIPE_ERROR
 mandatorySystemGestures
 DigitalZoomRatio
 intrface
@@ -2441,8 +2465,8 @@ initialExtras
 DstOut
 assetFilePath
 benchmarkStatus
-common_google_play_services_sign_in_f...
 fileName
+common_google_play_services_sign_in_f...
 getByte
 accessibility
 mFieldsMask
@@ -2505,8 +2529,8 @@ $dbRef
 existingFields
 Compose:Composer.dispose
 ON_DEVICE_POSE_PRELOAD
-Compose
 Container
+Compose
 maxResults
 java.lang.Short
 tile
@@ -2540,19 +2564,19 @@ onDeviceImageLabelLoadLogEvent
 font_variation_settings
 DpAnimation
 common_google_play_services_network_e...
-common_google_play_services_invalid_a...
 application_build
+common_google_play_services_invalid_a...
 Tudo
 EmojiSupportMatch.None
 personDetectionMode
 Stylus
 ON_DEVICE_SMART_REPLY_DETECT
-SEALED
 https://
+SEALED
 Bangu
 NO_OWNER
-isSuccessful
 SIGNED
+isSuccessful
 PICKUP
 codeScannerScanApiEvent
 ဌ
@@ -2561,8 +2585,8 @@ name_ulr_private
 validationTestResult
 Fab
 DNGVersion
-INTERNAL_ERROR
 indriver
+INTERNAL_ERROR
 captionBar
 GREEN
 generic
@@ -2590,8 +2614,8 @@ ACTION_PAGE_LEFT
 CARD
 LOWER_LEFT_CORNER
 FAILED
-font_ttc_index
 UNKNOWN_MOBILE_SUBTYPE
+font_ttc_index
 options
 hex
 cached_local_model_hash_%1s_%2s
@@ -2604,12 +2628,12 @@ Serviços
 closeHandler
 CustomActions
 ဇ
-$callback
 BUFFERED
+$callback
 Sáb
 approximater
-vision.face
 java.lang.Throwable
+vision.face
 OPTIONAL_MODULE_DOCUMENT_ENHANCE_INIT
 /data/misc/profiles/cur/0/
 effectiveNodeIndex
@@ -2651,6 +2675,7 @@ PENTAX
 ခ
 R$/h
 OPTIONAL_MODULE_NOT_AVAILABLE
+com.ngbautoroad.service.OverlayServic...
 criteriaScores
 Bytes
 kotlinx.serialization.json.JsonLiteral
@@ -2684,14 +2709,14 @@ googleSignInAccount:
 findViewByAccessibilityIdTraversal
 https://a.tile.opentopomap.org/
 https://wms.chartbundle.com/tms/v1.0/...
-Idle
 င
+Idle
 HardLight
 CANCELED
 displayMedium
 common_google_play_services_resolutio...
-loadDurationMs
 kotlin.String.Companion
+loadDurationMs
 padding
 LocalDensity
 process
@@ -2726,9 +2751,9 @@ kotlin.reflect.jvm.internal.Reflectio...
 mounted_ro
 COLLAPSED
 Todos
+cleanedAndPointers
 DEFAULT_TEST_TAG
 HAS_BEARING_ACCURACY_MASK
-cleanedAndPointers
 unspecified
 SFIXED32_LIST
 OPTIONAL_MODULE_DOCUMENT_DETECT_CREATE
@@ -2750,8 +2775,8 @@ TOXICITY_DETECTION
 DROP_LATEST
 _exceptionsHolder
 GNV
-onDevicePoseDetectionLogEvent
 confidenceScore
+onDevicePoseDetectionLogEvent
 RESULT_DESIRED_FORMAT_UNSUPPORTED
 ဂ ခ
 tail
@@ -2764,6 +2789,8 @@ android.os.SystemProperties
 ဌ ဈခခ
 Cyberpunk
 LICENSE_CHECK_FAILED
+overlay_pos_x
+overlay_pos_y
 listener
 BanParcelableUsage
 createWorkChain
@@ -2790,8 +2817,8 @@ com.ngbautoroad.data.prefs.PrefsManag...
 Role
 ON_DEVICE_DOCUMENT_ENHANCE_PROCESS
 ngb_finance_db
-ON_DEVICE_LANGUAGE_IDENTIFICATION_DETECT
 java.lang.annotation.Annotation
+ON_DEVICE_LANGUAGE_IDENTIFICATION_DETECT
 ACCESSORIES
 ဉ ဉဉဉ
 font_weight
@@ -2806,13 +2833,13 @@ SubjectArea
 Configurações
 ProfileInstaller
 Temático
-unusedTag
 com.google.protobuf.GeneratedMessage
+unusedTag
 java.lang.Boolean
 maxImages
 Semana
-owner
 GSM
+owner
 MlKitLegacyMigration
 ExifInterface
 com.google.android.gms.common.telemet...
@@ -2831,11 +2858,10 @@ androidx.view.accessibility.Accessibi...
 REMOTE_MODEL_LOADER_LOADS_NO_MODEL
 action
 rideDuration
-$this$keyframes
 liters
 RESOLUTION_REQUIRED
-CUSTOM_OBJECT_DETECTION
 Contrast
+CUSTOM_OBJECT_DETECTION
 sourceExtensionJsonProto3
 applicationContext
 getResId
@@ -2873,8 +2899,8 @@ $this$null
 KEY_COMPONENT_ACTIVITY_PENDING_RESULT
 CAMERA1_SOURCE_NO_SUITABLE_FPS_ERROR
 zoom_level
-ContinueTraversal
 mVisibleInsets
+ContinueTraversal
 find
 Build
 onActivate
@@ -2886,6 +2912,7 @@ AUTO
 Descrição
 SCANNER_AUTO_ZOOM_FIRST_ATTEMPT
 ᔄ ᔄᔄᔄ
+com.ngbautoroad.ui.dashboard.Dashboar...
 true
 SSHORT
 com.google.android.gms.mlkit_ocr_japa...
@@ -2896,6 +2923,7 @@ OPTIONAL_MODULE_SMART_REPLY_INIT
 com.ngbautoroad.ui.finance.FinanceAct...
 sendersAndCloseStatus
 asyncTraceEnd
+scoreBreakdown
 TOP_CENTER
 systemBarsIgnoringVisibility
 STARTED
@@ -2913,6 +2941,7 @@ com.ngbautoroad.ui.criteria.CriteriaT...
 androidx.datastore.preferences.protob...
 Completed
 callback
+UNINITIALIZED
 Лᐉ
 writer
 ACTION_PASTE
@@ -2945,16 +2974,16 @@ zbK
 zbJ
 zbM
 zbL
-ᐉ ဇဉဉ: : ဉင
 zbO
+ᐉ ဇဉဉ: : ဉင
 zbN
 zbQ
 zbP
 zbS
 zbR
 zbU
-OPTIONAL_MODULE_SMART_REPLY_INFERENCE
 zbT
+OPTIONAL_MODULE_SMART_REPLY_INFERENCE
 zbW
 zbV
 zbY
@@ -2982,8 +3011,8 @@ zbp
 CLOUD_TEXT_DETECT
 zbs
 zbr
-onDeviceFaceMeshCreateLogEvent
 zbu
+onDeviceFaceMeshCreateLogEvent
 zbt
 zbw
 zbv
@@ -3033,8 +3062,8 @@ FontFamily.Default
 $
 nativeCanvas
 getAccessibilityViewId
-OPTIONAL_MODULE_IMAGE_CAPTIONING_CREATE
 kotlinx.coroutines.io.parallelism
+OPTIONAL_MODULE_IMAGE_CAPTIONING_CREATE
 AGGREGATED_ON_DEVICE_IMAGE_CAPTIONING...
 ON_DEVICE_SEGMENTATION_CREATE
 collection
@@ -3045,6 +3074,7 @@ tile_row
 ETHANOL
 GainControl
 SMART_REPLY
+com.ngbautoroad.ui.dashboard.Dashboar...
 androidx.lifecycle.internal.SavedStat...
 osmdroid.tileFileSystemMaxQueueSize
 expires
@@ -3057,11 +3087,10 @@ Empty
 onBackPressedCallback
 Câmera/Dashcam
 AGGREGATED_ON_DEVICE_SEGMENTATION
-1e209ceece408c0d328554c226cd9b18
 android.view.accessibility.extra.EXTR...
 UNRECOGNIZED
-SetProgress
 use_safe_parcelable_in_intents
+SetProgress
 DELETE_NEXT_WORD
 osmdroid.tileDownloadMaxQueueSize
 PassThroughCoarseClassifier
@@ -3084,8 +3113,9 @@ zip
 application/json
 Aval.
 IDEN
-LEFT_CHAR
+com.ngbautoroad.ui.history.HistoryTab...
 java.util.Set
+LEFT_CHAR
 readIfAbsent
 Suffix
 Switch
@@ -3093,11 +3123,12 @@ Duração
 result_code
 UNMETERED_OR_DAILY
 DELETE_SKIP_FILE
-onDeviceImageLabelCreateLogEvent
 androidx.compose.ui.semantics.id
+onDeviceImageLabelCreateLogEvent
 market://details
 createFromFamiliesWithDefault
 ActivityResultRegistry
+auto_import_earnings
 DashboardTab.kt
 isModelUpdateEnabled
 Clip
@@ -3145,13 +3176,14 @@ familyName
 levelId
 progressBarRangeInfo
 com.google.android.gms.mlkit_ocr_deva...
-from
+Limpar
 AUTOML_IMAGE_LABELING_RUN
+from
 android.permission.POST_NOTIFICATIONS
 onTouchEvent
 Strategy.Balanced
-autoManageModelOnLowMemory
 timestamp_ms
+autoManageModelOnLowMemory
 decoder
 earningDao
 textDetectionOptions
@@ -3178,8 +3210,8 @@ TOXICITY_DETECTION_LOAD_EVENT
 ᐉ ခ
 ACTION_CUT
 $this$applyTonalElevation
-ဉ
 kotlin.Byte
+ဉ
 network
 bufferEnd
 array
@@ -3198,12 +3230,11 @@ Serviço
 TestTag
 resources
 Filled.Settings
-REMOTE_EXCEPTION
 int
+REMOTE_EXCEPTION
 stages
-com.ngbautoroad.ui.history.HistoryTab...
-င ဈငငခ
 customLocalModelOptions
+င ဈငငခ
 ဌ ဌဌခဇ
 imageCaptioningOptionalModuleLogEvent
 com.google.android.gms.vision.Depende...
@@ -3216,8 +3247,8 @@ resolution
 score
 $this$LazyColumn
 clientType
-com.google.app.id
 licensePlate
+com.google.app.id
 R$%.2f
 androidx.view.accessibility.Accessibi...
 getUncaughtExceptionPreHandler
@@ -3229,6 +3260,7 @@ isColdCall
 AndroidOwner:onTouch
 LEFT
 OPTIONAL_MODULE_CUSTOM_IMAGE_LABELING...
+receiveCatching
 downloading_model_type_%s
 onBackProgressed
 ON_DEVICE_SEGMENTATION_LOAD
@@ -3245,8 +3277,8 @@ onDeviceSmartReplyLogEvent
 android.settings.action.MANAGE_OVERLA...
 JPEG
 android.settings.ACCESSIBILITY_SETTINGS
-AUTOML_IMAGE_LABELING
 ContentOrLtr
+AUTOML_IMAGE_LABELING
 onCancel
 com.ngbautoroad.service.OverlayService
 EmojiCompat.EmojiCompatInitializer.run
@@ -3265,8 +3297,8 @@ Initial
 maxSsbo
 acc
 Padrão
-getName
 Email
+getName
 ImageUniqueID
 androidx.profileinstaller.action.SKIP...
 classificationConfidence
@@ -3316,6 +3348,7 @@ showBorder
 filesystem
 ACTION_DRAG_DROP
 Offset.Unspecified
+com.ngbautoroad.data.prefs.PrefsManag...
 ImeAction
 downloadStatus
 ROOM
@@ -3338,6 +3371,7 @@ totalInitializationMs
 eventType
 CUSTOM_OBJECT_CREATE
 putFloat
+com.ngbautoroad.ui.finance.FinanceAct...
 dynamiteLoader
 insertIndex
 FLOA
@@ -3405,8 +3439,8 @@ StorageUtils
 MagnifierPositionInRoot
 INSTALLATION_ID_INIT
 expense
-unit
 java.util.List
+unit
 Permissões
 imeAnimationTarget
 kotlin.Int
@@ -3441,13 +3475,12 @@ context_id
 SLONG
 until
 xMax
-com.ngbautoroad.ui.dashboard.Dashboar...
 Main
 reason
 CLOUD_LANDMARK_CLOSE
 င ငငဇခ
-tableName
 FabPosition.End
+tableName
 GoogleApiHandler
 androidx.datastore.preferences.protob...
 ဈ ဌဇင
@@ -3480,7 +3513,6 @@ visualTransformation
 kotlin.collections.ListIterator
 GROUP
 GPSLatitudeRef
-fe18f5ac88155346e1f5d2180c3a1203
 putByte
 /proc/
 ACTION_SELECT
@@ -3490,8 +3522,8 @@ backgroundColor
 logRequest
 autoWhiteBalanceEnabled
 blockingTasksInBuffer
-onDeviceDocumentEnhancementCreateLogE...
 sessionId
+onDeviceDocumentEnhancementCreateLogE...
 kotlin.Char
 com.ngbautoroad.ui.admin.AdminActivit...
 SrcOver
@@ -3540,8 +3572,8 @@ $queryInterceptorProgram
 Dispatchers.Main
 TraversalIndex
 collectionInfo
-Cancelled
 R$/KM
+Cancelled
 notify_manager
 getEmptyRegistry
 callbackName
@@ -3556,11 +3588,12 @@ Imbuí
 appVersion
 aborted
 _isCompleted
-.sp
 updateDownloadConditions
+.sp
 BOTTOM
 aggregatedOnDeviceFaceDetectionLogEvent
 ENTITY_EXTRACTION
+Confiança
 ACTION_ARGUMENT_SELECTION_END_INT
 င ဈ
 connectivity
@@ -3570,12 +3603,13 @@ ConnectionStatusConfig
 inputState
 com.ngbautoroad.ui.admin.AdminActivit...
 SINT64_LIST
-OPTIONAL_MODULE_TEXT_RELEASE
 SFIXED64
+OPTIONAL_MODULE_TEXT_RELEASE
 com.google.android.datatransport.events
 ဉ ဈ
 ဈ ခ
 Darken
+com.ngbautoroad.data.prefs.PrefsManag...
 .jpeg
 .png
 ConnectionTracker
@@ -3595,15 +3629,14 @@ com.ngbautoroad.ui.editor.CustomCardL...
 tappableElementIgnoringVisibility
 media_projection
 ON_DEVICE_POSE_INFERENCE
-com.ngbautoroad.ui.dashboard.Dashboar...
 requestedPreviewHeight
 DELETE_FROM_LINE_START
 android.permission.ACCESS_FINE_LOCATION
 buildLevel
 AnimateToGeoPoint
 mContentInsets
-resuming_sender
 AerialWithLabels
+resuming_sender
 ဌ ငဈ
 ENUM_LIST
 java.util.Map$Entry
@@ -3635,14 +3668,16 @@ nauticalMile
 keyboardActions
 HAS_VERTICAL_ACCURACY_MASK
 android.view.accessibility.action.ARG...
-package
+$params
 R$/Litro
+package
 https://auth.cloudmade.com/token/
 putInt
 updateEnabledCallbacks
 ဈ ဈЛခ
 inferenceCommonLogEvent
 FontFamily.SansSerif
+Data/Hora
 ON_DEVICE_DOCUMENT_CROP_CLOSE
 automlImageLabelingInferenceLogEvent
 ဉ င
@@ -3652,9 +3687,10 @@ nonContourDetectedFaces
 editableText
 com.ngbautoroad.ui.settings.SettingsT...
 com.google.android.gms.dynamite.descr...
-CLOSED_EMPTY
 kotlin.collections.Iterator
+CLOSED_EMPTY
 SecureOn
+540e7e93d3ccda1c729909a8997e3c29
 job
 com.ngbautoroad.data.prefs.PrefsManag...
 com.ngbautoroad.ui.admin.AdminActivit...
@@ -3665,8 +3701,8 @@ SupportSQLite
 PageRight
 $bitmap
 confirmButton
-OPTIONAL_MODULE_IMAGE_LABELING_RELEASE
 INT
+OPTIONAL_MODULE_IMAGE_LABELING_RELEASE
 SetCenterPoint
 onNameChange
 database
@@ -3692,14 +3728,14 @@ WindowInsetsCompat
 Spinal
 com.ngbautoroad.ui.card.CardTabKt$Car...
 getX
-getY
 INT32_LIST
+getY
 inline
 android_id
 CLOUD_FACE_CREATE
-Filtros
 OPTIONAL_MODULE_BARCODE_DETECTION_INF...
 com.ngbautoroad.data.prefs.PrefsManag...
+criteriaUsed
 MODEL_FORMAT_INVALID
 /mnt/sdcard
 OPTIONAL_MODULE_CUSTOM_IMAGE_LABELING...
@@ -3713,6 +3749,7 @@ cloudImageLabelDetectionLogEvent
 callingSource
 kotlinx.serialization.json.JsonElement
 chartbundle.com
+1c649a5976f7dd71ddd7800b5074210a
 SHOULD_BUFFER
 TD_SCDMA
 traceCounter
@@ -3721,6 +3758,7 @@ canceled
 kotlin.Unit
 MODEL_INFO_DOWNLOAD_UNSUCCESSFUL_HTTP...
 DpOffset.Unspecified
+71679b20670b4e27f78d699438700ba3
 ContentDescription
 fieldType
 com.google.android.gms.vision.text.ml...
@@ -3730,15 +3768,15 @@ Theme.Dialog.Alert
 icon
 java.
 aerial.maps.cit.api.here.com
-CODE_SCANNER_PIPELINE_INITIALIZATION_...
 GmsClientSupervisor
+CODE_SCANNER_PIPELINE_INITIALIZATION_...
 com.google.android.gms.mlkit_quality_...
 RIGHT_CHAR
 nlclassifier
 Selected
-seq
 http://openptmap.org/tiles/
 androidx.compose.text.SpanStyle
+seq
 completion
 LINE_END
 set
@@ -3773,12 +3811,13 @@ imageWidth
 Failed
 preferences_
 Color
-com.google.android.gms.mlkit_quality_...
 ဉ ᐉဇဈ
+com.google.android.gms.mlkit_quality_...
 SELECT_END
 androidx.datastore.preferences.protob...
 RectangleShape
 ShowTextSubstitution
+com.ngbautoroad.data.prefs.PrefsManag...
 card2_name
 ACTION_LONG_CLICK
 SRATIONAL
@@ -3786,17 +3825,17 @@ INSURANCE
 active_card_slot
 GPRS
 getFloat
-androidx.test.services.storage.runfiles
 putLong
+androidx.test.services.storage.runfiles
 ON_DEVICE_OBJECT_LOAD
 င ညခ
+corridas
 ခ ခ
 Neighbourhood
 Hue
 intervalDays
 vision.custom.ica
 false
-com.ngbautoroad.ui.history.HistoryTab...
 common_google_play_services_network_e...
 SubSecTimeDigitized
 workerCtl
@@ -3829,11 +3868,12 @@ THROTTLE_BACKGROUND
 AGGREGATED_ON_DEVICE_BARCODE_DETECTION
 params
 isFaceMeshEnabled
-featureLevel
 gpuInfo
+featureLevel
 ON_DEVICE_ENTITY_EXTRACTION_CREATE
 systemInfo
 getInt
+com.ngbautoroad.service.OverlayServic...
 OPTIONAL_MODULE_FACE_DETECTION_CREATE
 obfuscatedIdentifier
 com.ngbautoroad.data.prefs.PrefsManag...
@@ -3842,23 +3882,24 @@ Cmyk
 hts/frbslgigp.ogepscmv/ieo/eaybtho
 intrinsicMeasurable
 extras
+Filled.Favorite
 Gastos
 plate
-Filled.Favorite
 PASSENGER_RATING
 ACTION_POINTER_INDEX_SHIFT
 ON_DEVICE_SMART_REPLY_LOAD
 cycle
+parentExpenseId
 Botafogo
 bundle
-table
 OPTIONAL_MODULE_DOCUMENT_DETECT_INIT
 ON_DEVICE_DOCUMENT_CROP_LOAD
+table
 Cabula
 composer
 change
-င
 contourDetectedFaces
+င
 android.widget.ScrollView
 THUMB
 ON_DEVICE_EXPLICIT_CONTENT_LOAD
@@ -3872,12 +3913,12 @@ soc
 ᔄ ᔁ
 suffix
 CloudMadeSmallTiles
+_size
 RemoteModelFileManager
 င ဈခခ
-_size
 download
-ဉ ကဇᐉ
 avgMs
+ဉ ကဇᐉ
 TextFieldInputState
 ဈည ဉ
 NO_NETWORK_CONNECTION
@@ -3886,8 +3927,8 @@ com.google.android.gms.signin.interna...
 pokeInt
 %s.BlazeGenerated%sLoader
 streamModeSmoothingRatio
-NULL
 TOO_LATE_TO_CANCEL
+NULL
 level
 .preferences_pb
 com.google.protobuf.UnknownFieldSetSc...
@@ -3897,8 +3938,8 @@ currentAmount
 ON_DEVICE_DI_CREATE
 onDeviceFaceMeshLoadLogEvent
 Droid
-UNFINISHED
 ModelFileHelper
+UNFINISHED
 MOBILE_FOTA
 CardEditorActivity.kt
 mccMnc
@@ -3915,11 +3956,11 @@ SupportSQLiteLock
 receivers
 DASHBOARD
 ACTION_SCROLL_LEFT
-YV12
 backend_name
+YV12
 Mês
-HIGHEST
 kotlin.Comparable
+HIGHEST
 Height
 groupSlotIndex
 TILES_OK
@@ -3945,9 +3986,9 @@ google_location_accuracy_enabled
 TRANSIENT_ERROR
 Artist
 EditableText
-android.permission.INTERACT_ACROSS_USERS
 com.google.android.gms.common.interna...
 vehicle_config
+android.permission.INTERACT_ACROSS_USERS
 SEMANA
 .Companion
 Overlay
@@ -3961,13 +4002,13 @@ invoker
 mlkit.smartreply
 ACTION_COLLAPSE
 CONDITION_FALSE
-com.ngbautoroad.ui.dashboard.Dashboar...
 OIL_CHANGE
 ExposureBiasValue
 primitive
 Canceladas
 com.google.android.gms.vision.ica
 ON_DEVICE_IMAGE_CAPTIONING_MODEL_DOWN...
+com.ngbautoroad.service.OverlayServic...
 ASC
 current
 RTT
@@ -3980,15 +4021,15 @@ thresh_max_duration
 osmdroid.animationSpeedShort
 kotlin.Float
 store
-contentColor
 com.ngbautoroad.ui.criteria.CriteriaT...
+contentColor
 vehicleConfigDao
 com.ngbautoroad.data.prefs.PrefsManag...
 AGGREGATED_ON_DEVICE_OBJECT_INFERENCE
 INSTALLATION_ID_REFRESH_TEMPORARY_TOKEN
 overlay_channel
-com.ngbautoroad.data.prefs.PrefsManag...
 _prev
+com.ngbautoroad.data.prefs.PrefsManag...
 Metas
 SINT32_LIST_PACKED
 ဉ ဈငဇဌ
@@ -4003,8 +4044,8 @@ com.ngbautoroad.data.prefs.PrefsManag...
 UNKNOWN_FORMAT
 networkConnectionInfo
 com.ngbautoroad.ui.settings.SettingsT...
-Qua
 MOBILE_SUPL
+Qua
 BROKEN
 Hyphens.Unspecified
 Qui
@@ -4042,8 +4083,8 @@ AGGREGATED_ON_DEVICE_FACE_MESH_DETECTION
 documentCornerConfidence
 CUSTOM_IMAGE_LABEL_CLOSE
 androidx.core.app.NotificationCompat$...
-ဉ ဇᐉဉ
 DELETE_PREV_WORD
+ဉ ဇᐉဉ
 getAttributionTag
 underlyingInteractionSource
 initialDownloadConditions
@@ -4091,8 +4132,8 @@ logEvent
 Borda
 Modelo
 ခ င
-ခ ဇည
 EVDO_0
+ခ ဇည
 Next
 င င
 Package
@@ -4130,8 +4171,8 @@ ON_RESUME
 BASE_TRANSLATE
 NEXT_PARAGRAPH
 inject_location_with_callback
-API_VERSION_UPDATE_REQUIRED
 clientLibraryName
+API_VERSION_UPDATE_REQUIRED
 asyncTraceBegin
 JpgFromRaw
 InteroperabilityIFDPointer
@@ -4145,16 +4186,16 @@ Inherit
 EmojiCompat.FontRequestEmojiCompatCon...
 SYNCHRONIZED
 PageUp
-RESULT_UNSUPPORTED_ART_VERSION
 innerTextField
+RESULT_UNSUPPORTED_ART_VERSION
 ACTION_COPY
 inputLength
 controlState
 Tijuca
 Active
+kotlin.collections.Iterable
 OPTIONAL_MODULE_DOCUMENT_DETECT_PROCESS
 com.ngbautoroad.ui.criteria.CriteriaT...
-kotlin.collections.Iterable
 scrollState
 2024.01.00
 CustomModelLoader
@@ -4162,8 +4203,8 @@ Filled.Remove
 OPERATIONAL
 endVelocityVector
 favorites
-com.ngbautoroad.ui.map.ZoneMapActivit...
 android.
+com.ngbautoroad.ui.map.ZoneMapActivit...
 CameraSettingsIFDPointer
 ScrollBy
 Screen
@@ -4286,6 +4327,7 @@ Marking attr:layout_insetEdge:2130772001 used because it matches string pool con
 Marking attr:layout_keyline:2130772002 used because it matches string pool constant layout
 Marking string:base:2131296261 used because it matches string pool constant base
 Marking string:base_nl:2131296262 used because it matches string pool constant base
+Marking drawable:next:2130968616 used because it matches string pool constant next
 Marking color:notification_action_color_filter:2130837519 used because it matches string pool constant notification
 Marking color:notification_icon_bg_color:2130837520 used because it matches string pool constant notification
 Marking dimen:notification_action_icon_size:2130903047 used because it matches string pool constant notification

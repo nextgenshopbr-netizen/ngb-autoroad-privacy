@@ -2,6 +2,8 @@ package com.ngbautoroad.data.db
 
 import android.content.Context
 import androidx.room.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 // === ENTITIES ===
@@ -21,7 +23,10 @@ data class ExpenseEntity(
     val liters: Double? = null,
     val pricePerLiter: Double? = null,
     val odometer: Int? = null,
-    val fuelType: String? = null
+    val fuelType: String? = null,
+    // v3.0 — item 3.1: controle de instâncias geradas de recorrência
+    val parentExpenseId: Long = 0,         // ID do gasto recorrente pai (0 = original)
+    val isGenerated: Boolean = false       // Se foi gerado automaticamente pela recorrência
 )
 
 @Entity(tableName = "earnings")
@@ -37,7 +42,9 @@ data class EarningEntity(
     val date: Long = System.currentTimeMillis(),
     val description: String = "",
     val period: String = "DIA",            // DIA, SEMANA, MES
-    val isAutoImported: Boolean = false    // Se foi importado automaticamente
+    val isAutoImported: Boolean = false,   // Se foi importado automaticamente (item 3.2)
+    // v3.0 — item 3.3: DRE / relatório
+    val rideHistoryId: Long = 0            // ID do histórico de corrida associado (se auto-importado)
 )
 
 @Entity(tableName = "maintenance_reminders")
@@ -80,12 +87,15 @@ data class FinancialGoalEntity(
     val createdAt: Long = System.currentTimeMillis()
 )
 
-// === DAO ===
+// === DAOs ===
 
 @Dao
 interface ExpenseDao {
     @Insert
     suspend fun insert(expense: ExpenseEntity): Long
+
+    @Insert
+    suspend fun insertAll(expenses: List<ExpenseEntity>)
 
     @Update
     suspend fun update(expense: ExpenseEntity)
@@ -108,11 +118,22 @@ interface ExpenseDao {
     @Query("SELECT SUM(amount) FROM expenses WHERE category = :category AND date >= :startDate AND date <= :endDate")
     fun getTotalByCategory(category: String, startDate: Long, endDate: Long): Flow<Double?>
 
-    @Query("SELECT * FROM expenses WHERE isRecurring = 1")
+    @Query("SELECT * FROM expenses WHERE isRecurring = 1 AND isGenerated = 0")
     fun getRecurringExpenses(): Flow<List<ExpenseEntity>>
+
+    @Query("SELECT * FROM expenses WHERE isRecurring = 1 AND isGenerated = 0")
+    suspend fun getRecurringExpensesSync(): List<ExpenseEntity>
 
     @Query("SELECT SUM(amount) FROM expenses WHERE isRecurring = 1")
     fun getTotalRecurring(): Flow<Double?>
+
+    // Para verificar se já existe instância gerada para um dia específico (evitar duplicatas)
+    @Query("SELECT COUNT(*) FROM expenses WHERE parentExpenseId = :parentId AND date >= :dayStart AND date <= :dayEnd")
+    suspend fun countGeneratedForDay(parentId: Long, dayStart: Long, dayEnd: Long): Int
+
+    // Relatório DRE (item 3.3)
+    @Query("SELECT category, SUM(amount) as total FROM expenses WHERE date >= :startDate AND date <= :endDate GROUP BY category ORDER BY total DESC")
+    suspend fun getExpenseSummaryByCategory(startDate: Long, endDate: Long): List<CategorySummary>
 }
 
 @Dao
@@ -138,6 +159,9 @@ interface EarningDao {
     @Query("SELECT SUM(amount + tips + bonus) FROM earnings WHERE date >= :startDate AND date <= :endDate")
     fun getTotalEarnings(startDate: Long, endDate: Long): Flow<Double?>
 
+    @Query("SELECT SUM(amount + tips + bonus) FROM earnings WHERE date >= :startDate AND date <= :endDate")
+    suspend fun getTotalEarningsSync(startDate: Long, endDate: Long): Double?
+
     @Query("SELECT SUM(distance) FROM earnings WHERE date >= :startDate AND date <= :endDate")
     fun getTotalDistance(startDate: Long, endDate: Long): Flow<Double?>
 
@@ -147,8 +171,23 @@ interface EarningDao {
     @Query("SELECT SUM(ridesCount) FROM earnings WHERE date >= :startDate AND date <= :endDate")
     fun getTotalRides(startDate: Long, endDate: Long): Flow<Int?>
 
+    @Query("SELECT SUM(ridesCount) FROM earnings WHERE date >= :startDate AND date <= :endDate")
+    suspend fun getTotalRidesSync(startDate: Long, endDate: Long): Int?
+
     @Query("SELECT * FROM earnings WHERE id = :id")
     suspend fun getById(id: Long): EarningEntity?
+
+    // Relatório por plataforma (item 3.3)
+    @Query("SELECT platform, SUM(amount + tips + bonus) as total, SUM(ridesCount) as rides, SUM(distance) as km FROM earnings WHERE date >= :startDate AND date <= :endDate GROUP BY platform ORDER BY total DESC")
+    suspend fun getEarningsByPlatformSummary(startDate: Long, endDate: Long): List<PlatformSummary>
+
+    // Verificar se corrida já foi importada (evitar duplicatas - item 2.2)
+    @Query("SELECT COUNT(*) FROM earnings WHERE rideHistoryId = :rideId AND isAutoImported = 1")
+    suspend fun countAutoImportedByRideId(rideId: Long): Int
+
+    // Ganhos do dia para dashboard (item 3.4)
+    @Query("SELECT SUM(amount + tips + bonus) FROM earnings WHERE date >= :dayStart AND date <= :dayEnd")
+    suspend fun getTodayEarnings(dayStart: Long, dayEnd: Long): Double?
 }
 
 @Dao
@@ -199,6 +238,20 @@ interface FinancialGoalDao {
     fun getAllGoals(): Flow<List<FinancialGoalEntity>>
 }
 
+// === Resultado de queries de relatório ===
+
+data class CategorySummary(
+    val category: String,
+    val total: Double
+)
+
+data class PlatformSummary(
+    val platform: String,
+    val total: Double,
+    val rides: Int,
+    val km: Double
+)
+
 // === DATABASE ===
 
 @Database(
@@ -209,7 +262,7 @@ interface FinancialGoalDao {
         VehicleConfigEntity::class,
         FinancialGoalEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class FinanceDatabase : RoomDatabase() {
@@ -223,15 +276,27 @@ abstract class FinanceDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: FinanceDatabase? = null
 
+        // Migração v2 → v3: adicionar novos campos sem destruir dados (item 6.1)
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE expenses ADD COLUMN parentExpenseId INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE expenses ADD COLUMN isGenerated INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE earnings ADD COLUMN rideHistoryId INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): FinanceDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     FinanceDatabase::class.java,
                     "ngb_finance_db"
-                ).fallbackToDestructiveMigration()
-                 .allowMainThreadQueries()
-                 .build()
+                )
+                .addMigrations(MIGRATION_2_3)
+                // Fallback apenas para migração de versão 1 (primeira instalação antiga)
+                .fallbackToDestructiveMigrationFrom(1)
+                // Removido allowMainThreadQueries — todas as queries são suspend/Flow (item 6.2)
+                .build()
                 INSTANCE = instance
                 instance
             }

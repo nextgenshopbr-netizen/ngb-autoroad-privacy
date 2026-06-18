@@ -39,16 +39,16 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
   @Override
   @NonNull
   protected SupportSQLiteOpenHelper createOpenHelper(@NonNull final DatabaseConfiguration config) {
-    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(2) {
+    final SupportSQLiteOpenHelper.Callback _openCallback = new RoomOpenHelper(config, new RoomOpenHelper.Delegate(3) {
       @Override
       public void createAllTables(@NonNull final SupportSQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS `expenses` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `category` TEXT NOT NULL, `amount` REAL NOT NULL, `description` TEXT NOT NULL, `date` INTEGER NOT NULL, `isRecurring` INTEGER NOT NULL, `recurringDay` INTEGER NOT NULL, `recurringDays` TEXT NOT NULL, `recurringDuration` INTEGER NOT NULL, `recurringEndDate` INTEGER NOT NULL, `liters` REAL, `pricePerLiter` REAL, `odometer` INTEGER, `fuelType` TEXT)");
-        db.execSQL("CREATE TABLE IF NOT EXISTS `earnings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `platform` TEXT NOT NULL, `amount` REAL NOT NULL, `tips` REAL NOT NULL, `bonus` REAL NOT NULL, `distance` REAL NOT NULL, `duration` INTEGER NOT NULL, `ridesCount` INTEGER NOT NULL, `date` INTEGER NOT NULL, `description` TEXT NOT NULL, `period` TEXT NOT NULL, `isAutoImported` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `expenses` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `category` TEXT NOT NULL, `amount` REAL NOT NULL, `description` TEXT NOT NULL, `date` INTEGER NOT NULL, `isRecurring` INTEGER NOT NULL, `recurringDay` INTEGER NOT NULL, `recurringDays` TEXT NOT NULL, `recurringDuration` INTEGER NOT NULL, `recurringEndDate` INTEGER NOT NULL, `liters` REAL, `pricePerLiter` REAL, `odometer` INTEGER, `fuelType` TEXT, `parentExpenseId` INTEGER NOT NULL, `isGenerated` INTEGER NOT NULL)");
+        db.execSQL("CREATE TABLE IF NOT EXISTS `earnings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `platform` TEXT NOT NULL, `amount` REAL NOT NULL, `tips` REAL NOT NULL, `bonus` REAL NOT NULL, `distance` REAL NOT NULL, `duration` INTEGER NOT NULL, `ridesCount` INTEGER NOT NULL, `date` INTEGER NOT NULL, `description` TEXT NOT NULL, `period` TEXT NOT NULL, `isAutoImported` INTEGER NOT NULL, `rideHistoryId` INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `maintenance_reminders` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `category` TEXT NOT NULL, `nextDate` INTEGER NOT NULL, `nextOdometer` INTEGER NOT NULL, `intervalDays` INTEGER NOT NULL, `intervalKm` INTEGER NOT NULL, `isActive` INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS `vehicle_config` (`id` INTEGER NOT NULL, `vehicleType` TEXT NOT NULL, `fuelType` TEXT NOT NULL, `brand` TEXT NOT NULL, `model` TEXT NOT NULL, `year` INTEGER NOT NULL, `plate` TEXT NOT NULL, `averageConsumption` REAL NOT NULL, `fuelPrice` REAL NOT NULL, `costPerKm` REAL NOT NULL, `monthlyFixedCosts` REAL NOT NULL, `isOwned` INTEGER NOT NULL, `rentalCost` REAL NOT NULL, PRIMARY KEY(`id`))");
         db.execSQL("CREATE TABLE IF NOT EXISTS `financial_goals` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `title` TEXT NOT NULL, `targetAmount` REAL NOT NULL, `currentAmount` REAL NOT NULL, `period` TEXT NOT NULL, `isActive` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL)");
         db.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)");
-        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '70a975983d454391df9276e0410fff27')");
+        db.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'aa8a852a1ab9de2f465400286f3632cc')");
       }
 
       @Override
@@ -101,7 +101,7 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
       @NonNull
       public RoomOpenHelper.ValidationResult onValidateSchema(
           @NonNull final SupportSQLiteDatabase db) {
-        final HashMap<String, TableInfo.Column> _columnsExpenses = new HashMap<String, TableInfo.Column>(14);
+        final HashMap<String, TableInfo.Column> _columnsExpenses = new HashMap<String, TableInfo.Column>(16);
         _columnsExpenses.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsExpenses.put("category", new TableInfo.Column("category", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsExpenses.put("amount", new TableInfo.Column("amount", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -116,6 +116,8 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
         _columnsExpenses.put("pricePerLiter", new TableInfo.Column("pricePerLiter", "REAL", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsExpenses.put("odometer", new TableInfo.Column("odometer", "INTEGER", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsExpenses.put("fuelType", new TableInfo.Column("fuelType", "TEXT", false, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsExpenses.put("parentExpenseId", new TableInfo.Column("parentExpenseId", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsExpenses.put("isGenerated", new TableInfo.Column("isGenerated", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysExpenses = new HashSet<TableInfo.ForeignKey>(0);
         final HashSet<TableInfo.Index> _indicesExpenses = new HashSet<TableInfo.Index>(0);
         final TableInfo _infoExpenses = new TableInfo("expenses", _columnsExpenses, _foreignKeysExpenses, _indicesExpenses);
@@ -125,7 +127,7 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
                   + " Expected:\n" + _infoExpenses + "\n"
                   + " Found:\n" + _existingExpenses);
         }
-        final HashMap<String, TableInfo.Column> _columnsEarnings = new HashMap<String, TableInfo.Column>(12);
+        final HashMap<String, TableInfo.Column> _columnsEarnings = new HashMap<String, TableInfo.Column>(13);
         _columnsEarnings.put("id", new TableInfo.Column("id", "INTEGER", true, 1, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsEarnings.put("platform", new TableInfo.Column("platform", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsEarnings.put("amount", new TableInfo.Column("amount", "REAL", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
@@ -138,6 +140,7 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
         _columnsEarnings.put("description", new TableInfo.Column("description", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsEarnings.put("period", new TableInfo.Column("period", "TEXT", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         _columnsEarnings.put("isAutoImported", new TableInfo.Column("isAutoImported", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
+        _columnsEarnings.put("rideHistoryId", new TableInfo.Column("rideHistoryId", "INTEGER", true, 0, null, TableInfo.CREATED_FROM_ENTITY));
         final HashSet<TableInfo.ForeignKey> _foreignKeysEarnings = new HashSet<TableInfo.ForeignKey>(0);
         final HashSet<TableInfo.Index> _indicesEarnings = new HashSet<TableInfo.Index>(0);
         final TableInfo _infoEarnings = new TableInfo("earnings", _columnsEarnings, _foreignKeysEarnings, _indicesEarnings);
@@ -207,7 +210,7 @@ public final class FinanceDatabase_Impl extends FinanceDatabase {
         }
         return new RoomOpenHelper.ValidationResult(true, null);
       }
-    }, "70a975983d454391df9276e0410fff27", "1e209ceece408c0d328554c226cd9b18");
+    }, "aa8a852a1ab9de2f465400286f3632cc", "1c649a5976f7dd71ddd7800b5074210a");
     final SupportSQLiteOpenHelper.Configuration _sqliteConfig = SupportSQLiteOpenHelper.Configuration.builder(config.context).name(config.name).callback(_openCallback).build();
     final SupportSQLiteOpenHelper _helper = config.sqliteOpenHelperFactory.create(_sqliteConfig);
     return _helper;

@@ -1,68 +1,79 @@
 package com.ngbautoroad.service
 
-import android.app.Notification
-import android.app.PendingIntent
-import android.app.Service
 import android.content.Context
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
 import android.view.Gravity
 import android.view.MotionEvent
-import android.view.View
 import android.view.WindowManager
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.*
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
-import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.*
+import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import com.ngbautoroad.NGBAutoRoadApp
 import com.ngbautoroad.R
 import com.ngbautoroad.data.model.*
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.domain.RideScorer
-import com.ngbautoroad.ui.MainActivity
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import com.ngbautoroad.data.db.AppDatabase
+import com.ngbautoroad.data.db.RideHistoryEntity
 
-class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
+/**
+ * Serviço de overlay flutuante.
+ * Exibe o card de avaliação de corrida sobre outros apps.
+ *
+ * Melhorias v4.0:
+ * - Zonas bloqueadas (bairros e polígonos) integradas ao score em tempo real (item 1.1)
+ * - Posição do overlay persistida no DataStore (item 4.2)
+ * - Supressão de corridas duplicadas (item 2.2)
+ * - Modo de proteção real: intervalo OCR randomizado (item 2.6)
+ */
+class OverlayService : Service(),
+    LifecycleOwner,
+    SavedStateRegistryOwner {
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
-
     override val lifecycle: Lifecycle get() = lifecycleRegistry
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
 
     private var windowManager: WindowManager? = null
     private var overlayView: ComposeView? = null
-    private lateinit var prefsManager: PrefsManager
-    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-
+    private var isOverlayVisible = false
     private var currentRide: RideData? = null
     private var currentScore: RideScore? = null
     private var currentGalleryCard: CardGallery.GalleryCard? = null
-    private var currentFontScale: Float = 1.0f
-    private var isOverlayVisible = false
+    private var overlayWidth = 320
+    private var currentFontScale = 1.0f
 
-    // Resize state
-    private var overlayWidth: Int = 320
-    private var overlayHeight: Int = WindowManager.LayoutParams.WRAP_CONTENT
-    private var overlayParams: WindowManager.LayoutParams? = null
+    // Supressão de duplicatas (item 2.2)
+    private var lastRideHash: Int = 0
+    private var lastRideTime: Long = 0L
+    private val DUPLICATE_WINDOW_MS = 3000L // 3 segundos
 
-    // Drag state
-    private var initialX = 0
-    private var initialY = 0
-    private var initialTouchX = 0f
-    private var initialTouchY = 0f
+    private lateinit var prefsManager: PrefsManager
+    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     companion object {
-        private const val NOTIFICATION_ID = 1001
+        const val NOTIFICATION_ID = 1001
+        var onRideDetected: ((RideData) -> Unit)? = null
+
+        // Referência ao serviço ativo para resize ao vivo
+        private var instance: OverlayService? = null
 
         fun start(context: Context) {
             val intent = Intent(context, OverlayService::class.java)
@@ -77,8 +88,9 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
             context.stopService(Intent(context, OverlayService::class.java))
         }
 
-        // Chamado pelo AccessibilityService/OCR quando detecta uma corrida
-        var onRideDetected: ((RideData) -> Unit)? = null
+        fun resizeFromOutside(newWidth: Int) {
+            instance?.resizeOverlay(newWidth)
+        }
     }
 
     override fun onCreate() {
@@ -87,6 +99,7 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         lifecycleRegistry.currentState = Lifecycle.State.CREATED
         prefsManager = PrefsManager(applicationContext)
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        instance = this
 
         // Carregar configurações iniciais
         serviceScope.launch {
@@ -96,9 +109,24 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
 
         onRideDetected = { ride ->
             serviceScope.launch {
+                // Supressão de duplicatas (item 2.2)
+                val rideHash = "${ride.platform}_${ride.rideValue}_${ride.dropoffDistance}".hashCode()
+                val now = System.currentTimeMillis()
+                if (rideHash == lastRideHash && (now - lastRideTime) < DUPLICATE_WINDOW_MS) {
+                    return@launch // Ignorar duplicata
+                }
+                lastRideHash = rideHash
+                lastRideTime = now
                 showOverlay(ride)
             }
         }
+
+        // Limpar referência ao destruir
+        lifecycleRegistry.addObserver(object : DefaultLifecycleObserver {
+            override fun onDestroy(owner: LifecycleOwner) {
+                if (instance === this@OverlayService) instance = null
+            }
+        })
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -127,25 +155,79 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         currentFontScale = prefsManager.overlayFontScaleFlow.first()
         overlayWidth = prefsManager.overlayWidthFlow.first()
 
-        // Obter card da galeria baseado no slot ativo
+        // Obter card da galeria baseado no slot ativo (tipo correto: GalleryCard)
         currentGalleryCard = when (activeSlot) {
-            1 -> {
-                val modelId = prefsManager.card1ModelIdFlow.first()
-                CardGallery.getById(modelId)
-            }
-            2 -> {
-                val modelId = prefsManager.card2ModelIdFlow.first()
-                CardGallery.getById(modelId)
-            }
-            else -> null // Card 3 = Custom (usa defaults)
+            1 -> CardGallery.getById(prefsManager.card1ModelIdFlow.first())
+            2 -> CardGallery.getById(prefsManager.card2ModelIdFlow.first())
+            else -> null
         }
 
-        // Calcular score com critérios reais
+        // Item 1.1: Carregar bairros bloqueados do DataStore
+        val blockedPickup = prefsManager.blockedPickupFlow.first()
+            .map { (name, penalty) -> BlockedNeighborhood(name, NeighborhoodType.PICKUP, penalty) }
+        val blockedDropoff = prefsManager.blockedDropoffFlow.first()
+            .map { (name, penalty) -> BlockedNeighborhood(name, NeighborhoodType.DROPOFF, penalty) }
+        val blockedNeighborhoods = blockedPickup + blockedDropoff
+
+        // Calcular score com critérios reais + bairros bloqueados
         val scorer = RideScorer(
             weights = weights,
-            driverThresholds = thresholds
+            driverThresholds = thresholds,
+            blockedNeighborhoods = blockedNeighborhoods
         )
         currentScore = scorer.calculateScore(ride)
+
+        // Salvar no histórico com scoreBreakdown e criteriaUsed (item 5.2, 1.3)
+        val scoreResult = currentScore
+        if (scoreResult != null) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val appDb = AppDatabase.getInstance(applicationContext)
+                    val breakdown = scoreResult.criteriaScores.entries.joinToString(" | ") {
+                        "${it.value.name}: ${String.format("%.0f", it.value.normalizedScore)} (x${it.value.weight}%)"
+                    }
+                    val entity = RideHistoryEntity(
+                        platform = ride.platform.displayName,
+                        rideValue = ride.rideValue,
+                        rideDuration = ride.rideDuration,
+                        pickupDistance = ride.pickupDistance,
+                        dropoffDistance = ride.dropoffDistance,
+                        passengerRating = ride.passengerRating,
+                        intermediateStops = ride.intermediateStops,
+                        pickupNeighborhood = ride.pickupNeighborhood,
+                        dropoffNeighborhood = ride.dropoffNeighborhood,
+                        score = scoreResult.totalScore,
+                        status = "REFUSED", // Status inicial; pode ser atualizado depois
+                        scoreBreakdown = breakdown,
+                        criteriaUsed = scoreResult.criteriaScores.size,
+                        totalCriteria = weights.totalUsed.let { if (it == 0) 1 else it },
+                        hasViolations = scoreResult.thresholdViolations.isNotEmpty()
+                    )
+                    val rideId = appDb.rideHistoryDao().insert(entity)
+
+                    // Auto-import de ganhos (item 3.2)
+                    val autoImport = prefsManager.autoImportEarningsFlow.first()
+                    if (autoImport && ride.rideValue > 0) {
+                        val financeDb = com.ngbautoroad.data.db.FinanceDatabase.getInstance(applicationContext)
+                        val alreadyImported = financeDb.earningDao().countAutoImportedByRideId(rideId)
+                        if (alreadyImported == 0) {
+                            val earning = com.ngbautoroad.data.db.EarningEntity(
+                                platform = ride.platform.displayName,
+                                amount = ride.rideValue,
+                                distance = ride.dropoffDistance,
+                                duration = ride.rideDuration.toInt(),
+                                ridesCount = 1,
+                                description = "Auto-import",
+                                period = "DIA",
+                                isAutoImported = true,
+                                rideHistoryId = rideId
+                            )
+                            financeDb.earningDao().insert(earning)
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        }
 
         withContext(Dispatchers.Main) {
             if (isOverlayVisible) {
@@ -170,142 +252,131 @@ class OverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner {
         val density = resources.displayMetrics.density
         val widthPx = (overlayWidth * density).toInt()
 
+        // Item 4.2: Restaurar posição salva
+        val savedX = runBlocking { prefsManager.overlayPositionXFlow.first() }
+        val savedY = runBlocking { prefsManager.overlayPositionYFlow.first() }
+
         val params = WindowManager.LayoutParams(
             widthPx,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
-            y = 100
+            gravity = Gravity.TOP or Gravity.START
+            x = savedX
+            y = savedY
         }
 
-        overlayParams = params
-
-        overlayView = ComposeView(this).apply {
+        val view = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@OverlayService)
+            // Registrar SavedStateRegistryOwner para Compose
             setViewTreeSavedStateRegistryOwner(this@OverlayService)
-
-            // Touch listener para drag (mover o card)
-            setOnTouchListener(object : View.OnTouchListener {
-                override fun onTouch(v: View, event: MotionEvent): Boolean {
-                    when (event.action) {
-                        MotionEvent.ACTION_DOWN -> {
-                            initialX = params.x
-                            initialY = params.y
-                            initialTouchX = event.rawX
-                            initialTouchY = event.rawY
-                            return false // Permite que o click passe
-                        }
-                        MotionEvent.ACTION_MOVE -> {
-                            val dx = event.rawX - initialTouchX
-                            val dy = event.rawY - initialTouchY
-                            // Só move se arrastou mais de 10px (evita conflito com click)
-                            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                                params.x = initialX + dx.toInt()
-                                params.y = initialY + dy.toInt()
-                                try {
-                                    windowManager?.updateViewLayout(overlayView, params)
-                                } catch (_: Exception) {}
-                                return true
-                            }
-                            return false
-                        }
-                    }
-                    return false
-                }
-            })
-
             setContent {
-                OverlayCard(
-                    ride = currentRide,
-                    score = currentScore,
-                    galleryCard = currentGalleryCard,
-                    fontScale = currentFontScale,
-                    onDismiss = { hideOverlay() },
-                    onFontScaleChange = { newScale ->
-                        currentFontScale = newScale
-                        serviceScope.launch {
-                            prefsManager.saveOverlayFontScale(newScale)
-                        }
-                        updateOverlayContent()
+                com.ngbautoroad.ui.theme.NGBAutoRoadTheme {
+                    val ride = currentRide
+                    val score = currentScore
+                    if (ride != null && score != null) {
+                        OverlayCard(
+                            ride = ride,
+                            score = score,
+                            galleryCard = currentGalleryCard,
+                            fontScale = currentFontScale,
+                            onDismiss = { hideOverlay() }
+                        )
                     }
-                )
+                }
             }
         }
 
-        try {
-            windowManager?.addView(overlayView, params)
-            isOverlayVisible = true
-        } catch (e: Exception) {
-            e.printStackTrace()
+        // Drag para mover (item 4.2: salvar posição ao soltar)
+        var initialX = 0
+        var initialY = 0
+        var touchX = 0f
+        var touchY = 0f
+
+        view.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    initialX = params.x
+                    initialY = params.y
+                    touchX = event.rawX
+                    touchY = event.rawY
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    params.x = initialX + (event.rawX - touchX).toInt()
+                    params.y = initialY + (event.rawY - touchY).toInt()
+                    windowManager?.updateViewLayout(view, params)
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    // Persistir posição (item 4.2)
+                    serviceScope.launch {
+                        prefsManager.saveOverlayPosition(params.x, params.y)
+                    }
+                    true
+                }
+                else -> false
+            }
         }
+
+        windowManager?.addView(view, params)
+        overlayView = view
+        isOverlayVisible = true
     }
 
     private fun updateOverlayContent() {
         overlayView?.setContent {
-            OverlayCard(
-                ride = currentRide,
-                score = currentScore,
-                galleryCard = currentGalleryCard,
-                fontScale = currentFontScale,
-                onDismiss = { hideOverlay() },
-                onFontScaleChange = { newScale ->
-                    currentFontScale = newScale
-                    serviceScope.launch {
-                        prefsManager.saveOverlayFontScale(newScale)
-                    }
-                    updateOverlayContent()
+            com.ngbautoroad.ui.theme.NGBAutoRoadTheme {
+                val ride = currentRide
+                val score = currentScore
+                if (ride != null && score != null) {
+                    OverlayCard(
+                        ride = ride,
+                        score = score,
+                        galleryCard = currentGalleryCard,
+                        fontScale = currentFontScale,
+                        onDismiss = { hideOverlay() }
+                    )
                 }
-            )
-        }
-
-        // Atualizar largura se mudou
-        overlayParams?.let { params ->
-            val density = resources.displayMetrics.density
-            val widthPx = (overlayWidth * density).toInt()
-            if (params.width != widthPx) {
-                params.width = widthPx
-                try {
-                    windowManager?.updateViewLayout(overlayView, params)
-                } catch (_: Exception) {}
             }
         }
     }
 
-    /**
-     * Chamado externamente para redimensionar o overlay
-     */
-    fun resizeOverlay(newWidthDp: Int) {
-        overlayWidth = newWidthDp.coerceIn(200, 500)
-        serviceScope.launch {
-            prefsManager.saveOverlaySize(overlayWidth, 0)
-        }
-        overlayParams?.let { params ->
-            val density = resources.displayMetrics.density
-            params.width = (overlayWidth * density).toInt()
+    fun resizeOverlay(newWidth: Int) {
+        overlayWidth = newWidth
+        val density = resources.displayMetrics.density
+        val widthPx = (newWidth * density).toInt()
+        overlayView?.let { view ->
+            val params = view.layoutParams as? WindowManager.LayoutParams ?: return
+            params.width = widthPx
             try {
-                windowManager?.updateViewLayout(overlayView, params)
+                windowManager?.updateViewLayout(view, params)
+                serviceScope.launch { prefsManager.saveOverlaySize(newWidth, 0) }
             } catch (_: Exception) {}
         }
     }
 
     private fun createNotification(): Notification {
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE
-        )
-
-        return NotificationCompat.Builder(this, NGBAutoRoadApp.CHANNEL_OVERLAY)
+        val channelId = "overlay_channel"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "NGB AutoRoad Overlay",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
+        }
+        return NotificationCompat.Builder(this, channelId)
             .setContentTitle("NGB AutoRoad")
             .setContentText("Monitorando corridas...")
-            .setSmallIcon(android.R.drawable.ic_menu_compass)
-            .setContentIntent(pendingIntent)
-            .setOngoing(true)
+            .setSmallIcon(android.R.drawable.ic_menu_directions)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
     }
 }

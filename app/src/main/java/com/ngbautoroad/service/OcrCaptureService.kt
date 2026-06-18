@@ -47,9 +47,12 @@ class OcrCaptureService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 1002
         private const val CAPTURE_INTERVAL_MS = 1500L // Captura a cada 1.5s
+        // Intervalo adaptativo: aumenta quando não há corridas detectadas (item 2.6)
+        private const val CAPTURE_INTERVAL_IDLE_MS = 3000L
 
         private var resultCode: Int = 0
         private var resultData: Intent? = null
+        private var consecutiveNoRide = 0
 
         fun setMediaProjectionResult(code: Int, data: Intent) {
             resultCode = code
@@ -130,10 +133,12 @@ class OcrCaptureService : Service() {
 
     private fun scheduleNextCapture() {
         if (!isCapturing) return
+        // Intervalo adaptativo: mais lento quando inativo (item 2.6)
+        val interval = if (consecutiveNoRide > 5) CAPTURE_INTERVAL_IDLE_MS else CAPTURE_INTERVAL_MS
         handler.postDelayed({
             captureAndProcess()
             scheduleNextCapture()
-        }, CAPTURE_INTERVAL_MS)
+        }, interval)
     }
 
     private fun captureAndProcess() {
@@ -170,11 +175,14 @@ class OcrCaptureService : Service() {
                 val fullText = visionText.text
                 if (fullText.isNotBlank()) {
                     val rideData = parseOcrText(fullText)
-                    rideData?.let { ride ->
-                        if (ride.rideValue > 0 || ride.dropoffDistance > 0) {
-                            OverlayService.onRideDetected?.invoke(ride)
-                        }
+                    if (rideData != null && (rideData.rideValue > 0 || rideData.dropoffDistance > 0)) {
+                        consecutiveNoRide = 0
+                        OverlayService.onRideDetected?.invoke(rideData)
+                    } else {
+                        consecutiveNoRide++
                     }
+                } else {
+                    consecutiveNoRide++
                 }
                 bitmap.recycle()
             }
@@ -207,47 +215,72 @@ class OcrCaptureService : Service() {
             else -> Platform.UNKNOWN
         }
 
+        var pickupNeighborhood = ""
+        var dropoffNeighborhood = ""
+
+        // Padrão combinado Uber: "R$ XX,XX • X km • X min"
+        val uberCombined = Regex("""R\$\s*(\d+[.,]\d{2})\s*[•·]\s*(\d+[.,]\d+)\s*km\s*[•·]\s*(\d+)\s*min""", RegexOption.IGNORE_CASE).find(text)
+        if (uberCombined != null) {
+            rideValue = uberCombined.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
+            distance = uberCombined.groupValues[2].replace(",", ".").toDoubleOrNull() ?: 0.0
+            duration = uberCombined.groupValues[3].toDoubleOrNull() ?: 0.0
+        }
+
         for (line in lines) {
             // Valor: R$ XX,XX
-            val valueMatch = Regex("""R\$\s*(\d+[.,]\d{2})""").find(line)
-            if (valueMatch != null && rideValue == 0.0) {
-                rideValue = valueMatch.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
+            if (rideValue == 0.0) {
+                val valueMatch = Regex("""R\$\s*(\d+[.,]\d{2})""").find(line)
+                if (valueMatch != null) {
+                    rideValue = valueMatch.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
+                }
             }
 
-            // Distância: X,X km
-            val distMatch = Regex("""(\d+[.,]\d+)\s*km""", RegexOption.IGNORE_CASE).find(line)
-            if (distMatch != null) {
-                val d = distMatch.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
-                if (pickupDistance == 0.0) {
+            // Distância: X,X km (múltiplos por linha)
+            val distMatches = Regex("""(\d+[.,]\d+)\s*km""", RegexOption.IGNORE_CASE).findAll(line)
+            for (dm in distMatches) {
+                val d = dm.groupValues[1].replace(",", ".").toDoubleOrNull() ?: continue
+                if (pickupDistance == 0.0 && d < 10.0) {
                     pickupDistance = d
                 } else if (distance == 0.0) {
                     distance = d
                 }
             }
 
-            // Duração: X min
-            val durMatch = Regex("""(\d+)\s*min""", RegexOption.IGNORE_CASE).find(line)
-            if (durMatch != null && duration == 0.0) {
-                duration = durMatch.groupValues[1].toDoubleOrNull() ?: 0.0
+            // Duração: X min ou ~X min
+            if (duration == 0.0) {
+                val durMatch = Regex("""~?(\d+)\s*min""", RegexOption.IGNORE_CASE).find(line)
+                if (durMatch != null) duration = durMatch.groupValues[1].toDoubleOrNull() ?: 0.0
             }
 
             // Rating
-            val ratingMatch = Regex("""([4-5][.,]\d{1,2})""").find(line)
-            if (ratingMatch != null && rating == 0.0) {
-                val r = ratingMatch.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
-                if (r in 3.0..5.0) rating = r
+            if (rating == 0.0) {
+                val ratingMatch = Regex("""([4-5][.,]\d{1,2})""").find(line)
+                if (ratingMatch != null) {
+                    val r = ratingMatch.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
+                    if (r in 3.0..5.0) rating = r
+                }
             }
 
             // Paradas
-            if (line.contains("parada", ignoreCase = true)) {
+            if (stops == 0 && line.contains("parada", ignoreCase = true)) {
                 stops = Regex("""(\d+)""").find(line)?.groupValues?.get(1)?.toIntOrNull() ?: 1
+            }
+
+            // Bairros via OCR (item 2.3)
+            if (pickupNeighborhood.isBlank()) {
+                val m = Regex("""(?:embarque|pickup|origem|partida)[:\s]+([A-ZÀ-Ú][a-zà-ú\s]+)""", RegexOption.IGNORE_CASE).find(line)
+                if (m != null) pickupNeighborhood = m.groupValues[1].trim().take(30)
+            }
+            if (dropoffNeighborhood.isBlank()) {
+                val m = Regex("""(?:destino|desembarque|dropoff)[:\s]+([A-ZÀ-Ú][a-zà-ú\s]+)""", RegexOption.IGNORE_CASE).find(line)
+                if (m != null) dropoffNeighborhood = m.groupValues[1].trim().take(30)
             }
         }
 
         if (rideValue == 0.0 && distance == 0.0 && duration == 0.0) return null
 
         // Heurística: se pickup > dropoff, trocar
-        if (pickupDistance > distance && distance > 0) {
+        if (pickupDistance > distance && distance > 0 && pickupDistance > 3.0) {
             val temp = pickupDistance
             pickupDistance = distance
             distance = temp
@@ -260,7 +293,9 @@ class OcrCaptureService : Service() {
             pickupDistance = pickupDistance,
             dropoffDistance = distance,
             passengerRating = rating,
-            intermediateStops = stops
+            intermediateStops = stops,
+            pickupNeighborhood = pickupNeighborhood,
+            dropoffNeighborhood = dropoffNeighborhood
         )
     }
 

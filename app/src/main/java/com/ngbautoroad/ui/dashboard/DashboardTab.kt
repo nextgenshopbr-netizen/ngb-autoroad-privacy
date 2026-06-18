@@ -25,6 +25,7 @@ import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.ui.finance.FinanceActivity
 import com.ngbautoroad.ui.theme.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import java.util.*
@@ -32,47 +33,53 @@ import java.util.*
 @Composable
 fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
     val scope = rememberCoroutineScope()
-    var dashData by remember { mutableStateOf(DashboardData()) }
     val serviceEnabled by prefsManager.serviceEnabledFlow.collectAsState(initial = false)
     val protectionEnabled by prefsManager.protectionEnabledFlow.collectAsState(initial = false)
 
     // Calcular timestamps
     val calendar = Calendar.getInstance()
-    val now = calendar.timeInMillis
-
     calendar.set(Calendar.HOUR_OF_DAY, 0)
     calendar.set(Calendar.MINUTE, 0)
     calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
     val startOfDay = calendar.timeInMillis
-
     calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
     val startOfWeek = calendar.timeInMillis
-
     calendar.set(Calendar.DAY_OF_MONTH, 1)
     val startOfMonth = calendar.timeInMillis
 
-    // Carregar dados do dashboard
-    LaunchedEffect(Unit) {
-        val dao = database.rideHistoryDao()
-        dashData = DashboardData(
-            totalRidesToday = dao.countSince(startOfDay),
-            totalRidesWeek = dao.countSince(startOfWeek),
-            totalRidesMonth = dao.countSince(startOfMonth),
-            acceptedToday = dao.countSinceWithStatus(startOfDay, "ACCEPTED"),
-            refusedToday = dao.countSinceWithStatus(startOfDay, "REFUSED"),
-            cancelledToday = dao.countSinceWithStatus(startOfDay, "CANCELLED"),
-            averageScoreToday = dao.averageScoreSince(startOfDay) ?: 0.0,
-            averageScoreWeek = dao.averageScoreSince(startOfWeek) ?: 0.0,
-            totalEarningsToday = dao.totalEarningsSince(startOfDay) ?: 0.0,
-            totalEarningsWeek = dao.totalEarningsSince(startOfWeek) ?: 0.0,
-            totalEarningsMonth = dao.totalEarningsSince(startOfMonth) ?: 0.0,
-            bestRideToday = dao.bestRideSince(startOfDay) ?: 0.0,
-            averageValuePerKm = dao.averageValuePerKmSince(startOfDay) ?: 0.0,
-            topPlatform = dao.topPlatformSince(startOfDay) ?: "-",
-            serviceActive = serviceEnabled,
-            protectionActive = protectionEnabled
-        )
-    }
+    // Item 5.1: Dashboard reativo via Flow — atualiza automaticamente quando novas corridas chegam
+    val dao = remember { database.rideHistoryDao() }
+    val dashData by remember {
+        combine(
+            dao.countSinceFlow(startOfDay),
+            dao.countSinceFlow(startOfWeek),
+            dao.countSinceFlow(startOfMonth),
+            dao.getAllFlow()
+        ) { todayCount, weekCount, monthCount, allRides ->
+            val todayRides = allRides.filter { it.timestamp >= startOfDay }
+            val weekRides = allRides.filter { it.timestamp >= startOfWeek }
+            val monthRides = allRides.filter { it.timestamp >= startOfMonth }
+            DashboardData(
+                totalRidesToday = todayCount,
+                totalRidesWeek = weekCount,
+                totalRidesMonth = monthCount,
+                acceptedToday = todayRides.count { it.status == "ACCEPTED" },
+                refusedToday = todayRides.count { it.status == "REFUSED" },
+                cancelledToday = todayRides.count { it.status == "CANCELLED" },
+                averageScoreToday = todayRides.map { it.score }.let { if (it.isEmpty()) 0.0 else it.average() },
+                averageScoreWeek = weekRides.map { it.score }.let { if (it.isEmpty()) 0.0 else it.average() },
+                totalEarningsToday = todayRides.filter { it.status == "ACCEPTED" }.sumOf { it.rideValue },
+                totalEarningsWeek = weekRides.filter { it.status == "ACCEPTED" }.sumOf { it.rideValue },
+                totalEarningsMonth = monthRides.filter { it.status == "ACCEPTED" }.sumOf { it.rideValue },
+                bestRideToday = todayRides.maxOfOrNull { it.rideValue } ?: 0.0,
+                averageValuePerKm = todayRides.filter { it.dropoffDistance > 0 }.map { it.valuePerKm }.let { if (it.isEmpty()) 0.0 else it.average() },
+                topPlatform = todayRides.groupBy { it.platform }.maxByOrNull { it.value.size }?.key ?: "-",
+                serviceActive = serviceEnabled,
+                protectionActive = protectionEnabled
+            )
+        }
+    }.collectAsState(initial = DashboardData())
 
     val scrollState = rememberScrollState()
 

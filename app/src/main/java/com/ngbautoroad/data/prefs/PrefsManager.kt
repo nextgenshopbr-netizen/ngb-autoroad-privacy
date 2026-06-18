@@ -68,6 +68,13 @@ class PrefsManager(private val context: Context) {
     // Blocked Zones (stored as JSON)
     private val KEY_BLOCKED_ZONES_JSON = stringPreferencesKey("blocked_zones_json")
 
+    // Overlay Position (item 4.2)
+    private val KEY_OVERLAY_POS_X = intPreferencesKey("overlay_pos_x")
+    private val KEY_OVERLAY_POS_Y = intPreferencesKey("overlay_pos_y")
+
+    // Auto-import earnings (item 3.2)
+    private val KEY_AUTO_IMPORT_EARNINGS = booleanPreferencesKey("auto_import_earnings")
+
     // Keep screen on
     private val KEY_KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
 
@@ -249,6 +256,35 @@ class PrefsManager(private val context: Context) {
     suspend fun saveOverlayFontScale(scale: Float) {
         context.dataStore.edit { prefs ->
             prefs[KEY_OVERLAY_FONT_SCALE] = scale.coerceIn(0.7f, 2.0f)
+        }
+    }
+
+    // --- Overlay Position (item 4.2) ---
+
+    val overlayPositionXFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_OVERLAY_POS_X] ?: 0
+    }
+
+    val overlayPositionYFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_OVERLAY_POS_Y] ?: 100
+    }
+
+    suspend fun saveOverlayPosition(x: Int, y: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_OVERLAY_POS_X] = x
+            prefs[KEY_OVERLAY_POS_Y] = y
+        }
+    }
+
+    // --- Auto-import Earnings (item 3.2) ---
+
+    val autoImportEarningsFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUTO_IMPORT_EARNINGS] ?: false
+    }
+
+    suspend fun setAutoImportEarnings(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_AUTO_IMPORT_EARNINGS] = enabled
         }
     }
 

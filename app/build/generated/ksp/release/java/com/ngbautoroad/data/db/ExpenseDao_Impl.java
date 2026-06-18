@@ -1,6 +1,7 @@
 package com.ngbautoroad.data.db;
 
 import android.database.Cursor;
+import android.os.CancellationSignal;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.CoroutinesRoom;
@@ -46,7 +47,7 @@ public final class ExpenseDao_Impl implements ExpenseDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR ABORT INTO `expenses` (`id`,`category`,`amount`,`description`,`date`,`isRecurring`,`recurringDay`,`recurringDays`,`recurringDuration`,`recurringEndDate`,`liters`,`pricePerLiter`,`odometer`,`fuelType`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR ABORT INTO `expenses` (`id`,`category`,`amount`,`description`,`date`,`isRecurring`,`recurringDay`,`recurringDays`,`recurringDuration`,`recurringEndDate`,`liters`,`pricePerLiter`,`odometer`,`fuelType`,`parentExpenseId`,`isGenerated`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -83,6 +84,9 @@ public final class ExpenseDao_Impl implements ExpenseDao {
         } else {
           statement.bindString(14, entity.getFuelType());
         }
+        statement.bindLong(15, entity.getParentExpenseId());
+        final int _tmp_1 = entity.isGenerated() ? 1 : 0;
+        statement.bindLong(16, _tmp_1);
       }
     };
     this.__deletionAdapterOfExpenseEntity = new EntityDeletionOrUpdateAdapter<ExpenseEntity>(__db) {
@@ -102,7 +106,7 @@ public final class ExpenseDao_Impl implements ExpenseDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `expenses` SET `id` = ?,`category` = ?,`amount` = ?,`description` = ?,`date` = ?,`isRecurring` = ?,`recurringDay` = ?,`recurringDays` = ?,`recurringDuration` = ?,`recurringEndDate` = ?,`liters` = ?,`pricePerLiter` = ?,`odometer` = ?,`fuelType` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `expenses` SET `id` = ?,`category` = ?,`amount` = ?,`description` = ?,`date` = ?,`isRecurring` = ?,`recurringDay` = ?,`recurringDays` = ?,`recurringDuration` = ?,`recurringEndDate` = ?,`liters` = ?,`pricePerLiter` = ?,`odometer` = ?,`fuelType` = ?,`parentExpenseId` = ?,`isGenerated` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -139,7 +143,10 @@ public final class ExpenseDao_Impl implements ExpenseDao {
         } else {
           statement.bindString(14, entity.getFuelType());
         }
-        statement.bindLong(15, entity.getId());
+        statement.bindLong(15, entity.getParentExpenseId());
+        final int _tmp_1 = entity.isGenerated() ? 1 : 0;
+        statement.bindLong(16, _tmp_1);
+        statement.bindLong(17, entity.getId());
       }
     };
   }
@@ -155,6 +162,25 @@ public final class ExpenseDao_Impl implements ExpenseDao {
           final Long _result = __insertionAdapterOfExpenseEntity.insertAndReturnId(expense);
           __db.setTransactionSuccessful();
           return _result;
+        } finally {
+          __db.endTransaction();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object insertAll(final List<ExpenseEntity> expenses,
+      final Continuation<? super Unit> $completion) {
+    return CoroutinesRoom.execute(__db, true, new Callable<Unit>() {
+      @Override
+      @NonNull
+      public Unit call() throws Exception {
+        __db.beginTransaction();
+        try {
+          __insertionAdapterOfExpenseEntity.insert(expenses);
+          __db.setTransactionSuccessful();
+          return Unit.INSTANCE;
         } finally {
           __db.endTransaction();
         }
@@ -222,6 +248,8 @@ public final class ExpenseDao_Impl implements ExpenseDao {
           final int _cursorIndexOfPricePerLiter = CursorUtil.getColumnIndexOrThrow(_cursor, "pricePerLiter");
           final int _cursorIndexOfOdometer = CursorUtil.getColumnIndexOrThrow(_cursor, "odometer");
           final int _cursorIndexOfFuelType = CursorUtil.getColumnIndexOrThrow(_cursor, "fuelType");
+          final int _cursorIndexOfParentExpenseId = CursorUtil.getColumnIndexOrThrow(_cursor, "parentExpenseId");
+          final int _cursorIndexOfIsGenerated = CursorUtil.getColumnIndexOrThrow(_cursor, "isGenerated");
           final List<ExpenseEntity> _result = new ArrayList<ExpenseEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final ExpenseEntity _item;
@@ -271,7 +299,13 @@ public final class ExpenseDao_Impl implements ExpenseDao {
             } else {
               _tmpFuelType = _cursor.getString(_cursorIndexOfFuelType);
             }
-            _item = new ExpenseEntity(_tmpId,_tmpCategory,_tmpAmount,_tmpDescription,_tmpDate,_tmpIsRecurring,_tmpRecurringDay,_tmpRecurringDays,_tmpRecurringDuration,_tmpRecurringEndDate,_tmpLiters,_tmpPricePerLiter,_tmpOdometer,_tmpFuelType);
+            final long _tmpParentExpenseId;
+            _tmpParentExpenseId = _cursor.getLong(_cursorIndexOfParentExpenseId);
+            final boolean _tmpIsGenerated;
+            final int _tmp_1;
+            _tmp_1 = _cursor.getInt(_cursorIndexOfIsGenerated);
+            _tmpIsGenerated = _tmp_1 != 0;
+            _item = new ExpenseEntity(_tmpId,_tmpCategory,_tmpAmount,_tmpDescription,_tmpDate,_tmpIsRecurring,_tmpRecurringDay,_tmpRecurringDays,_tmpRecurringDuration,_tmpRecurringEndDate,_tmpLiters,_tmpPricePerLiter,_tmpOdometer,_tmpFuelType,_tmpParentExpenseId,_tmpIsGenerated);
             _result.add(_item);
           }
           return _result;
@@ -315,6 +349,8 @@ public final class ExpenseDao_Impl implements ExpenseDao {
           final int _cursorIndexOfPricePerLiter = CursorUtil.getColumnIndexOrThrow(_cursor, "pricePerLiter");
           final int _cursorIndexOfOdometer = CursorUtil.getColumnIndexOrThrow(_cursor, "odometer");
           final int _cursorIndexOfFuelType = CursorUtil.getColumnIndexOrThrow(_cursor, "fuelType");
+          final int _cursorIndexOfParentExpenseId = CursorUtil.getColumnIndexOrThrow(_cursor, "parentExpenseId");
+          final int _cursorIndexOfIsGenerated = CursorUtil.getColumnIndexOrThrow(_cursor, "isGenerated");
           final List<ExpenseEntity> _result = new ArrayList<ExpenseEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final ExpenseEntity _item;
@@ -364,7 +400,13 @@ public final class ExpenseDao_Impl implements ExpenseDao {
             } else {
               _tmpFuelType = _cursor.getString(_cursorIndexOfFuelType);
             }
-            _item = new ExpenseEntity(_tmpId,_tmpCategory,_tmpAmount,_tmpDescription,_tmpDate,_tmpIsRecurring,_tmpRecurringDay,_tmpRecurringDays,_tmpRecurringDuration,_tmpRecurringEndDate,_tmpLiters,_tmpPricePerLiter,_tmpOdometer,_tmpFuelType);
+            final long _tmpParentExpenseId;
+            _tmpParentExpenseId = _cursor.getLong(_cursorIndexOfParentExpenseId);
+            final boolean _tmpIsGenerated;
+            final int _tmp_1;
+            _tmp_1 = _cursor.getInt(_cursorIndexOfIsGenerated);
+            _tmpIsGenerated = _tmp_1 != 0;
+            _item = new ExpenseEntity(_tmpId,_tmpCategory,_tmpAmount,_tmpDescription,_tmpDate,_tmpIsRecurring,_tmpRecurringDay,_tmpRecurringDays,_tmpRecurringDuration,_tmpRecurringEndDate,_tmpLiters,_tmpPricePerLiter,_tmpOdometer,_tmpFuelType,_tmpParentExpenseId,_tmpIsGenerated);
             _result.add(_item);
           }
           return _result;
@@ -406,6 +448,8 @@ public final class ExpenseDao_Impl implements ExpenseDao {
           final int _cursorIndexOfPricePerLiter = CursorUtil.getColumnIndexOrThrow(_cursor, "pricePerLiter");
           final int _cursorIndexOfOdometer = CursorUtil.getColumnIndexOrThrow(_cursor, "odometer");
           final int _cursorIndexOfFuelType = CursorUtil.getColumnIndexOrThrow(_cursor, "fuelType");
+          final int _cursorIndexOfParentExpenseId = CursorUtil.getColumnIndexOrThrow(_cursor, "parentExpenseId");
+          final int _cursorIndexOfIsGenerated = CursorUtil.getColumnIndexOrThrow(_cursor, "isGenerated");
           final List<ExpenseEntity> _result = new ArrayList<ExpenseEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final ExpenseEntity _item;
@@ -455,7 +499,13 @@ public final class ExpenseDao_Impl implements ExpenseDao {
             } else {
               _tmpFuelType = _cursor.getString(_cursorIndexOfFuelType);
             }
-            _item = new ExpenseEntity(_tmpId,_tmpCategory,_tmpAmount,_tmpDescription,_tmpDate,_tmpIsRecurring,_tmpRecurringDay,_tmpRecurringDays,_tmpRecurringDuration,_tmpRecurringEndDate,_tmpLiters,_tmpPricePerLiter,_tmpOdometer,_tmpFuelType);
+            final long _tmpParentExpenseId;
+            _tmpParentExpenseId = _cursor.getLong(_cursorIndexOfParentExpenseId);
+            final boolean _tmpIsGenerated;
+            final int _tmp_1;
+            _tmp_1 = _cursor.getInt(_cursorIndexOfIsGenerated);
+            _tmpIsGenerated = _tmp_1 != 0;
+            _item = new ExpenseEntity(_tmpId,_tmpCategory,_tmpAmount,_tmpDescription,_tmpDate,_tmpIsRecurring,_tmpRecurringDay,_tmpRecurringDays,_tmpRecurringDuration,_tmpRecurringEndDate,_tmpLiters,_tmpPricePerLiter,_tmpOdometer,_tmpFuelType,_tmpParentExpenseId,_tmpIsGenerated);
             _result.add(_item);
           }
           return _result;
@@ -554,7 +604,7 @@ public final class ExpenseDao_Impl implements ExpenseDao {
 
   @Override
   public Flow<List<ExpenseEntity>> getRecurringExpenses() {
-    final String _sql = "SELECT * FROM expenses WHERE isRecurring = 1";
+    final String _sql = "SELECT * FROM expenses WHERE isRecurring = 1 AND isGenerated = 0";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
     return CoroutinesRoom.createFlow(__db, false, new String[] {"expenses"}, new Callable<List<ExpenseEntity>>() {
       @Override
@@ -576,6 +626,8 @@ public final class ExpenseDao_Impl implements ExpenseDao {
           final int _cursorIndexOfPricePerLiter = CursorUtil.getColumnIndexOrThrow(_cursor, "pricePerLiter");
           final int _cursorIndexOfOdometer = CursorUtil.getColumnIndexOrThrow(_cursor, "odometer");
           final int _cursorIndexOfFuelType = CursorUtil.getColumnIndexOrThrow(_cursor, "fuelType");
+          final int _cursorIndexOfParentExpenseId = CursorUtil.getColumnIndexOrThrow(_cursor, "parentExpenseId");
+          final int _cursorIndexOfIsGenerated = CursorUtil.getColumnIndexOrThrow(_cursor, "isGenerated");
           final List<ExpenseEntity> _result = new ArrayList<ExpenseEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final ExpenseEntity _item;
@@ -625,7 +677,13 @@ public final class ExpenseDao_Impl implements ExpenseDao {
             } else {
               _tmpFuelType = _cursor.getString(_cursorIndexOfFuelType);
             }
-            _item = new ExpenseEntity(_tmpId,_tmpCategory,_tmpAmount,_tmpDescription,_tmpDate,_tmpIsRecurring,_tmpRecurringDay,_tmpRecurringDays,_tmpRecurringDuration,_tmpRecurringEndDate,_tmpLiters,_tmpPricePerLiter,_tmpOdometer,_tmpFuelType);
+            final long _tmpParentExpenseId;
+            _tmpParentExpenseId = _cursor.getLong(_cursorIndexOfParentExpenseId);
+            final boolean _tmpIsGenerated;
+            final int _tmp_1;
+            _tmp_1 = _cursor.getInt(_cursorIndexOfIsGenerated);
+            _tmpIsGenerated = _tmp_1 != 0;
+            _item = new ExpenseEntity(_tmpId,_tmpCategory,_tmpAmount,_tmpDescription,_tmpDate,_tmpIsRecurring,_tmpRecurringDay,_tmpRecurringDays,_tmpRecurringDuration,_tmpRecurringEndDate,_tmpLiters,_tmpPricePerLiter,_tmpOdometer,_tmpFuelType,_tmpParentExpenseId,_tmpIsGenerated);
             _result.add(_item);
           }
           return _result;
@@ -639,6 +697,101 @@ public final class ExpenseDao_Impl implements ExpenseDao {
         _statement.release();
       }
     });
+  }
+
+  @Override
+  public Object getRecurringExpensesSync(
+      final Continuation<? super List<ExpenseEntity>> $completion) {
+    final String _sql = "SELECT * FROM expenses WHERE isRecurring = 1 AND isGenerated = 0";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 0);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<ExpenseEntity>>() {
+      @Override
+      @NonNull
+      public List<ExpenseEntity> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfId = CursorUtil.getColumnIndexOrThrow(_cursor, "id");
+          final int _cursorIndexOfCategory = CursorUtil.getColumnIndexOrThrow(_cursor, "category");
+          final int _cursorIndexOfAmount = CursorUtil.getColumnIndexOrThrow(_cursor, "amount");
+          final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
+          final int _cursorIndexOfDate = CursorUtil.getColumnIndexOrThrow(_cursor, "date");
+          final int _cursorIndexOfIsRecurring = CursorUtil.getColumnIndexOrThrow(_cursor, "isRecurring");
+          final int _cursorIndexOfRecurringDay = CursorUtil.getColumnIndexOrThrow(_cursor, "recurringDay");
+          final int _cursorIndexOfRecurringDays = CursorUtil.getColumnIndexOrThrow(_cursor, "recurringDays");
+          final int _cursorIndexOfRecurringDuration = CursorUtil.getColumnIndexOrThrow(_cursor, "recurringDuration");
+          final int _cursorIndexOfRecurringEndDate = CursorUtil.getColumnIndexOrThrow(_cursor, "recurringEndDate");
+          final int _cursorIndexOfLiters = CursorUtil.getColumnIndexOrThrow(_cursor, "liters");
+          final int _cursorIndexOfPricePerLiter = CursorUtil.getColumnIndexOrThrow(_cursor, "pricePerLiter");
+          final int _cursorIndexOfOdometer = CursorUtil.getColumnIndexOrThrow(_cursor, "odometer");
+          final int _cursorIndexOfFuelType = CursorUtil.getColumnIndexOrThrow(_cursor, "fuelType");
+          final int _cursorIndexOfParentExpenseId = CursorUtil.getColumnIndexOrThrow(_cursor, "parentExpenseId");
+          final int _cursorIndexOfIsGenerated = CursorUtil.getColumnIndexOrThrow(_cursor, "isGenerated");
+          final List<ExpenseEntity> _result = new ArrayList<ExpenseEntity>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final ExpenseEntity _item;
+            final long _tmpId;
+            _tmpId = _cursor.getLong(_cursorIndexOfId);
+            final String _tmpCategory;
+            _tmpCategory = _cursor.getString(_cursorIndexOfCategory);
+            final double _tmpAmount;
+            _tmpAmount = _cursor.getDouble(_cursorIndexOfAmount);
+            final String _tmpDescription;
+            _tmpDescription = _cursor.getString(_cursorIndexOfDescription);
+            final long _tmpDate;
+            _tmpDate = _cursor.getLong(_cursorIndexOfDate);
+            final boolean _tmpIsRecurring;
+            final int _tmp;
+            _tmp = _cursor.getInt(_cursorIndexOfIsRecurring);
+            _tmpIsRecurring = _tmp != 0;
+            final int _tmpRecurringDay;
+            _tmpRecurringDay = _cursor.getInt(_cursorIndexOfRecurringDay);
+            final String _tmpRecurringDays;
+            _tmpRecurringDays = _cursor.getString(_cursorIndexOfRecurringDays);
+            final int _tmpRecurringDuration;
+            _tmpRecurringDuration = _cursor.getInt(_cursorIndexOfRecurringDuration);
+            final long _tmpRecurringEndDate;
+            _tmpRecurringEndDate = _cursor.getLong(_cursorIndexOfRecurringEndDate);
+            final Double _tmpLiters;
+            if (_cursor.isNull(_cursorIndexOfLiters)) {
+              _tmpLiters = null;
+            } else {
+              _tmpLiters = _cursor.getDouble(_cursorIndexOfLiters);
+            }
+            final Double _tmpPricePerLiter;
+            if (_cursor.isNull(_cursorIndexOfPricePerLiter)) {
+              _tmpPricePerLiter = null;
+            } else {
+              _tmpPricePerLiter = _cursor.getDouble(_cursorIndexOfPricePerLiter);
+            }
+            final Integer _tmpOdometer;
+            if (_cursor.isNull(_cursorIndexOfOdometer)) {
+              _tmpOdometer = null;
+            } else {
+              _tmpOdometer = _cursor.getInt(_cursorIndexOfOdometer);
+            }
+            final String _tmpFuelType;
+            if (_cursor.isNull(_cursorIndexOfFuelType)) {
+              _tmpFuelType = null;
+            } else {
+              _tmpFuelType = _cursor.getString(_cursorIndexOfFuelType);
+            }
+            final long _tmpParentExpenseId;
+            _tmpParentExpenseId = _cursor.getLong(_cursorIndexOfParentExpenseId);
+            final boolean _tmpIsGenerated;
+            final int _tmp_1;
+            _tmp_1 = _cursor.getInt(_cursorIndexOfIsGenerated);
+            _tmpIsGenerated = _tmp_1 != 0;
+            _item = new ExpenseEntity(_tmpId,_tmpCategory,_tmpAmount,_tmpDescription,_tmpDate,_tmpIsRecurring,_tmpRecurringDay,_tmpRecurringDays,_tmpRecurringDuration,_tmpRecurringEndDate,_tmpLiters,_tmpPricePerLiter,_tmpOdometer,_tmpFuelType,_tmpParentExpenseId,_tmpIsGenerated);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
   }
 
   @Override
@@ -674,6 +827,78 @@ public final class ExpenseDao_Impl implements ExpenseDao {
         _statement.release();
       }
     });
+  }
+
+  @Override
+  public Object countGeneratedForDay(final long parentId, final long dayStart, final long dayEnd,
+      final Continuation<? super Integer> $completion) {
+    final String _sql = "SELECT COUNT(*) FROM expenses WHERE parentExpenseId = ? AND date >= ? AND date <= ?";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 3);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, parentId);
+    _argIndex = 2;
+    _statement.bindLong(_argIndex, dayStart);
+    _argIndex = 3;
+    _statement.bindLong(_argIndex, dayEnd);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<Integer>() {
+      @Override
+      @NonNull
+      public Integer call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final Integer _result;
+          if (_cursor.moveToFirst()) {
+            final int _tmp;
+            _tmp = _cursor.getInt(0);
+            _result = _tmp;
+          } else {
+            _result = 0;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object getExpenseSummaryByCategory(final long startDate, final long endDate,
+      final Continuation<? super List<CategorySummary>> $completion) {
+    final String _sql = "SELECT category, SUM(amount) as total FROM expenses WHERE date >= ? AND date <= ? GROUP BY category ORDER BY total DESC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 2);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, startDate);
+    _argIndex = 2;
+    _statement.bindLong(_argIndex, endDate);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<CategorySummary>>() {
+      @Override
+      @NonNull
+      public List<CategorySummary> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfCategory = 0;
+          final int _cursorIndexOfTotal = 1;
+          final List<CategorySummary> _result = new ArrayList<CategorySummary>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final CategorySummary _item;
+            final String _tmpCategory;
+            _tmpCategory = _cursor.getString(_cursorIndexOfCategory);
+            final double _tmpTotal;
+            _tmpTotal = _cursor.getDouble(_cursorIndexOfTotal);
+            _item = new CategorySummary(_tmpCategory,_tmpTotal);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
   }
 
   @NonNull

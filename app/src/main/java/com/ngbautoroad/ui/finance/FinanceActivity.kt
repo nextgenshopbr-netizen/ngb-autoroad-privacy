@@ -34,6 +34,7 @@ class FinanceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val db = FinanceDatabase.getInstance(applicationContext)
+        val prefsManager = com.ngbautoroad.data.prefs.PrefsManager(applicationContext)
         setContent {
             NGBAutoRoadTheme {
                 FinanceScreen(
@@ -42,6 +43,7 @@ class FinanceActivity : ComponentActivity() {
                     reminderDao = db.reminderDao(),
                     vehicleConfigDao = db.vehicleConfigDao(),
                     financialGoalDao = db.financialGoalDao(),
+                    prefsManager = prefsManager,
                     onBack = { finish() }
                 )
             }
@@ -56,6 +58,7 @@ fun FinanceScreen(
     reminderDao: ReminderDao,
     vehicleConfigDao: VehicleConfigDao,
     financialGoalDao: FinancialGoalDao,
+    prefsManager: com.ngbautoroad.data.prefs.PrefsManager? = null,
     onBack: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -89,7 +92,7 @@ fun FinanceScreen(
 
             when (selectedTab) {
                 0 -> FinanceSummaryTab(expenseDao, earningDao, financialGoalDao)
-                1 -> EarningsTab(earningDao)
+                1 -> EarningsTab(earningDao, prefsManager)
                 2 -> ExpensesTab(expenseDao)
                 3 -> VehicleTab(vehicleConfigDao)
                 4 -> GoalsTab(earningDao, expenseDao, financialGoalDao)
@@ -257,12 +260,13 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
 // === ABA GANHOS ===
 
 @Composable
-fun EarningsTab(earningDao: EarningDao) {
+fun EarningsTab(earningDao: EarningDao, prefsManager: com.ngbautoroad.data.prefs.PrefsManager? = null) {
     val scope = rememberCoroutineScope()
     val allEarnings by earningDao.getAllEarnings().collectAsState(initial = emptyList())
     var showAddDialog by remember { mutableStateOf(false) }
     var editingEarning by remember { mutableStateOf<EarningEntity?>(null) }
-    var autoImportEnabled by remember { mutableStateOf(false) }
+    val autoImportEnabled by (prefsManager?.autoImportEarningsFlow
+        ?: kotlinx.coroutines.flow.flowOf(false)).collectAsState(initial = false)
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Auto-import toggle
@@ -277,7 +281,12 @@ fun EarningsTab(earningDao: EarningDao) {
                 Text("Lançamento automático", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Text("Registra corridas concluídas automaticamente", fontSize = 11.sp, color = Color.Gray)
             }
-            Switch(checked = autoImportEnabled, onCheckedChange = { autoImportEnabled = it })
+            Switch(
+                checked = autoImportEnabled,
+                onCheckedChange = { enabled ->
+                    scope.launch { prefsManager?.setAutoImportEarnings(enabled) }
+                }
+            )
         }
 
         // Botão adicionar

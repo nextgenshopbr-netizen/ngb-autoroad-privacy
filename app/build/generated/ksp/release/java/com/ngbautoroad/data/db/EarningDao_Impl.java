@@ -47,7 +47,7 @@ public final class EarningDao_Impl implements EarningDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "INSERT OR ABORT INTO `earnings` (`id`,`platform`,`amount`,`tips`,`bonus`,`distance`,`duration`,`ridesCount`,`date`,`description`,`period`,`isAutoImported`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?)";
+        return "INSERT OR ABORT INTO `earnings` (`id`,`platform`,`amount`,`tips`,`bonus`,`distance`,`duration`,`ridesCount`,`date`,`description`,`period`,`isAutoImported`,`rideHistoryId`) VALUES (nullif(?, 0),?,?,?,?,?,?,?,?,?,?,?,?)";
       }
 
       @Override
@@ -66,6 +66,7 @@ public final class EarningDao_Impl implements EarningDao {
         statement.bindString(11, entity.getPeriod());
         final int _tmp = entity.isAutoImported() ? 1 : 0;
         statement.bindLong(12, _tmp);
+        statement.bindLong(13, entity.getRideHistoryId());
       }
     };
     this.__deletionAdapterOfEarningEntity = new EntityDeletionOrUpdateAdapter<EarningEntity>(__db) {
@@ -85,7 +86,7 @@ public final class EarningDao_Impl implements EarningDao {
       @Override
       @NonNull
       protected String createQuery() {
-        return "UPDATE OR ABORT `earnings` SET `id` = ?,`platform` = ?,`amount` = ?,`tips` = ?,`bonus` = ?,`distance` = ?,`duration` = ?,`ridesCount` = ?,`date` = ?,`description` = ?,`period` = ?,`isAutoImported` = ? WHERE `id` = ?";
+        return "UPDATE OR ABORT `earnings` SET `id` = ?,`platform` = ?,`amount` = ?,`tips` = ?,`bonus` = ?,`distance` = ?,`duration` = ?,`ridesCount` = ?,`date` = ?,`description` = ?,`period` = ?,`isAutoImported` = ?,`rideHistoryId` = ? WHERE `id` = ?";
       }
 
       @Override
@@ -104,7 +105,8 @@ public final class EarningDao_Impl implements EarningDao {
         statement.bindString(11, entity.getPeriod());
         final int _tmp = entity.isAutoImported() ? 1 : 0;
         statement.bindLong(12, _tmp);
-        statement.bindLong(13, entity.getId());
+        statement.bindLong(13, entity.getRideHistoryId());
+        statement.bindLong(14, entity.getId());
       }
     };
   }
@@ -185,6 +187,7 @@ public final class EarningDao_Impl implements EarningDao {
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfPeriod = CursorUtil.getColumnIndexOrThrow(_cursor, "period");
           final int _cursorIndexOfIsAutoImported = CursorUtil.getColumnIndexOrThrow(_cursor, "isAutoImported");
+          final int _cursorIndexOfRideHistoryId = CursorUtil.getColumnIndexOrThrow(_cursor, "rideHistoryId");
           final List<EarningEntity> _result = new ArrayList<EarningEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final EarningEntity _item;
@@ -214,7 +217,9 @@ public final class EarningDao_Impl implements EarningDao {
             final int _tmp;
             _tmp = _cursor.getInt(_cursorIndexOfIsAutoImported);
             _tmpIsAutoImported = _tmp != 0;
-            _item = new EarningEntity(_tmpId,_tmpPlatform,_tmpAmount,_tmpTips,_tmpBonus,_tmpDistance,_tmpDuration,_tmpRidesCount,_tmpDate,_tmpDescription,_tmpPeriod,_tmpIsAutoImported);
+            final long _tmpRideHistoryId;
+            _tmpRideHistoryId = _cursor.getLong(_cursorIndexOfRideHistoryId);
+            _item = new EarningEntity(_tmpId,_tmpPlatform,_tmpAmount,_tmpTips,_tmpBonus,_tmpDistance,_tmpDuration,_tmpRidesCount,_tmpDate,_tmpDescription,_tmpPeriod,_tmpIsAutoImported,_tmpRideHistoryId);
             _result.add(_item);
           }
           return _result;
@@ -256,6 +261,7 @@ public final class EarningDao_Impl implements EarningDao {
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfPeriod = CursorUtil.getColumnIndexOrThrow(_cursor, "period");
           final int _cursorIndexOfIsAutoImported = CursorUtil.getColumnIndexOrThrow(_cursor, "isAutoImported");
+          final int _cursorIndexOfRideHistoryId = CursorUtil.getColumnIndexOrThrow(_cursor, "rideHistoryId");
           final List<EarningEntity> _result = new ArrayList<EarningEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final EarningEntity _item;
@@ -285,7 +291,9 @@ public final class EarningDao_Impl implements EarningDao {
             final int _tmp;
             _tmp = _cursor.getInt(_cursorIndexOfIsAutoImported);
             _tmpIsAutoImported = _tmp != 0;
-            _item = new EarningEntity(_tmpId,_tmpPlatform,_tmpAmount,_tmpTips,_tmpBonus,_tmpDistance,_tmpDuration,_tmpRidesCount,_tmpDate,_tmpDescription,_tmpPeriod,_tmpIsAutoImported);
+            final long _tmpRideHistoryId;
+            _tmpRideHistoryId = _cursor.getLong(_cursorIndexOfRideHistoryId);
+            _item = new EarningEntity(_tmpId,_tmpPlatform,_tmpAmount,_tmpTips,_tmpBonus,_tmpDistance,_tmpDuration,_tmpRidesCount,_tmpDate,_tmpDescription,_tmpPeriod,_tmpIsAutoImported,_tmpRideHistoryId);
             _result.add(_item);
           }
           return _result;
@@ -325,6 +333,7 @@ public final class EarningDao_Impl implements EarningDao {
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfPeriod = CursorUtil.getColumnIndexOrThrow(_cursor, "period");
           final int _cursorIndexOfIsAutoImported = CursorUtil.getColumnIndexOrThrow(_cursor, "isAutoImported");
+          final int _cursorIndexOfRideHistoryId = CursorUtil.getColumnIndexOrThrow(_cursor, "rideHistoryId");
           final List<EarningEntity> _result = new ArrayList<EarningEntity>(_cursor.getCount());
           while (_cursor.moveToNext()) {
             final EarningEntity _item;
@@ -354,7 +363,9 @@ public final class EarningDao_Impl implements EarningDao {
             final int _tmp;
             _tmp = _cursor.getInt(_cursorIndexOfIsAutoImported);
             _tmpIsAutoImported = _tmp != 0;
-            _item = new EarningEntity(_tmpId,_tmpPlatform,_tmpAmount,_tmpTips,_tmpBonus,_tmpDistance,_tmpDuration,_tmpRidesCount,_tmpDate,_tmpDescription,_tmpPeriod,_tmpIsAutoImported);
+            final long _tmpRideHistoryId;
+            _tmpRideHistoryId = _cursor.getLong(_cursorIndexOfRideHistoryId);
+            _item = new EarningEntity(_tmpId,_tmpPlatform,_tmpAmount,_tmpTips,_tmpBonus,_tmpDistance,_tmpDuration,_tmpRidesCount,_tmpDate,_tmpDescription,_tmpPeriod,_tmpIsAutoImported,_tmpRideHistoryId);
             _result.add(_item);
           }
           return _result;
@@ -407,6 +418,43 @@ public final class EarningDao_Impl implements EarningDao {
         _statement.release();
       }
     });
+  }
+
+  @Override
+  public Object getTotalEarningsSync(final long startDate, final long endDate,
+      final Continuation<? super Double> $completion) {
+    final String _sql = "SELECT SUM(amount + tips + bonus) FROM earnings WHERE date >= ? AND date <= ?";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 2);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, startDate);
+    _argIndex = 2;
+    _statement.bindLong(_argIndex, endDate);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<Double>() {
+      @Override
+      @Nullable
+      public Double call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final Double _result;
+          if (_cursor.moveToFirst()) {
+            final Double _tmp;
+            if (_cursor.isNull(0)) {
+              _tmp = null;
+            } else {
+              _tmp = _cursor.getDouble(0);
+            }
+            _result = _tmp;
+          } else {
+            _result = null;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
   }
 
   @Override
@@ -527,6 +575,43 @@ public final class EarningDao_Impl implements EarningDao {
   }
 
   @Override
+  public Object getTotalRidesSync(final long startDate, final long endDate,
+      final Continuation<? super Integer> $completion) {
+    final String _sql = "SELECT SUM(ridesCount) FROM earnings WHERE date >= ? AND date <= ?";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 2);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, startDate);
+    _argIndex = 2;
+    _statement.bindLong(_argIndex, endDate);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<Integer>() {
+      @Override
+      @Nullable
+      public Integer call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final Integer _result;
+          if (_cursor.moveToFirst()) {
+            final Integer _tmp;
+            if (_cursor.isNull(0)) {
+              _tmp = null;
+            } else {
+              _tmp = _cursor.getInt(0);
+            }
+            _result = _tmp;
+          } else {
+            _result = null;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
   public Object getById(final long id, final Continuation<? super EarningEntity> $completion) {
     final String _sql = "SELECT * FROM earnings WHERE id = ?";
     final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
@@ -551,6 +636,7 @@ public final class EarningDao_Impl implements EarningDao {
           final int _cursorIndexOfDescription = CursorUtil.getColumnIndexOrThrow(_cursor, "description");
           final int _cursorIndexOfPeriod = CursorUtil.getColumnIndexOrThrow(_cursor, "period");
           final int _cursorIndexOfIsAutoImported = CursorUtil.getColumnIndexOrThrow(_cursor, "isAutoImported");
+          final int _cursorIndexOfRideHistoryId = CursorUtil.getColumnIndexOrThrow(_cursor, "rideHistoryId");
           final EarningEntity _result;
           if (_cursor.moveToFirst()) {
             final long _tmpId;
@@ -579,7 +665,120 @@ public final class EarningDao_Impl implements EarningDao {
             final int _tmp;
             _tmp = _cursor.getInt(_cursorIndexOfIsAutoImported);
             _tmpIsAutoImported = _tmp != 0;
-            _result = new EarningEntity(_tmpId,_tmpPlatform,_tmpAmount,_tmpTips,_tmpBonus,_tmpDistance,_tmpDuration,_tmpRidesCount,_tmpDate,_tmpDescription,_tmpPeriod,_tmpIsAutoImported);
+            final long _tmpRideHistoryId;
+            _tmpRideHistoryId = _cursor.getLong(_cursorIndexOfRideHistoryId);
+            _result = new EarningEntity(_tmpId,_tmpPlatform,_tmpAmount,_tmpTips,_tmpBonus,_tmpDistance,_tmpDuration,_tmpRidesCount,_tmpDate,_tmpDescription,_tmpPeriod,_tmpIsAutoImported,_tmpRideHistoryId);
+          } else {
+            _result = null;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object getEarningsByPlatformSummary(final long startDate, final long endDate,
+      final Continuation<? super List<PlatformSummary>> $completion) {
+    final String _sql = "SELECT platform, SUM(amount + tips + bonus) as total, SUM(ridesCount) as rides, SUM(distance) as km FROM earnings WHERE date >= ? AND date <= ? GROUP BY platform ORDER BY total DESC";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 2);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, startDate);
+    _argIndex = 2;
+    _statement.bindLong(_argIndex, endDate);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<List<PlatformSummary>>() {
+      @Override
+      @NonNull
+      public List<PlatformSummary> call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final int _cursorIndexOfPlatform = 0;
+          final int _cursorIndexOfTotal = 1;
+          final int _cursorIndexOfRides = 2;
+          final int _cursorIndexOfKm = 3;
+          final List<PlatformSummary> _result = new ArrayList<PlatformSummary>(_cursor.getCount());
+          while (_cursor.moveToNext()) {
+            final PlatformSummary _item;
+            final String _tmpPlatform;
+            _tmpPlatform = _cursor.getString(_cursorIndexOfPlatform);
+            final double _tmpTotal;
+            _tmpTotal = _cursor.getDouble(_cursorIndexOfTotal);
+            final int _tmpRides;
+            _tmpRides = _cursor.getInt(_cursorIndexOfRides);
+            final double _tmpKm;
+            _tmpKm = _cursor.getDouble(_cursorIndexOfKm);
+            _item = new PlatformSummary(_tmpPlatform,_tmpTotal,_tmpRides,_tmpKm);
+            _result.add(_item);
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object countAutoImportedByRideId(final long rideId,
+      final Continuation<? super Integer> $completion) {
+    final String _sql = "SELECT COUNT(*) FROM earnings WHERE rideHistoryId = ? AND isAutoImported = 1";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 1);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, rideId);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<Integer>() {
+      @Override
+      @NonNull
+      public Integer call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final Integer _result;
+          if (_cursor.moveToFirst()) {
+            final int _tmp;
+            _tmp = _cursor.getInt(0);
+            _result = _tmp;
+          } else {
+            _result = 0;
+          }
+          return _result;
+        } finally {
+          _cursor.close();
+          _statement.release();
+        }
+      }
+    }, $completion);
+  }
+
+  @Override
+  public Object getTodayEarnings(final long dayStart, final long dayEnd,
+      final Continuation<? super Double> $completion) {
+    final String _sql = "SELECT SUM(amount + tips + bonus) FROM earnings WHERE date >= ? AND date <= ?";
+    final RoomSQLiteQuery _statement = RoomSQLiteQuery.acquire(_sql, 2);
+    int _argIndex = 1;
+    _statement.bindLong(_argIndex, dayStart);
+    _argIndex = 2;
+    _statement.bindLong(_argIndex, dayEnd);
+    final CancellationSignal _cancellationSignal = DBUtil.createCancellationSignal();
+    return CoroutinesRoom.execute(__db, false, _cancellationSignal, new Callable<Double>() {
+      @Override
+      @Nullable
+      public Double call() throws Exception {
+        final Cursor _cursor = DBUtil.query(__db, _statement, false, null);
+        try {
+          final Double _result;
+          if (_cursor.moveToFirst()) {
+            final Double _tmp;
+            if (_cursor.isNull(0)) {
+              _tmp = null;
+            } else {
+              _tmp = _cursor.getDouble(0);
+            }
+            _result = _tmp;
           } else {
             _result = null;
           }

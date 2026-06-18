@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ngbautoroad.data.prefs.PrefsManager
+import com.ngbautoroad.service.OcrCaptureService
 import com.ngbautoroad.service.OverlayService
 import com.ngbautoroad.ui.theme.*
 import kotlinx.coroutines.launch
@@ -228,7 +229,14 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     Switch(
                         checked = ocrEnabled,
                         onCheckedChange = { enabled ->
-                            scope.launch { prefsManager.setOcrEnabled(enabled) }
+                            scope.launch {
+                                prefsManager.setOcrEnabled(enabled)
+                                if (enabled) {
+                                    OcrCaptureService.start(context)
+                                } else {
+                                    OcrCaptureService.stop(context)
+                                }
+                            }
                         }
                     )
                 }
@@ -262,7 +270,11 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 Slider(
                     value = overlayWidth.toFloat(),
                     onValueChange = { newWidth ->
-                        scope.launch { prefsManager.saveOverlaySize(newWidth.toInt(), 0) }
+                        scope.launch {
+                            prefsManager.saveOverlaySize(newWidth.toInt(), 0)
+                            // Aplicar resize ao vivo no overlay ativo (item 4.3)
+                            OverlayService.resizeFromOutside(newWidth.toInt())
+                        }
                     },
                     valueRange = 200f..500f,
                     steps = 14
