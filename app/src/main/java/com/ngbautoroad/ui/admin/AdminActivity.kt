@@ -330,38 +330,57 @@ fun AdminPanel(
                 LaunchedEffect(result) {
                     try {
                         android.util.Log.d("NGB_SIMULACAO", "[1] Iniciando simulação de corrida")
+                        // Usar applicationContext para não depender do ciclo de vida da Activity
+                        val appCtx = context.applicationContext
                         // Verificar permissão de overlay
-                        val canDraw = android.provider.Settings.canDrawOverlays(context)
+                        val canDraw = android.provider.Settings.canDrawOverlays(appCtx)
                         android.util.Log.d("NGB_SIMULACAO", "[2] canDrawOverlays=$canDraw")
                         if (!canDraw) {
                             android.util.Log.w("NGB_SIMULACAO", "[ERR] Sem permissão de overlay. Abra Configurações > Apps > NGB AutoRoad > Permissões > Exibir sobre outros apps")
+                            android.widget.Toast.makeText(appCtx, "Ative a permissão 'Exibir sobre outros apps' nas configurações do app.", android.widget.Toast.LENGTH_LONG).show()
                             return@LaunchedEffect
                         }
-                        // Garantir que o OverlayService está rodando
+                        // Garantir que o OverlayService está rodando (usando applicationContext)
                         val wasRunning = OverlayService.isRunning()
                         android.util.Log.d("NGB_SIMULACAO", "[3] OverlayService.isRunning()=$wasRunning")
                         if (!wasRunning) {
                             android.util.Log.d("NGB_SIMULACAO", "[4] Iniciando OverlayService...")
-                            OverlayService.start(context)
+                            OverlayService.start(appCtx)
                         }
-                        // Pequeno delay para garantir que o serviço iniciou
-                        kotlinx.coroutines.delay(300)
+                        // Aguardar até 3s com retry para garantir que o serviço iniciou
+                        var retries = 0
+                        while (!OverlayService.isRunning() && retries < 6) {
+                            kotlinx.coroutines.delay(500)
+                            retries++
+                            android.util.Log.d("NGB_SIMULACAO", "[4.$retries] Aguardando serviço... isRunning=${OverlayService.isRunning()}")
+                        }
                         val nowRunning = OverlayService.isRunning()
-                        android.util.Log.d("NGB_SIMULACAO", "[5] OverlayService.isRunning() após start=$nowRunning")
+                        android.util.Log.d("NGB_SIMULACAO", "[5] OverlayService.isRunning() após start=$nowRunning (tentativas=$retries)")
                         // Enviar RideData real para o overlay (exatamente como AccessibilityService faz)
                         val rideData = result.toRideData()
                         android.util.Log.d("NGB_SIMULACAO", "[6] RideData: plataforma=${rideData.platform} valor=${rideData.rideValue} dist=${rideData.dropoffDistance}km score=${result.score}")
-                        val cb = OverlayService.onRideDetected
+                        var cb = OverlayService.onRideDetected
                         android.util.Log.d("NGB_SIMULACAO", "[7] onRideDetected callback=${cb != null}")
+                        // Retry para obter o callback (pode demorar um pouco após o serviço iniciar)
+                        var cbRetries = 0
+                        while (cb == null && cbRetries < 3) {
+                            kotlinx.coroutines.delay(500)
+                            cb = OverlayService.onRideDetected
+                            cbRetries++
+                            android.util.Log.d("NGB_SIMULACAO", "[7.$cbRetries] Aguardando callback... cb=${cb != null}")
+                        }
                         if (cb != null) {
                             cb.invoke(rideData)
                             android.util.Log.d("NGB_SIMULACAO", "[8] Callback invocado com sucesso")
+                            android.widget.Toast.makeText(appCtx, "Card simulado! Pressione Home para ver o overlay.", android.widget.Toast.LENGTH_LONG).show()
                         } else {
-                            android.util.Log.w("NGB_SIMULACAO", "[ERR] onRideDetected é null. Serviço não inicializou corretamente.")
+                            android.util.Log.w("NGB_SIMULACAO", "[ERR] onRideDetected é null após $cbRetries tentativas. Serviço não inicializou corretamente.")
+                            android.widget.Toast.makeText(appCtx, "Serviço não iniciou. Verifique permissão de overlay e notificações.", android.widget.Toast.LENGTH_LONG).show()
                         }
                     } catch (e: Exception) {
                         android.util.Log.e("NGB_SIMULACAO", "[ERR] Exceção na simulação: ${e.javaClass.simpleName}: ${e.message}", e)
                         android.util.Log.e("NGB_SIMULACAO", "[ERR] StackTrace: ${e.stackTraceToString().take(1000)}")
+                        android.widget.Toast.makeText(context.applicationContext, "Erro: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                     }
                 }
 
