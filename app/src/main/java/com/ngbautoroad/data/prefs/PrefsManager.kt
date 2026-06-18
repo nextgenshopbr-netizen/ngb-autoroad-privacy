@@ -23,7 +23,6 @@ class PrefsManager(private val context: Context) {
     private val KEY_WEIGHT_RIDE_VALUE = intPreferencesKey("weight_ride_value")
     private val KEY_WEIGHT_DURATION = intPreferencesKey("weight_duration")
     private val KEY_WEIGHT_PICKUP_DIST = intPreferencesKey("weight_pickup_distance")
-    private val KEY_WEIGHT_USER_RATING = intPreferencesKey("weight_user_rating")
     private val KEY_WEIGHT_DROPOFF_DIST = intPreferencesKey("weight_dropoff_distance")
 
     // Driver Thresholds Keys (valores mínimos desejados)
@@ -34,7 +33,6 @@ class PrefsManager(private val context: Context) {
     private val KEY_THRESH_MIN_RATING = doublePreferencesKey("thresh_min_passenger_rating")
     private val KEY_THRESH_MAX_DURATION = doublePreferencesKey("thresh_max_duration")
     private val KEY_THRESH_MAX_STOPS = intPreferencesKey("thresh_max_stops")
-    private val KEY_THRESH_MIN_USER_RATING = doublePreferencesKey("thresh_min_user_rating")
     private val KEY_THRESH_MIN_DROPOFF_DIST = doublePreferencesKey("thresh_min_dropoff_distance")
 
     // Card Selection Keys
@@ -84,7 +82,6 @@ class PrefsManager(private val context: Context) {
             valuePerHour = prefs[KEY_WEIGHT_VALUE_PER_HOUR] ?: 30,
             intermediateStops = prefs[KEY_WEIGHT_STOPS] ?: 25,
             passengerRating = prefs[KEY_WEIGHT_RATING] ?: 15,
-            userRating = prefs[KEY_WEIGHT_USER_RATING] ?: 0,
             rideValue = prefs[KEY_WEIGHT_RIDE_VALUE] ?: 0,
             rideDuration = prefs[KEY_WEIGHT_DURATION] ?: 0,
             pickupDistance = prefs[KEY_WEIGHT_PICKUP_DIST] ?: 0,
@@ -98,7 +95,6 @@ class PrefsManager(private val context: Context) {
             prefs[KEY_WEIGHT_VALUE_PER_HOUR] = weights.valuePerHour
             prefs[KEY_WEIGHT_STOPS] = weights.intermediateStops
             prefs[KEY_WEIGHT_RATING] = weights.passengerRating
-            prefs[KEY_WEIGHT_USER_RATING] = weights.userRating
             prefs[KEY_WEIGHT_RIDE_VALUE] = weights.rideValue
             prefs[KEY_WEIGHT_DURATION] = weights.rideDuration
             prefs[KEY_WEIGHT_PICKUP_DIST] = weights.pickupDistance
@@ -115,7 +111,6 @@ class PrefsManager(private val context: Context) {
             minRideValue = prefs[KEY_THRESH_MIN_RIDE_VALUE] ?: 0.0,
             maxPickupDistance = prefs[KEY_THRESH_MAX_PICKUP_DIST] ?: 0.0,
             minPassengerRating = prefs[KEY_THRESH_MIN_RATING] ?: 0.0,
-            minUserRating = prefs[KEY_THRESH_MIN_USER_RATING] ?: 0.0,
             maxDuration = prefs[KEY_THRESH_MAX_DURATION] ?: 0.0,
             maxStops = prefs[KEY_THRESH_MAX_STOPS] ?: 99,
             minDropoffDistance = prefs[KEY_THRESH_MIN_DROPOFF_DIST] ?: 0.0
@@ -129,7 +124,6 @@ class PrefsManager(private val context: Context) {
             prefs[KEY_THRESH_MIN_RIDE_VALUE] = thresholds.minRideValue
             prefs[KEY_THRESH_MAX_PICKUP_DIST] = thresholds.maxPickupDistance
             prefs[KEY_THRESH_MIN_RATING] = thresholds.minPassengerRating
-            prefs[KEY_THRESH_MIN_USER_RATING] = thresholds.minUserRating
             prefs[KEY_THRESH_MAX_DURATION] = thresholds.maxDuration
             prefs[KEY_THRESH_MAX_STOPS] = thresholds.maxStops
             prefs[KEY_THRESH_MIN_DROPOFF_DIST] = thresholds.minDropoffDistance

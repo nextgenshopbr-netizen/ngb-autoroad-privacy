@@ -10,7 +10,6 @@ data class RideData(
     val pickupDistance: Double = 0.0,     // Distância até embarque (km)
     val dropoffDistance: Double = 0.0,    // Distância até desembarque (km)
     val passengerRating: Double = 0.0,   // Avaliação do passageiro (0-5)
-    val userRating: Double = 0.0,         // Avaliação de usuários/corrida (0-5)
     val intermediateStops: Int = 0,       // Número de paradas intermediárias
     val pickupNeighborhood: String = "",  // Bairro de embarque
     val dropoffNeighborhood: String = "", // Bairro de destino
@@ -49,7 +48,6 @@ data class CriteriaWeights(
     val valuePerHour: Int = 30,
     val intermediateStops: Int = 25,
     val passengerRating: Int = 15,
-    val userRating: Int = 0,
     val rideValue: Int = 0,
     val rideDuration: Int = 0,
     val pickupDistance: Int = 0,
@@ -57,7 +55,7 @@ data class CriteriaWeights(
 ) {
     val totalUsed: Int
         get() = valuePerKm + valuePerHour + intermediateStops + passengerRating +
-                userRating + rideValue + rideDuration + pickupDistance + dropoffDistance
+                rideValue + rideDuration + pickupDistance + dropoffDistance
 }
 
 /**
@@ -70,7 +68,6 @@ data class DriverThresholds(
     val minRideValue: Double = 0.0,         // Valor mínimo da corrida (R$)
     val maxPickupDistance: Double = 0.0,    // Distância máxima até embarque (km)
     val minPassengerRating: Double = 0.0,   // Avaliação mínima do passageiro
-    val minUserRating: Double = 0.0,        // Avaliação mínima de usuários
     val maxDuration: Double = 0.0,          // Duração máxima aceitável (min)
     val maxStops: Int = 99,                 // Máximo de paradas aceitáveis
     val minDropoffDistance: Double = 0.0    // Distância mínima do destino (km)
@@ -83,7 +80,6 @@ data class DriverThresholds(
     fun isRideValueActive() = minRideValue > 0
     fun isPickupDistanceActive() = maxPickupDistance > 0
     fun isPassengerRatingActive() = minPassengerRating > 0
-    fun isUserRatingActive() = minUserRating > 0
     fun isDurationActive() = maxDuration > 0
     fun isStopsActive() = maxStops < 99
     fun isDropoffDistanceActive() = minDropoffDistance > 0

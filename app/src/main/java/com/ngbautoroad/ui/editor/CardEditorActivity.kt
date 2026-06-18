@@ -702,7 +702,6 @@ fun RealCardPreview(layout: CustomCardLayout) {
             "DROPOFF_DISTANCE" to "7,8 km",
             "DURATION" to "22 min",
             "PASSENGER_RATING" to "4,8 ★",
-            "USER_RATING" to "4,6 ★",
             "INTERMEDIATE_STOPS" to "0 paradas",
             "PLATFORM" to "Uber",
             "PICKUP_NEIGHBORHOOD" to "Pituba",

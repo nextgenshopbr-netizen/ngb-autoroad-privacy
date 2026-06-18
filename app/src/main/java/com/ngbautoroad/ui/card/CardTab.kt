@@ -601,7 +601,6 @@ fun PreviewDialog(
                         val rvColor = if (thresholds.isRideValueActive() && randomRide.rideValue < thresholds.minRideValue) ScoreRed else accentColor
                         val pkColor = if (thresholds.isPickupDistanceActive() && randomRide.pickupDistance > thresholds.maxPickupDistance) ScoreRed else accentColor
                         val prColor = if (thresholds.isPassengerRatingActive() && randomRide.passengerRating < thresholds.minPassengerRating) ScoreRed else accentColor
-                        val urColor = if (thresholds.isUserRatingActive() && randomRide.userRating < thresholds.minUserRating) ScoreRed else accentColor
                         val durColor = if (thresholds.isDurationActive() && randomRide.rideDuration > thresholds.maxDuration) ScoreRed else accentColor
                         val stopsColor = if (thresholds.isStopsActive() && randomRide.intermediateStops > thresholds.maxStops) ScoreRed else accentColor
 
@@ -611,8 +610,9 @@ fun PreviewDialog(
                         PreviewField("Embarque", String.format("%.1f km", randomRide.pickupDistance), textColor, pkColor)
                         PreviewField("Destino", String.format("%.1f km", randomRide.dropoffDistance), textColor, accentColor)
                         PreviewField("Duração", String.format("%.0f min", randomRide.rideDuration), textColor, durColor)
-                        PreviewField("Aval. Passageiro", String.format("%.1f ★", randomRide.passengerRating), textColor, prColor)
-                        PreviewField("Aval. Usuário", String.format("%.1f ★", randomRide.userRating), textColor, urColor)
+                        if (randomRide.passengerRating > 0) {
+                            PreviewField("Aval. Passageiro", String.format("%.1f ★", randomRide.passengerRating), textColor, prColor)
+                        }
                         if (randomRide.intermediateStops > 0) {
                             PreviewField("Paradas", "${randomRide.intermediateStops}", textColor, stopsColor)
                         }
@@ -689,7 +689,6 @@ fun generateRandomRide(): RideData {
         pickupDistance = Random.nextDouble(0.3, 5.0),
         dropoffDistance = dropoffDist,
         passengerRating = Random.nextDouble(3.5, 5.0),
-        userRating = Random.nextDouble(3.0, 5.0),
         intermediateStops = if (Random.nextFloat() < 0.3f) Random.nextInt(1, 3) else 0,
         pickupNeighborhood = neighborhoods.random(),
         dropoffNeighborhood = neighborhoods.random()

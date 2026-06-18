@@ -124,17 +124,6 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         )
 
         CriteriaSlider(
-            label = "Avaliação de Usuários",
-            value = weights.userRating,
-            maxValue = maxForCriteria(weights.userRating),
-            onValueChange = { newVal ->
-                scope.launch {
-                    prefsManager.saveCriteriaWeights(weights.copy(userRating = newVal))
-                }
-            }
-        )
-
-        CriteriaSlider(
             label = "Valor da Corrida",
             value = weights.rideValue,
             maxValue = maxForCriteria(weights.rideValue),
@@ -261,17 +250,6 @@ fun CriteriaTab(prefsManager: PrefsManager) {
                 onValueChange = { newVal ->
                     scope.launch {
                         prefsManager.saveDriverThresholds(thresholds.copy(minPassengerRating = newVal.coerceIn(0.0, 5.0)))
-                    }
-                }
-            )
-
-            ThresholdField(
-                label = "Avaliação mínima de usuários",
-                value = thresholds.minUserRating,
-                suffix = "estrelas",
-                onValueChange = { newVal ->
-                    scope.launch {
-                        prefsManager.saveDriverThresholds(thresholds.copy(minUserRating = newVal.coerceIn(0.0, 5.0)))
                     }
                 }
             )

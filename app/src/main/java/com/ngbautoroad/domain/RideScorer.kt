@@ -24,8 +24,8 @@ class RideScorer(
         val criteriaScores = mutableMapOf<String, CriteriaScore>()
         val violations = mutableListOf<ThresholdViolation>()
 
-        // 1. Valor por KM
-        if (weights.valuePerKm > 0) {
+        // 1. Valor por KM (pular se dropoffDistance=0 pois não há dados suficientes)
+        if (weights.valuePerKm > 0 && ride.dropoffDistance > 0) {
             val normalized = normalizeValuePerKm(ride.valuePerKm)
             criteriaScores["valuePerKm"] = CriteriaScore(
                 name = "Valor/KM",
@@ -47,8 +47,8 @@ class RideScorer(
             }
         }
 
-        // 2. Valor por Hora
-        if (weights.valuePerHour > 0) {
+        // 2. Valor por Hora (pular se rideDuration=0 pois não há dados suficientes)
+        if (weights.valuePerHour > 0 && ride.rideDuration > 0) {
             val normalized = normalizeValuePerHour(ride.valuePerHour)
             criteriaScores["valuePerHour"] = CriteriaScore(
                 name = "Valor/Hora",
@@ -179,29 +179,7 @@ class RideScorer(
             }
         }
 
-        // 8. Avaliação de Usuários (rating do usuário no app)
-        if (weights.userRating > 0) {
-            val normalized = normalizeRating(ride.userRating)
-            criteriaScores["userRating"] = CriteriaScore(
-                name = "Aval. Usuário",
-                rawValue = ride.userRating,
-                normalizedScore = normalized,
-                weight = weights.userRating,
-                weightedScore = normalized * weights.userRating / 100.0,
-                level = getLevel(normalized)
-            )
-            if (driverThresholds.isUserRatingActive() && ride.userRating < driverThresholds.minUserRating) {
-                val penalty = weights.userRating * 0.6
-                violations.add(ThresholdViolation(
-                    criteriaName = "Aval. Usuário",
-                    currentValue = ride.userRating,
-                    minimumRequired = driverThresholds.minUserRating,
-                    penaltyApplied = penalty
-                ))
-            }
-        }
-
-        // 9. Distância até Desembarque
+        // 8. Distância até Desembarque
         if (weights.dropoffDistance > 0) {
             val normalized = normalizeDropoffDistance(ride.dropoffDistance)
             criteriaScores["dropoffDistance"] = CriteriaScore(
@@ -224,7 +202,14 @@ class RideScorer(
         }
 
         // Calcular score total
-        var totalScore = criteriaScores.values.sumOf { it.weightedScore }
+        // Se critérios foram pulados por dados parciais, normalizar pelo peso efetivo
+        val effectiveWeight = criteriaScores.values.sumOf { it.weight }
+        var totalScore = if (effectiveWeight > 0 && effectiveWeight < weights.totalUsed) {
+            // Escalar proporcionalmente para compensar critérios sem dados
+            criteriaScores.values.sumOf { it.weightedScore } * (weights.totalUsed.toDouble() / effectiveWeight)
+        } else {
+            criteriaScores.values.sumOf { it.weightedScore }
+        }
 
         // Aplicar penalidades de thresholds violados
         val thresholdPenalty = violations.sumOf { it.penaltyApplied }

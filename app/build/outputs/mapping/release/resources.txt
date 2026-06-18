@@ -626,7 +626,6 @@ Manutenção
 format
 http://localhost
 com.google.android.gms.signin
-com.ngbautoroad.ui.criteria.CriteriaT...
 SELECT_LEFT_WORD
 Leblon
 WrongConstant
@@ -926,7 +925,6 @@ collectionItemInfo
 admin_pin
 TRANSLATE
 OPTIONAL_MODULE_DOCUMENT_ENHANCE_RELEASE
-USER_RATING
 RESUME_TOKEN
 /L
 OSMPublicTransport
@@ -1046,7 +1044,6 @@ RESOURCE_EXHAUSTED
 mlkit_google_ocr_pipeline
 R$/km
 detectorOptions
-weight_user_rating
 VisionKit
 င
 debug.layout
@@ -2270,7 +2267,6 @@ WordBreak.None
 SDK_INT
 AGGREGATED_AUTO_ML_IMAGE_LABELING_INF...
 CLOUD_DOCUMENT_TEXT_CREATE
-com.ngbautoroad.ui.criteria.CriteriaT...
 osmdroid
 OBJ
 updateBaseUrl
@@ -3050,7 +3046,6 @@ ETHANOL
 GainControl
 SMART_REPLY
 androidx.lifecycle.internal.SavedStat...
-thresh_min_user_rating
 osmdroid.tileFileSystemMaxQueueSize
 expires
 PROXY
@@ -3373,7 +3368,6 @@ com.ngbautoroad.ui.finance.FinanceAct...
 landmarkDetectionMode
 CycleMap
 Text
-userRating
 TilesOverlaySnapShotThread
 inDrive
 fuelType
@@ -3417,7 +3411,6 @@ Permissões
 imeAnimationTarget
 kotlin.Int
 sensor
-com.ngbautoroad.ui.criteria.CriteriaT...
 INDRIVE
 osmdroid.tileFileSystemThreads
 addNode
@@ -3758,6 +3751,7 @@ RED
 useCases
 LEFT_CENTER
 getPressure
+com.ngbautoroad.ui.criteria.CriteriaT...
 DOUB
 cardWidth
 ACTION_NEXT_AT_MOVEMENT_GRANULARITY

@@ -113,6 +113,14 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
     val totalRides by earningDao.getTotalRides(startDate, endDate).collectAsState(initial = 0)
     val activeGoals by financialGoalDao.getActiveGoals().collectAsState(initial = emptyList())
 
+    // Calcular ganhos por período para metas (igual ao GoalsTab)
+    val (todayStart, todayEnd) = remember { getPeriodRange(FinancePeriod.TODAY) }
+    val (weekStart, weekEnd) = remember { getPeriodRange(FinancePeriod.WEEK) }
+    val (monthStart, monthEnd) = remember { getPeriodRange(FinancePeriod.MONTH) }
+    val todayEarningsForGoals by earningDao.getTotalEarnings(todayStart, todayEnd).collectAsState(initial = 0.0)
+    val weekEarningsForGoals by earningDao.getTotalEarnings(weekStart, weekEnd).collectAsState(initial = 0.0)
+    val monthEarningsForGoals by earningDao.getTotalEarnings(monthStart, monthEnd).collectAsState(initial = 0.0)
+
     val earnings = totalEarnings ?: 0.0
     val expenses = totalExpenses ?: 0.0
     val netProfit = earnings - expenses
@@ -212,7 +220,13 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
             Text("Metas Ativas", fontWeight = FontWeight.Bold, fontSize = 14.sp)
             Spacer(modifier = Modifier.height(8.dp))
             activeGoals.take(3).forEach { goal ->
-                val progress = if (goal.targetAmount > 0) (goal.currentAmount / goal.targetAmount).coerceIn(0.0, 1.0) else 0.0
+                val goalCurrent = when (goal.period) {
+                    "DIA" -> todayEarningsForGoals ?: 0.0
+                    "SEMANA" -> weekEarningsForGoals ?: 0.0
+                    "MES" -> monthEarningsForGoals ?: 0.0
+                    else -> 0.0
+                }
+                val progress = if (goal.targetAmount > 0) (goalCurrent / goal.targetAmount).coerceIn(0.0, 1.0) else 0.0
                 val progressColor = when {
                     progress >= 1.0 -> ScoreGreen
                     progress >= 0.7 -> ScoreYellow
