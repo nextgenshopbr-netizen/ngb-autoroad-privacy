@@ -118,3 +118,39 @@
 - Registrada no AndroidManifest.xml
 
 ### Versão: 4.5.0 (versionCode 53)
+
+---
+
+## v5.0.0 — 18/06/2026 16:00
+### Correções de Lógica Aplicadas (36 correções em 14 módulos):
+
+**RideScorer.kt:** Guard divisão por zero em 6 funções normalize + escala rating 3.0-5.0
+
+**RideAccessibilityService.kt:** maxDepth=10 no traverseNode + pickupNeighborhood no hash
+
+**OverlayService.kt:** Auto-dismiss timer (30s), remove overlay antes de recriar
+
+**ProjectionEngine.kt:** Guard daysWithData dinâmico + averageOrZero no cenário Mescla
+
+**ShiftManager.kt:** Guard turno duplicado
+
+**LocalLearningEngine.kt:** Persistência SharedPreferences + feedback dados insuficientes
+
+**PrefsManager.kt:** Novo autoDismissSecondsFlow (0-120s)
+
+**NavigationHelper.kt:** FLAG_ACTIVITY_NEW_TASK em todos os intents
+
+**DataExporter.kt:** FLAG_ACTIVITY_NEW_TASK no shareFile
+
+**BatteryOptimizer.kt:** Thresholds ECO=30%, ULTRA_ECO=15%
+
+**MainActivity.kt:** lifecycleScope.launch substitui runBlocking (evita ANR)
+
+**AdminActivity.kt:** Validação PIN mínimo 4 dígitos
+
+**FinanceExtTabs.kt:** Guard installments≥1 + rateio anual (total/12)
+
+**build.gradle.kts:** versionCode=54, versionName="5.0.0"
+
+### Status: BUILD SUCCESSFUL, Push + Tag v5.0.0 no GitHub
+### Versão: 5.0.0 (versionCode 54)
