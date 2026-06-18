@@ -18,6 +18,7 @@ package com.ngbautoroad.ui.settings
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.clickable
@@ -31,14 +32,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ngbautoroad.data.prefs.PrefsManager
+import com.ngbautoroad.service.BubbleService
 import com.ngbautoroad.service.OcrCaptureService
 import com.ngbautoroad.service.OverlayService
+import androidx.compose.material3.Divider
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ExperimentalMaterial3Api
 import com.ngbautoroad.ui.theme.*
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsTab(prefsManager: PrefsManager) {
     val context = LocalContext.current
@@ -330,53 +338,215 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     valueRange = 0.7f..2.0f,
                     steps = 12
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Transparência do overlay
+                val overlayOpacity by prefsManager.overlayOpacityFlow.collectAsState(initial = 1.0f)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Transparência: ${String.format("%.0f", overlayOpacity * 100)}%",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                Slider(
+                    value = overlayOpacity,
+                    onValueChange = { newOpacity ->
+                        scope.launch { prefsManager.saveOverlayOpacity(newOpacity) }
+                    },
+                    valueRange = 0.3f..1.0f,
+                    steps = 6
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Botão Flutuante (Bubble)
+                Text(
+                    text = "Botão Flutuante Lateral",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Aparece na lateral quando o app não está ativo",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                val bubbleEnabled by prefsManager.bubbleEnabledFlow.collectAsState(initial = true)
+                val bubbleSide by prefsManager.bubbleSideFlow.collectAsState(initial = "right")
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Ativar bubble", style = MaterialTheme.typography.bodyMedium)
+                    Switch(
+                        checked = bubbleEnabled,
+                        onCheckedChange = { enabled ->
+                            scope.launch {
+                                prefsManager.setBubbleEnabled(enabled)
+                                if (enabled) {
+                                    BubbleService.start(context)
+                                } else {
+                                    BubbleService.stop(context)
+                                }
+                            }
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Lado:", style = MaterialTheme.typography.bodyMedium)
+                    Row {
+                        FilterChip(
+                            selected = bubbleSide == "left",
+                            onClick = { scope.launch { prefsManager.setBubbleSide("left") } },
+                            label = { Text("Esquerdo") }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        FilterChip(
+                            selected = bubbleSide == "right",
+                            onClick = { scope.launch { prefsManager.setBubbleSide("right") } },
+                            label = { Text("Direito") }
+                        )
+                    }
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // === PERMISSÕES ===
+        // === CHECKLIST DE PERMISSÕES COMPLETO ===
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Permissões",
+                    text = "Permissões Necessárias",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Ative todas para funcionamento completo",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // 1. Acessibilidade
+                val isAccessibilityEnabled = remember {
+                    try {
+                        val enabledServices = Settings.Secure.getString(
+                            context.contentResolver,
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+                        ) ?: ""
+                        enabledServices.contains(context.packageName)
+                    } catch (_: Exception) { false }
+                }
+                PermissionCheckItem(
+                    title = "Acessibilidade",
+                    description = "Detectar corridas nos apps (Uber, 99, inDrive)",
+                    isGranted = isAccessibilityEnabled,
+                    icon = Icons.Default.Accessibility,
+                    onClick = {
+                        context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                OutlinedButton(
-                    onClick = {
-                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Accessibility, contentDescription = "Acessibilidade")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Acessibilidade")
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedButton(
+                // 2. Sobreposição de tela
+                val isOverlayEnabled = Settings.canDrawOverlays(context)
+                PermissionCheckItem(
+                    title = "Sobreposição de Tela",
+                    description = "Exibir card sobre outros apps",
+                    isGranted = isOverlayEnabled,
+                    icon = Icons.Default.Layers,
                     onClick = {
                         val intent = Intent(
                             Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                             android.net.Uri.parse("package:${context.packageName}")
                         )
                         context.startActivity(intent)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Layers, contentDescription = "Overlay")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Sobreposição de Tela")
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 3. Notificações
+                val isNotificationEnabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, android.Manifest.permission.POST_NOTIFICATIONS
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                } else true
+                PermissionCheckItem(
+                    title = "Notificações",
+                    description = "Manter serviço ativo em background (obrigatório)",
+                    isGranted = isNotificationEnabled,
+                    icon = Icons.Default.Notifications,
+                    onClick = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                            }
+                            context.startActivity(intent)
+                        }
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 4. Otimização de bateria
+                val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+                val isIgnoringBattery = pm.isIgnoringBatteryOptimizations(context.packageName)
+                PermissionCheckItem(
+                    title = "Sem Restrição de Bateria",
+                    description = "Impedir que o sistema mate o serviço",
+                    isGranted = isIgnoringBattery,
+                    icon = Icons.Default.BatteryChargingFull,
+                    onClick = {
+                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = android.net.Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Resumo
+                val totalGranted = listOf(isAccessibilityEnabled, isOverlayEnabled, isNotificationEnabled, isIgnoringBattery).count { it }
+                val statusColor = when (totalGranted) {
+                    4 -> MaterialTheme.colorScheme.primary
+                    3 -> MaterialTheme.colorScheme.tertiary
+                    else -> MaterialTheme.colorScheme.error
                 }
+                Text(
+                    text = "$totalGranted/4 permissões ativas",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = statusColor,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
@@ -668,5 +838,50 @@ fun NeighborhoodInput(
             Spacer(modifier = Modifier.width(8.dp))
             Button(onClick = onAdd) { Text("Adicionar") }
         }
+    }
+}
+
+@Composable
+private fun PermissionCheckItem(
+    title: String,
+    description: String,
+    isGranted: Boolean,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = title,
+            tint = if (isGranted) MaterialTheme.colorScheme.primary
+                   else MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Icon(
+            imageVector = if (isGranted) Icons.Default.CheckCircle else Icons.Default.Cancel,
+            contentDescription = if (isGranted) "Ativo" else "Inativo",
+            tint = if (isGranted) MaterialTheme.colorScheme.primary
+                   else MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }

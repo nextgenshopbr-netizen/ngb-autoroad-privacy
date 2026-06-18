@@ -101,6 +101,7 @@ class OverlayService : Service(),
 
     companion object {
         const val NOTIFICATION_ID = 1001
+        const val ACTION_STOP = "com.ngbautoroad.STOP_SERVICE"
         var onRideDetected: ((RideData) -> Unit)? = null
 
         // Referência ao serviço ativo para resize ao vivo
@@ -161,6 +162,12 @@ class OverlayService : Service(),
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Tratar ação de desligar da notificação
+        if (intent?.action == ACTION_STOP) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
         startForeground(NOTIFICATION_ID, createNotification())
         lifecycleRegistry.currentState = Lifecycle.State.STARTED
         return START_STICKY
@@ -398,16 +405,43 @@ class OverlayService : Service(),
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "NGB AutoRoad Overlay",
+                "NGB AutoRoad - Copiloto",
                 NotificationManager.IMPORTANCE_LOW
-            )
+            ).apply {
+                description = "Notificação persistente do serviço de monitoramento"
+                setShowBadge(false)
+            }
             getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
         }
+
+        // Intent para abrir o app ao tocar na notificação
+        val openIntent = packageManager.getLaunchIntentForPackage(packageName)
+        val openPendingIntent = android.app.PendingIntent.getActivity(
+            this, 0, openIntent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Intent para desligar o serviço
+        val stopIntent = Intent(this, OverlayService::class.java).apply {
+            action = ACTION_STOP
+        }
+        val stopPendingIntent = android.app.PendingIntent.getService(
+            this, 1, stopIntent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+        )
+
         return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("NGB AutoRoad")
-            .setContentText("Monitorando corridas...")
+            .setContentTitle("NGB AutoRoad — Copiloto")
+            .setContentText("Monitorando corridas. Toque para abrir.")
             .setSmallIcon(android.R.drawable.ic_menu_directions)
+            .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setContentIntent(openPendingIntent)
+            .addAction(
+                android.R.drawable.ic_menu_close_clear_cancel,
+                "DESLIGAR",
+                stopPendingIntent
+            )
             .build()
     }
 }

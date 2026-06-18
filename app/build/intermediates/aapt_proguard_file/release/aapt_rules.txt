@@ -9,6 +9,7 @@
 -keep class com.google.mlkit.common.internal.MlKitComponentDiscoveryService { <init>(); }
 -keep class com.google.mlkit.common.internal.MlKitInitProvider { <init>(); }
 -keep class com.ngbautoroad.NGBAutoRoadApp { <init>(); }
+-keep class com.ngbautoroad.service.BubbleService { <init>(); }
 -keep class com.ngbautoroad.service.OcrCaptureService { <init>(); }
 -keep class com.ngbautoroad.service.OverlayService { <init>(); }
 -keep class com.ngbautoroad.service.RideAccessibilityService { <init>(); }

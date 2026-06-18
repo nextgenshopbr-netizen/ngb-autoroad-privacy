@@ -1,4 +1,4 @@
-#Thu Jun 18 10:40:58 UTC 2026
+#Thu Jun 18 10:56:03 UTC 2026
 base.0=/home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 path.0=classes.dex
 renamed.0=classes.dex

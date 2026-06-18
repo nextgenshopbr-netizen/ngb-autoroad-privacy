@@ -93,6 +93,11 @@ class PrefsManager(private val context: Context) {
     // Auto-import earnings (item 3.2)
     private val KEY_AUTO_IMPORT_EARNINGS = booleanPreferencesKey("auto_import_earnings")
 
+    // Overlay Opacity & Bubble (item 4.4)
+    private val KEY_OVERLAY_OPACITY = floatPreferencesKey("overlay_opacity")
+    private val KEY_BUBBLE_ENABLED = booleanPreferencesKey("bubble_enabled")
+    private val KEY_BUBBLE_SIDE = stringPreferencesKey("bubble_side") // "left" or "right"
+
     // Keep screen on
     private val KEY_KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
 
@@ -402,6 +407,38 @@ class PrefsManager(private val context: Context) {
             else current.add(cardId)
 
             prefs[KEY_GALLERY_FAVORITES] = current.joinToString(",")
+        }
+    }
+
+    // --- Overlay Opacity & Bubble ---
+
+    val overlayOpacityFlow: Flow<Float> = context.dataStore.data.map { prefs ->
+        prefs[KEY_OVERLAY_OPACITY] ?: 1.0f
+    }
+
+    suspend fun saveOverlayOpacity(opacity: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_OVERLAY_OPACITY] = opacity.coerceIn(0.3f, 1.0f)
+        }
+    }
+
+    val bubbleEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_BUBBLE_ENABLED] ?: true
+    }
+
+    suspend fun setBubbleEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_BUBBLE_ENABLED] = enabled
+        }
+    }
+
+    val bubbleSideFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_BUBBLE_SIDE] ?: "right"
+    }
+
+    suspend fun setBubbleSide(side: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_BUBBLE_SIDE] = side
         }
     }
 
