@@ -32,6 +32,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.ngbautoroad.data.model.Platform
 import com.ngbautoroad.data.model.RideData
+import com.ngbautoroad.data.model.RideType
 
 /**
  * AccessibilityService que detecta quando um app de transporte exibe
@@ -157,6 +158,7 @@ class RideAccessibilityService : AccessibilityService() {
         var pickupNeighborhood = ""
         var dropoffNeighborhood = ""
         var hasAcceptButton = false
+        var rideTypeBadge = "" // Badge no topo: "UberX", "Comfort", "Black", etc.
 
         val allText = collectAllText(root)
 
@@ -166,6 +168,15 @@ class RideAccessibilityService : AccessibilityService() {
                 text.equals("Selecionar", ignoreCase = true) ||
                 text.equals("Accept", ignoreCase = true)) {
                 hasAcceptButton = true
+            }
+
+            // ---- TIPO DE CORRIDA (badge no topo) ----
+            // Formato real: "UberX", "Comfort", "Black", "Flash", "Promo", "Green"
+            if (rideTypeBadge.isBlank()) {
+                val trimmed = text.trim()
+                if (trimmed.matches(Regex("""(?i)(UberX|Uber\s*X|Comfort|Black|Flash|Promo|Green|Prioridade|Priority)"""))) {
+                    rideTypeBadge = trimmed
+                }
             }
 
             // ---- VALOR DA CORRIDA ----
@@ -264,10 +275,18 @@ class RideAccessibilityService : AccessibilityService() {
         // Só retornar se parece ser uma tela de oferta de corrida
         if (rideValue == 0.0 && !hasAcceptButton) return null
 
-        Log.d(TAG, "Uber parsed: R$$rideValue | pickup=${pickupDistance}km | trip=${dropoffDistance}km/${duration}min | ★$rating")
+        // Detectar tipo de corrida a partir do badge
+        val detectedType = if (rideTypeBadge.isNotBlank()) {
+            RideType.fromBadgeText(rideTypeBadge, Platform.UBER)
+        } else {
+            RideType.UBER_X // Default quando não detecta badge
+        }
+
+        Log.d(TAG, "Uber parsed: [${detectedType.displayName}] R$$rideValue | pickup=${pickupDistance}km | trip=${dropoffDistance}km/${duration}min | ★$rating")
 
         return RideData(
             platform = Platform.UBER,
+            rideType = detectedType,
             rideValue = rideValue,
             rideDuration = duration,
             pickupDistance = pickupDistance,

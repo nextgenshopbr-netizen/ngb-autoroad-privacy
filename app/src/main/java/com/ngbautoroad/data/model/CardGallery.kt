@@ -30,6 +30,7 @@ object CardGallery {
     enum class CardField(val label: String, val shortLabel: String) {
         SCORE("Score", "Score"),
         PLATFORM("Plataforma", "Plat."),
+        RIDE_TYPE("Tipo de Corrida", "Tipo"),
         RIDE_VALUE("Valor da Corrida", "Valor"),
         VALUE_PER_KM("R$/KM", "R$/km"),
         VALUE_PER_HOUR("R$/Hora", "R$/h"),
@@ -70,7 +71,37 @@ object CardGallery {
         THEMED("Temático")
     }
 
+    // =========================================================================
+    // CARD PADRÃO NGBAutoRoad (id=0) — Card default do sistema
+    // Inspirado no GigU: 4 métricas com barras de cor (verde/vermelho),
+    // badge de plataforma+tipo, score circular, fundo branco com borda vermelha.
+    // Este card é o que aparece ao resetar configurações e é o primeiro da galeria.
+    // =========================================================================
+    val DEFAULT_CARD = GalleryCard(
+        id = 0, name = "NGBAutoRoad Padrão",
+        description = "Card padrão do sistema — 4 métricas com barras de cor, badge de tipo e score",
+        category = CardCategory.STANDARD,
+        fields = listOf(
+            CardField.SCORE, CardField.PLATFORM, CardField.RIDE_TYPE,
+            CardField.VALUE_PER_KM, CardField.VALUE_PER_HOUR,
+            CardField.RIDE_VALUE, CardField.PASSENGER_RATING,
+            CardField.PICKUP_DISTANCE, CardField.DROPOFF_DISTANCE,
+            CardField.DURATION, CardField.SCORE_BAR
+        ),
+        backgroundColor = 0xFFFFFFFF, // Fundo branco
+        textColor = 0xFF1A1A1A,       // Texto preto
+        accentColor = 0xFF1A1A1A,     // Accent preto
+        borderColor = 0xFFE53935,     // Borda vermelha (como GigU)
+        borderRadius = 12,
+        fontSize = 14,
+        showBorder = true,
+        compactMode = false
+    )
+
     val allCards: List<GalleryCard> = listOf(
+        // === CARD PADRÃO (primeiro da lista, default ao resetar) ===
+        DEFAULT_CARD,
+
         // === COMPLETOS (todos os campos) ===
         GalleryCard(
             id = 1, name = "Completo Pro",
@@ -322,6 +353,8 @@ object CardGallery {
     )
 
     fun getById(id: Int): GalleryCard? = allCards.find { it.id == id }
+
+    fun getDefault(): GalleryCard = DEFAULT_CARD
 
     fun getByCategory(category: CardCategory): List<GalleryCard> =
         allCards.filter { it.category == category }

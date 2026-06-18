@@ -164,6 +164,17 @@ fun OverlayCard(
                 when (field) {
                     CardField.SCORE -> {} // Já exibido no header
                     CardField.PLATFORM -> {} // Já exibido no header
+                    CardField.RIDE_TYPE -> {
+                        if (ride.rideType != RideType.UNKNOWN) {
+                            OverlayCriteriaRow(
+                                label = field.shortLabel,
+                                value = ride.rideType.displayName,
+                                textColor = textColor,
+                                valueColor = accentColor,
+                                fontSize = scaledLabel
+                            )
+                        }
+                    }
                     CardField.RIDE_VALUE -> {
                         OverlayCriteriaRow(
                             label = field.shortLabel,

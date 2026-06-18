@@ -31,6 +31,7 @@ package com.ngbautoroad.data.model
  */
 data class RideData(
     val platform: Platform = Platform.UNKNOWN,
+    val rideType: RideType = RideType.UNKNOWN, // Tipo da corrida (UberX, Comfort, Black, etc.)
     val rideValue: Double = 0.0,          // Valor da corrida (R$) — campo obrigatório
     val rideDuration: Double = 0.0,       // Duração da corrida (minutos) — pode ser 0 se OCR não capturou
     val pickupDistance: Double = 0.0,     // Distância até embarque (km)
@@ -62,6 +63,62 @@ enum class Platform(val displayName: String, val packageName: String) {
     INDRIVE("inDrive", "com.machfrankfurt.android"),
     CABIFY("Cabify", "com.cabify.driver"),
     UNKNOWN("Desconhecido", "")
+}
+
+// ============================================================================
+// BLOCO 2.1: RideType — Tipo/categoria da corrida dentro da plataforma
+// LÓGICA: Uber tem UberX, Comfort, Black, Flash, etc.
+//         99 tem 99Pop, 99Comfort. inDrive e Cabify não diferenciam.
+//         O tipo influencia o valor esperado e pode ser critério de aceitação.
+// DETECÇÃO: Parser do AccessibilityService lê o badge no topo do card da Uber
+// DEPENDENTE: OverlayCard exibe tipo, RideScorer pode usar como critério futuro
+// ============================================================================
+enum class RideType(val displayName: String, val platform: Platform) {
+    // Uber
+    UBER_X("UberX", Platform.UBER),
+    UBER_COMFORT("Comfort", Platform.UBER),
+    UBER_BLACK("Black", Platform.UBER),
+    UBER_FLASH("Flash", Platform.UBER),
+    UBER_PROMO("Promo", Platform.UBER),
+    UBER_GREEN("Green", Platform.UBER),
+    UBER_PRIORITY("Prioridade", Platform.UBER),
+    // 99
+    NINETY_NINE_POP("99Pop", Platform.NINETY_NINE),
+    NINETY_NINE_COMFORT("99Comfort", Platform.NINETY_NINE),
+    // inDrive
+    INDRIVE_STANDARD("Padrão", Platform.INDRIVE),
+    // Cabify
+    CABIFY_STANDARD("Padrão", Platform.CABIFY),
+    // Desconhecido
+    UNKNOWN("Desconhecido", Platform.UNKNOWN);
+
+    companion object {
+        /**
+         * Detecta o RideType a partir do texto do badge (ex: "UberX", "Comfort", "Black")
+         */
+        fun fromBadgeText(text: String, platform: Platform): RideType {
+            val normalized = text.trim().lowercase()
+            return when (platform) {
+                Platform.UBER -> when {
+                    normalized.contains("uberx") || normalized == "x" -> UBER_X
+                    normalized.contains("comfort") || normalized.contains("confort") -> UBER_COMFORT
+                    normalized.contains("black") -> UBER_BLACK
+                    normalized.contains("flash") -> UBER_FLASH
+                    normalized.contains("promo") -> UBER_PROMO
+                    normalized.contains("green") || normalized.contains("planet") -> UBER_GREEN
+                    normalized.contains("prioridade") || normalized.contains("priority") -> UBER_PRIORITY
+                    else -> UBER_X // Default Uber
+                }
+                Platform.NINETY_NINE -> when {
+                    normalized.contains("comfort") || normalized.contains("confort") -> NINETY_NINE_COMFORT
+                    else -> NINETY_NINE_POP
+                }
+                Platform.INDRIVE -> INDRIVE_STANDARD
+                Platform.CABIFY -> CABIFY_STANDARD
+                else -> UNKNOWN
+            }
+        }
+    }
 }
 
 // ============================================================================

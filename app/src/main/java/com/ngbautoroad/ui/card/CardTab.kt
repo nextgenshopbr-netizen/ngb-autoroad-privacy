@@ -665,6 +665,9 @@ fun PreviewDialog(
                                 CardGallery.CardField.DROPOFF_NEIGHBORHOOD -> {
                                     PreviewField("B. Destino", randomRide.dropoffNeighborhood.ifBlank { "-" }, textColor, accentColor)
                                 }
+                                CardGallery.CardField.RIDE_TYPE -> {
+                                    PreviewField("Tipo", randomRide.rideType.displayName, textColor, accentColor)
+                                }
                                 CardGallery.CardField.PLATFORM -> {} // Já mostrado no header
                                 CardGallery.CardField.SCORE -> {} // Já mostrado no header
                                 CardGallery.CardField.SCORE_BAR -> {} // Mostrado abaixo

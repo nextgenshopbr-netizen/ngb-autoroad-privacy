@@ -185,11 +185,11 @@ class PrefsManager(private val context: Context) {
     }
 
     val card1ModelIdFlow: Flow<Int> = context.dataStore.data.map { prefs ->
-        prefs[KEY_CARD1_MODEL_ID] ?: 1
+        prefs[KEY_CARD1_MODEL_ID] ?: 0 // Default: NGBAutoRoad Padrão
     }
 
     val card2ModelIdFlow: Flow<Int> = context.dataStore.data.map { prefs ->
-        prefs[KEY_CARD2_MODEL_ID] ?: 2
+        prefs[KEY_CARD2_MODEL_ID] ?: 0 // Default: NGBAutoRoad Padrão
     }
 
     val card1NameFlow: Flow<String> = context.dataStore.data.map { prefs ->

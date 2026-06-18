@@ -353,7 +353,7 @@ fun AdminPanel(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    InfoRow("Versão", "4.2.1")
+                    InfoRow("Versão", "4.2.2")
                     InfoRow("Build", "release")
                     InfoRow("Package", "com.ngbautoroad")
                     InfoRow("SDK Target", "34")
@@ -501,6 +501,14 @@ fun UberStyleCard(result: SimulationResult) {
                         fontWeight = FontWeight.Bold
                     )
                 }
+
+                // Tipo de corrida (UberX, Comfort, Black, etc.)
+                Text(
+                    text = result.rideType,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF555555)
+                )
 
                 // Tempo e distância
                 Text(
@@ -718,6 +726,7 @@ enum class RideQuality { GOOD, AVERAGE, BAD, RANDOM }
 
 data class SimulationResult(
     val platform: String,
+    val rideType: String, // Tipo da corrida (UberX, Comfort, Black, 99Pop, etc.)
     val value: Double,
     val distance: Double,
     val pickupDistance: Double,
@@ -737,6 +746,8 @@ data class SimulationResult(
 )
 
 private val platforms = listOf("Uber", "99", "inDrive", "Cabify")
+private val uberTypes = listOf("UberX", "Comfort", "Black", "Flash", "Green")
+private val ninetyNineTypes = listOf("99Pop", "99Comfort")
 private val neighborhoods = listOf(
     "Centro", "Líder", "Vila Real", "Eldorado", "Belvedere",
     "Efapi", "Passo dos Fortes", "São Cristóvão", "Jardim Itália",
@@ -768,17 +779,27 @@ suspend fun simulateRide(prefsManager: PrefsManager, quality: RideQuality): Simu
     val stops = if (quality == RideQuality.BAD) random.nextInt(0, 3) else 0
 
     val platform = platforms[random.nextInt(platforms.size)]
+    val rideTypeStr = when (platform) {
+        "Uber" -> uberTypes[random.nextInt(uberTypes.size)]
+        "99" -> ninetyNineTypes[random.nextInt(ninetyNineTypes.size)]
+        else -> "Padrão"
+    }
     val pickup = neighborhoods[random.nextInt(neighborhoods.size)]
     val dropoff = neighborhoods[random.nextInt(neighborhoods.size)]
 
+    // Detectar enum RideType
+    val platformEnum = when (platform) {
+        "Uber" -> Platform.UBER
+        "99" -> Platform.NINETY_NINE
+        "inDrive" -> Platform.INDRIVE
+        else -> Platform.CABIFY
+    }
+    val rideTypeEnum = RideType.fromBadgeText(rideTypeStr, platformEnum)
+
     // Calcular score usando o RideScorer real
     val rideData = RideData(
-        platform = when (platform) {
-            "Uber" -> Platform.UBER
-            "99" -> Platform.NINETY_NINE
-            "inDrive" -> Platform.INDRIVE
-            else -> Platform.CABIFY
-        },
+        platform = platformEnum,
+        rideType = rideTypeEnum,
         rideValue = value,
         rideDuration = estimatedMinutes.toDouble(),
         pickupDistance = pickupDist,
@@ -810,6 +831,7 @@ suspend fun simulateRide(prefsManager: PrefsManager, quality: RideQuality): Simu
 
     return SimulationResult(
         platform = platform,
+        rideType = rideTypeStr,
         value = value,
         distance = distance,
         pickupDistance = pickupDist,
