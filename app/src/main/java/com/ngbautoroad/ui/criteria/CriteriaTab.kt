@@ -247,9 +247,10 @@ fun CriteriaTab(prefsManager: PrefsManager) {
                 label = "Avaliação mínima do passageiro",
                 value = thresholds.minPassengerRating,
                 suffix = "estrelas",
+                maxValue = 5.0,
                 onValueChange = { newVal ->
                     scope.launch {
-                        prefsManager.saveDriverThresholds(thresholds.copy(minPassengerRating = newVal.coerceIn(0.0, 5.0)))
+                        prefsManager.saveDriverThresholds(thresholds.copy(minPassengerRating = newVal))
                     }
                 }
             )
@@ -450,19 +451,23 @@ fun ThresholdField(
     label: String,
     value: Double,
     suffix: String,
+    maxValue: Double = 9999.0,
     onValueChange: (Double) -> Unit
 ) {
     var textValue by remember(value) {
         mutableStateOf(if (value == 0.0) "" else String.format("%.2f", value))
     }
 
+    val parsed = textValue.replace(",", ".").toDoubleOrNull()
+    val isInvalid = parsed != null && (parsed < 0.0 || parsed > maxValue)
+
     OutlinedTextField(
         value = textValue,
         onValueChange = { input ->
             textValue = input
-            val parsed = input.replace(",", ".").toDoubleOrNull()
-            if (parsed != null) {
-                onValueChange(parsed)
+            val p = input.replace(",", ".").toDoubleOrNull()
+            if (p != null && p >= 0.0 && p <= maxValue) {
+                onValueChange(p)
             } else if (input.isBlank()) {
                 onValueChange(0.0)
             }
@@ -474,6 +479,8 @@ fun ThresholdField(
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         singleLine = true,
+        isError = isInvalid,
+        supportingText = if (isInvalid) {{ Text("Máx: $maxValue", color = MaterialTheme.colorScheme.error) }} else null,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,
             unfocusedBorderColor = MaterialTheme.colorScheme.outline

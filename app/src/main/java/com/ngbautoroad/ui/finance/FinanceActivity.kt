@@ -30,6 +30,8 @@ import com.ngbautoroad.ui.theme.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import com.ngbautoroad.util.toDoubleLocale
+import com.ngbautoroad.util.toDoubleLocaleOrNull
 
 class FinanceActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -497,22 +499,27 @@ fun AddEarningDialog(existingEarning: EarningEntity?, onDismiss: () -> Unit, onC
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                val entity = EarningEntity(
-                    id = existingEarning?.id ?: 0,
-                    platform = platform,
-                    amount = amount.toDoubleOrNull() ?: 0.0,
-                    tips = tips.toDoubleOrNull() ?: 0.0,
-                    bonus = bonus.toDoubleOrNull() ?: 0.0,
-                    distance = distance.toDoubleOrNull() ?: 0.0,
-                    duration = duration.toIntOrNull() ?: 0,
-                    ridesCount = rides.toIntOrNull() ?: 0,
-                    description = description,
-                    period = period,
-                    date = existingEarning?.date ?: System.currentTimeMillis()
-                )
-                onConfirm(entity)
-            }) { Text("Salvar") }
+            TextButton(
+                onClick = {
+                    val parsedAmount = amount.toDoubleLocale()
+                    if (parsedAmount <= 0.0) return@TextButton // Validação: valor obrigatório e positivo
+                    val entity = EarningEntity(
+                        id = existingEarning?.id ?: 0,
+                        platform = platform,
+                        amount = parsedAmount,
+                        tips = tips.toDoubleLocale(),
+                        bonus = bonus.toDoubleLocale(),
+                        distance = distance.toDoubleLocale(),
+                        duration = duration.trim().toIntOrNull() ?: 0,
+                        ridesCount = rides.trim().toIntOrNull()?.coerceAtLeast(0) ?: 0,
+                        description = description.trim(),
+                        period = period,
+                        date = existingEarning?.date ?: System.currentTimeMillis()
+                    )
+                    onConfirm(entity)
+                },
+                enabled = amount.toDoubleLocale() > 0.0
+            ) { Text("Salvar") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }
@@ -762,24 +769,28 @@ fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) 
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                val finalAmount = amount.toDoubleOrNull() ?: run {
-                    val l = liters.toDoubleOrNull() ?: 0.0
-                    val p = pricePerLiter.toDoubleOrNull() ?: 0.0
-                    l * p
-                }
-                onConfirm(ExpenseEntity(
-                    category = selectedCategory.name,
-                    amount = finalAmount,
-                    description = description,
-                    isRecurring = isRecurring,
-                    recurringDay = recurringDay.toIntOrNull() ?: 1,
-                    recurringDays = selectedDays.sorted().joinToString(","),
-                    recurringDuration = recurringDuration.toIntOrNull() ?: 0,
-                    liters = liters.toDoubleOrNull(),
-                    pricePerLiter = pricePerLiter.toDoubleOrNull()
-                ))
-            }) { Text("Salvar") }
+            val parsedExpenseAmount = amount.toDoubleLocale().let { if (it > 0) it else {
+                val l = liters.toDoubleLocale()
+                val p = pricePerLiter.toDoubleLocale()
+                l * p
+            }}
+            TextButton(
+                onClick = {
+                    if (parsedExpenseAmount <= 0.0) return@TextButton // Validação: valor obrigatório
+                    onConfirm(ExpenseEntity(
+                        category = selectedCategory.name,
+                        amount = parsedExpenseAmount,
+                        description = description.trim(),
+                        isRecurring = isRecurring,
+                        recurringDay = recurringDay.trim().toIntOrNull()?.coerceIn(1, 31) ?: 1,
+                        recurringDays = selectedDays.sorted().joinToString(","),
+                        recurringDuration = recurringDuration.trim().toIntOrNull()?.coerceAtLeast(0) ?: 0,
+                        liters = liters.toDoubleLocaleOrNull()?.coerceAtLeast(0.0),
+                        pricePerLiter = pricePerLiter.toDoubleLocaleOrNull()?.coerceAtLeast(0.0)
+                    ))
+                },
+                enabled = parsedExpenseAmount > 0.0
+            ) { Text("Salvar") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }
@@ -827,8 +838,7 @@ fun VehicleTab(vehicleConfigDao: VehicleConfigDao) {
         }
     }
 
-    // Normaliza vírgula para ponto (teclado BR digita vírgula como separador decimal)
-    fun String.toDoubleLocale(): Double = this.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
+    // Usa extensão global com.ngbautoroad.util.toDoubleLocale()
 
     val avgConsumption = consumption.toDoubleLocale()
     val price = fuelPrice.toDoubleLocale()
@@ -893,10 +903,11 @@ fun VehicleTab(vehicleConfigDao: VehicleConfigDao) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
-                value = year, onValueChange = { year = it },
+                value = year, onValueChange = { if (it.length <= 4) year = it.filter { c -> c.isDigit() } },
                 label = { Text("Ano") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f), singleLine = true
+                modifier = Modifier.weight(1f), singleLine = true,
+                isError = year.isNotBlank() && (year.toIntOrNull() ?: 0) !in 1990..2030
             )
             OutlinedTextField(
                 value = plate, onValueChange = { plate = it },
@@ -911,7 +922,8 @@ fun VehicleTab(vehicleConfigDao: VehicleConfigDao) {
                 value = consumption, onValueChange = { consumption = it },
                 label = { Text(if (vehicleType == "ELECTRIC") "km/kWh" else "km/L") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.weight(1f), singleLine = true
+                modifier = Modifier.weight(1f), singleLine = true,
+                isError = consumption.isNotBlank() && consumption.toDoubleLocale() <= 0.0
             )
             OutlinedTextField(
                 value = fuelPrice, onValueChange = { fuelPrice = it },
@@ -956,8 +968,8 @@ fun VehicleTab(vehicleConfigDao: VehicleConfigDao) {
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                val monthly = monthlyFixed.toDoubleOrNull() ?: 0.0
-                val rental = rentalCost.toDoubleOrNull() ?: 0.0
+                val monthly = monthlyFixed.toDoubleLocale()
+                val rental = rentalCost.toDoubleLocale()
                 if (monthly > 0 || rental > 0) {
                     Text(
                         "Custo fixo diário: R$ %.2f".format((monthly + rental) / 30),
@@ -1135,15 +1147,19 @@ fun AddGoalDialog(onDismiss: () -> Unit, onConfirm: (FinancialGoalEntity) -> Uni
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                if (title.isNotBlank() && targetAmount.isNotBlank()) {
-                    onConfirm(FinancialGoalEntity(
-                        title = title,
-                        targetAmount = targetAmount.toDoubleOrNull() ?: 0.0,
-                        period = period
-                    ))
-                }
-            }) { Text("Salvar") }
+            val parsedTarget = targetAmount.toDoubleLocale()
+            TextButton(
+                onClick = {
+                    if (title.isNotBlank() && parsedTarget > 0.0) {
+                        onConfirm(FinancialGoalEntity(
+                            title = title.trim(),
+                            targetAmount = parsedTarget,
+                            period = period
+                        ))
+                    }
+                },
+                enabled = title.isNotBlank() && parsedTarget > 0.0
+            ) { Text("Salvar") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }

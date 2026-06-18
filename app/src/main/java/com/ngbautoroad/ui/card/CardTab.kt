@@ -595,26 +595,54 @@ fun PreviewDialog(
                         val textColor = Color(activeCard?.textColor ?: 0xFFFFFFFF)
                         val accentColor = Color(activeCard?.accentColor ?: 0xFF4F6BFF)
 
-                        // Cores por critério baseadas nos thresholds
-                        val vkmColor = if (thresholds.isValuePerKmActive() && randomRide.valuePerKm < thresholds.minValuePerKm) ScoreRed else accentColor
-                        val vhColor = if (thresholds.isValuePerHourActive() && randomRide.valuePerHour < thresholds.minValuePerHour) ScoreRed else accentColor
-                        val rvColor = if (thresholds.isRideValueActive() && randomRide.rideValue < thresholds.minRideValue) ScoreRed else accentColor
-                        val pkColor = if (thresholds.isPickupDistanceActive() && randomRide.pickupDistance > thresholds.maxPickupDistance) ScoreRed else accentColor
-                        val prColor = if (thresholds.isPassengerRatingActive() && randomRide.passengerRating < thresholds.minPassengerRating) ScoreRed else accentColor
-                        val durColor = if (thresholds.isDurationActive() && randomRide.rideDuration > thresholds.maxDuration) ScoreRed else accentColor
-                        val stopsColor = if (thresholds.isStopsActive() && randomRide.intermediateStops > thresholds.maxStops) ScoreRed else accentColor
+                        // Renderizar APENAS os campos que o card ativo possui
+                        val cardFields = activeCard?.fields ?: CardGallery.CardField.entries.toList()
 
-                        PreviewField("Valor", String.format("R$ %.2f", randomRide.rideValue), textColor, rvColor)
-                        PreviewField("R$/KM", String.format("R$ %.2f", randomRide.valuePerKm), textColor, vkmColor)
-                        PreviewField("R$/Hora", String.format("R$ %.2f", randomRide.valuePerHour), textColor, vhColor)
-                        PreviewField("Embarque", String.format("%.1f km", randomRide.pickupDistance), textColor, pkColor)
-                        PreviewField("Destino", String.format("%.1f km", randomRide.dropoffDistance), textColor, accentColor)
-                        PreviewField("Duração", String.format("%.0f min", randomRide.rideDuration), textColor, durColor)
-                        if (randomRide.passengerRating > 0) {
-                            PreviewField("Aval. Passageiro", String.format("%.1f ★", randomRide.passengerRating), textColor, prColor)
-                        }
-                        if (randomRide.intermediateStops > 0) {
-                            PreviewField("Paradas", "${randomRide.intermediateStops}", textColor, stopsColor)
+                        cardFields.forEach { field ->
+                            when (field) {
+                                CardGallery.CardField.RIDE_VALUE -> {
+                                    val color = if (thresholds.isRideValueActive() && randomRide.rideValue < thresholds.minRideValue) ScoreRed else accentColor
+                                    PreviewField("Valor", String.format("R$ %.2f", randomRide.rideValue), textColor, color)
+                                }
+                                CardGallery.CardField.VALUE_PER_KM -> {
+                                    val color = if (thresholds.isValuePerKmActive() && randomRide.valuePerKm < thresholds.minValuePerKm) ScoreRed else accentColor
+                                    PreviewField("R$/KM", String.format("R$ %.2f", randomRide.valuePerKm), textColor, color)
+                                }
+                                CardGallery.CardField.VALUE_PER_HOUR -> {
+                                    val color = if (thresholds.isValuePerHourActive() && randomRide.valuePerHour < thresholds.minValuePerHour) ScoreRed else accentColor
+                                    PreviewField("R$/Hora", String.format("R$ %.2f", randomRide.valuePerHour), textColor, color)
+                                }
+                                CardGallery.CardField.PICKUP_DISTANCE -> {
+                                    val color = if (thresholds.isPickupDistanceActive() && randomRide.pickupDistance > thresholds.maxPickupDistance) ScoreRed else accentColor
+                                    PreviewField("Embarque", String.format("%.1f km", randomRide.pickupDistance), textColor, color)
+                                }
+                                CardGallery.CardField.DROPOFF_DISTANCE -> {
+                                    PreviewField("Destino", String.format("%.1f km", randomRide.dropoffDistance), textColor, accentColor)
+                                }
+                                CardGallery.CardField.DURATION -> {
+                                    val color = if (thresholds.isDurationActive() && randomRide.rideDuration > thresholds.maxDuration) ScoreRed else accentColor
+                                    PreviewField("Duração", String.format("%.0f min", randomRide.rideDuration), textColor, color)
+                                }
+                                CardGallery.CardField.PASSENGER_RATING -> {
+                                    if (randomRide.passengerRating > 0) {
+                                        val color = if (thresholds.isPassengerRatingActive() && randomRide.passengerRating < thresholds.minPassengerRating) ScoreRed else accentColor
+                                        PreviewField("Aval.", String.format("%.1f ★", randomRide.passengerRating), textColor, color)
+                                    }
+                                }
+                                CardGallery.CardField.STOPS -> {
+                                    val color = if (thresholds.isStopsActive() && randomRide.intermediateStops > thresholds.maxStops) ScoreRed else accentColor
+                                    PreviewField("Paradas", "${randomRide.intermediateStops}", textColor, color)
+                                }
+                                CardGallery.CardField.PICKUP_NEIGHBORHOOD -> {
+                                    PreviewField("B. Embarque", randomRide.pickupNeighborhood.ifBlank { "-" }, textColor, accentColor)
+                                }
+                                CardGallery.CardField.DROPOFF_NEIGHBORHOOD -> {
+                                    PreviewField("B. Destino", randomRide.dropoffNeighborhood.ifBlank { "-" }, textColor, accentColor)
+                                }
+                                CardGallery.CardField.PLATFORM -> {} // Já mostrado no header
+                                CardGallery.CardField.SCORE -> {} // Já mostrado no header
+                                CardGallery.CardField.SCORE_BAR -> {} // Mostrado abaixo
+                            }
                         }
 
                         // Score bar

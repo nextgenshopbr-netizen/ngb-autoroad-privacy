@@ -91,8 +91,8 @@ class RideScorer(
             }
         }
 
-        // 4. Avaliação do Passageiro
-        if (weights.passengerRating > 0) {
+        // 4. Avaliação do Passageiro (pular se rating=0 pois plataforma não forneceu)
+        if (weights.passengerRating > 0 && ride.passengerRating > 0.0) {
             val normalized = normalizeRating(ride.passengerRating)
             criteriaScores["passengerRating"] = CriteriaScore(
                 name = "Avaliação",
