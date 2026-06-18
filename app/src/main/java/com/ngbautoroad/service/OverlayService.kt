@@ -58,6 +58,10 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.OnBackPressedDispatcherOwner
+import androidx.activity.setViewTreeOnBackPressedDispatcherOwner
+import android.view.ContextThemeWrapper
 import com.ngbautoroad.R
 import com.ngbautoroad.data.model.*
 import com.ngbautoroad.data.prefs.PrefsManager
@@ -80,14 +84,17 @@ import com.ngbautoroad.data.db.RideHistoryEntity
 class OverlayService : Service(),
     LifecycleOwner,
     SavedStateRegistryOwner,
-    ViewModelStoreOwner {
+    ViewModelStoreOwner,
+    OnBackPressedDispatcherOwner {
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     private val _viewModelStore = ViewModelStore()
+    private val _onBackPressedDispatcher = OnBackPressedDispatcher(null)
     override val lifecycle: Lifecycle get() = lifecycleRegistry
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
     override val viewModelStore: ViewModelStore get() = _viewModelStore
+    override val onBackPressedDispatcher: OnBackPressedDispatcher get() = _onBackPressedDispatcher
 
     private var windowManager: WindowManager? = null
     private var overlayView: ComposeView? = null
@@ -348,10 +355,15 @@ class OverlayService : Service(),
             y = savedY
         }
 
-        val view = ComposeView(this).apply {
+        // Usar ContextThemeWrapper para evitar ClassCastException (Service != Activity)
+        val themedContext = ContextThemeWrapper(this, com.ngbautoroad.R.style.Theme_NGBAutoRoad)
+        // Nota: R.style.Theme_NGBAutoRoad corresponde ao @style/Theme.NGBAutoRoad no XML
+        val view = ComposeView(themedContext).apply {
             setViewTreeLifecycleOwner(this@OverlayService)
             // Registrar SavedStateRegistryOwner para Compose
             setViewTreeSavedStateRegistryOwner(this@OverlayService)
+            // Registrar OnBackPressedDispatcherOwner para evitar ClassCastException
+            setViewTreeOnBackPressedDispatcherOwner(this@OverlayService)
             setContent {
                 com.ngbautoroad.ui.theme.NGBAutoRoadTheme {
                     val ride = currentRide
@@ -441,6 +453,7 @@ class OverlayService : Service(),
         // Registrar ViewModelStoreOwner para Compose (necessário no Compose 1.5+)
         view.setViewTreeViewModelStoreOwner(this@OverlayService)
         windowManager?.addView(view, params)
+        android.util.Log.d("NGB_TESTAR_CARD", "[OVERLAY] View adicionada ao WindowManager com sucesso")
         overlayView = view
         isOverlayVisible = true
     }
