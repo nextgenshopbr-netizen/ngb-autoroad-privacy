@@ -108,7 +108,7 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text("NGB AutoRoad v4.4.0")
+                    Text("NGB AutoRoad v4.5.0")
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,

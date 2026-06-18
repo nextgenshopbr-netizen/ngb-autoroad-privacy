@@ -95,3 +95,26 @@
   5. Cabeçalhos em CardEditorActivity.kt e CardGalleryActivity.kt
   6. Warning do parâmetro `currentPin` corrigido
 - Versão 4.4.0 (versionCode 52)
+
+---
+
+## v4.5.0 — 18/06/2026 15:25
+
+### 10 Novas Funcionalidades (100% Local, sem nuvem/IA paga):
+
+1. **Modo Turno** (ShiftManager.kt) — Iniciar/pausar/encerrar turno com timer, meta de ganho, alerta ao atingir, persistência via SharedPreferences
+2. **Ranking de Bairros** (NeighborhoodRanker.kt) — Classificar bairros por R$/km, R$/hora ou total de corridas
+3. **Integração Waze/Google Maps** (NavigationHelper.kt) — Deep link com fallback (Waze → Maps → genérico)
+4. **Compartilhamento de Critérios** (CriteriaShareManager.kt) — Export/import JSON com validação e FileProvider
+5. **Modo Economia de Bateria** (BatteryOptimizer.kt) — Normal/ECO/Ultra-ECO com polling adaptativo
+6. **Alertas de Surge/Demanda** (SurgeDetector.kt) — Heurística local baseada em R$/km recente vs baseline
+7. **Multi-idioma** — strings.xml PT-BR + ES (espanhol para motoristas na fronteira)
+8. **Relatório PDF** (ReportGenerator.kt) — Gerar PDF nativo Android sem dependência de nuvem
+9. **Exportar CSV** (DataExporter.kt) — UTF-8 BOM, escape correto, compartilhar via intent
+10. **Modo Aprendizado LOCAL** (LocalLearningEngine.kt) — Padrões estatísticos (melhores horários, bairros, fadiga)
+
+### UI:
+- FeaturesActivity.kt com 5 abas: Turno, Ranking, IA Local, Relatório, Exportar
+- Registrada no AndroidManifest.xml
+
+### Versão: 4.5.0 (versionCode 53)

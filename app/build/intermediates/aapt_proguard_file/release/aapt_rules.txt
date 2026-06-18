@@ -16,6 +16,7 @@
 -keep class com.ngbautoroad.ui.MainActivity { <init>(); }
 -keep class com.ngbautoroad.ui.admin.AdminActivity { <init>(); }
 -keep class com.ngbautoroad.ui.editor.CardEditorActivity { <init>(); }
+-keep class com.ngbautoroad.ui.features.FeaturesActivity { <init>(); }
 -keep class com.ngbautoroad.ui.finance.FinanceActivity { <init>(); }
 -keep class com.ngbautoroad.ui.gallery.CardGalleryActivity { <init>(); }
 -keep class com.ngbautoroad.ui.map.ZoneMapActivity { <init>(); }

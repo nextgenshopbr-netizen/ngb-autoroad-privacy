@@ -366,7 +366,7 @@ fun AdminPanel(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    InfoRow("Versão", "4.4.0")
+                    InfoRow("Versão", "4.5.0")
                     InfoRow("Build", "release")
                     InfoRow("Package", "com.ngbautoroad")
                     InfoRow("SDK Target", "34")

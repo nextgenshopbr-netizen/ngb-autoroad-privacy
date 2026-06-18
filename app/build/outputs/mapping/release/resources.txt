@@ -1,17 +1,5 @@
-Marking id:hide_in_inspector_tag:2131034180 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:view_tree_view_model_store_owner:2131034226 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:default_popup_window_title:2131296340 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:compose_view_saveable_id_tag:2131034169 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:inspection_slot_table_set:2131034185 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_enable_button:2131296288 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_update_button:2131296298 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_install_button:2131296291 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_notification_ticker:2131296295 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_open_on_phone:2131296303 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking drawable:common_full_open_on_phone:2130968579 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_notification_channel_name:2131296294 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:tab:2131296389 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:switch_role:2131296388 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:tag_on_apply_window_listener:2131034209 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:tag_window_insets_animation_callback:2131034217 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:accessibility_custom_action_0:2131034113 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:accessibility_custom_action_1:2131034114 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:accessibility_custom_action_2:2131034125 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
@@ -44,79 +32,21 @@ Marking id:accessibility_custom_action_28:2131034134 reachable: referenced from 
 Marking id:accessibility_custom_action_29:2131034135 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:accessibility_custom_action_30:2131034137 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:accessibility_custom_action_31:2131034138 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:indeterminate:2131296359 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:off:2131296369 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:on:2131296371 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:selected:2131296378 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:not_selected:2131296368 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:template_percent:2131296390 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:in_progress:2131296358 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:navigation_menu:2131296367 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:close_drawer:2131296285 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:close_sheet:2131296286 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:default_error_message:2131296339 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:dropdown_menu:2131296342 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:range_start:2131296374 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:range_end:2131296373 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:dialog:2131296341 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:expanded:2131296343 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:collapsed:2131296287 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:snackbar_dismiss:2131296383 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:search_bar_search:2131296377 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:suggestions_available:2131296387 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_title:2131296328 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_headline:2131296316 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_year_picker_pane_title:2131296330 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_switch_to_year_selection:2131296327 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_switch_to_day_selection:2131296323 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_switch_to_next_month:2131296325 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_switch_to_previous_month:2131296326 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_navigate_to_year_description:2131296318 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_headline_description:2131296317 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_no_selection_description:2131296319 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_today_description:2131296329 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_scroll_to_later_years:2131296321 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_scroll_to_earlier_years:2131296320 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_input_title:2131296315 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_input_headline:2131296308 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_input_label:2131296313 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_input_headline_description:2131296309 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_input_no_input_description:2131296314 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_input_invalid_not_allowed:2131296311 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_input_invalid_for_pattern:2131296310 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_input_invalid_year_range:2131296312 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_switch_to_calendar_mode:2131296322 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_picker_switch_to_input_mode:2131296324 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_range_picker_title:2131296338 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_range_picker_start_headline:2131296337 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_range_picker_end_headline:2131296334 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_range_picker_scroll_to_next_month:2131296335 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_range_picker_scroll_to_previous_month:2131296336 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_range_picker_day_in_range:2131296333 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_range_input_title:2131296332 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:date_range_input_invalid_range_input:2131296331 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:m3c_bottom_sheet_pane_title:2131296360 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:bottom_sheet_drag_handle_description:2131296266 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:bottom_sheet_collapse_description:2131296264 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:bottom_sheet_dismiss_description:2131296265 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:bottom_sheet_expand_description:2131296267 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:tooltip_long_press_label:2131296405 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_am:2131296391 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_pm:2131296402 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_period_toggle_description:2131296401 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_minute_selection:2131296398 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_hour_selection:2131296394 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_hour_suffix:2131296395 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_minute_suffix:2131296399 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_hour_24h_suffix:2131296393 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_hour:2131296392 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_minute:2131296397 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_hour_text_field:2131296396 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:time_picker_minute_text_field:2131296400 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:tooltip_pane_description:2131296406 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:indeterminate:2131296363 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:off:2131296377 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:on:2131296379 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:selected:2131296386 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:not_selected:2131296376 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:template_percent:2131296402 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:in_progress:2131296362 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:tag_unhandled_key_listeners:2131034216 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:androidx_compose_ui_view_composition_context:2131034153 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:tab:2131296397 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:switch_role:2131296396 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:view_tree_on_back_pressed_dispatcher_owner:2131034224 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:report_drawn:2131034199 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking style:DialogWindowTheme:2131361792 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:view_tree_view_model_store_owner:2131034226 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:view_tree_saved_state_registry_owner:2131034225 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:compose_view_saveable_id_tag:2131034169 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:tag_screen_reader_focusable:2131034212 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:tag_accessibility_heading:2131034207 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:tag_accessibility_pane_title:2131034208 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
@@ -124,27 +54,97 @@ Marking id:tag_state_description:2131034213 reachable: referenced from /home/ubu
 Marking id:tag_accessibility_actions:2131034205 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:accessibility_action_clickable_span:2131034112 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:tag_accessibility_clickable_spans:2131034206 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_unknown_issue:2131296300 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_updating_text:2131296305 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_unsupported_text:2131296301 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_enable_text:2131296293 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_wear_update_text:2131296306 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_update_text:2131296303 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_install_text:2131296296 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_enable_title:2131296294 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_update_title:2131296304 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_install_title:2131296297 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:hide_in_inspector_tag:2131034180 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:default_popup_window_title:2131296344 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:tag_unhandled_key_event_manager:2131034215 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:tag_unhandled_key_listeners:2131034216 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:wrapped_composition_tag:2131034228 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_unknown_issue:2131296296 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:view_tree_lifecycle_owner:2131034223 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:androidx_compose_ui_view_composition_context:2131034153 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:tag_on_apply_window_listener:2131034209 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:tag_window_insets_animation_callback:2131034217 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:inspection_slot_table_set:2131034185 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_enable_button:2131296292 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_update_button:2131296302 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_install_button:2131296295 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_notification_ticker:2131296299 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_open_on_phone:2131296307 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking drawable:common_full_open_on_phone:2130968579 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:common_google_play_services_notification_channel_name:2131296298 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking string:androidx_startup:2131296259 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking id:view_tree_saved_state_registry_owner:2131034225 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:wrapped_composition_tag:2131034228 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:view_tree_lifecycle_owner:2131034223 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking style:DialogWindowTheme:2131361792 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:consume_window_insets_tag:2131034170 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_updating_text:2131296301 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_unsupported_text:2131296297 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_enable_text:2131296289 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_wear_update_text:2131296302 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_update_text:2131296299 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_install_text:2131296292 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_enable_title:2131296290 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_update_title:2131296300 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
-Marking string:common_google_play_services_install_title:2131296293 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:navigation_menu:2131296375 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:close_drawer:2131296289 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:close_sheet:2131296290 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:default_error_message:2131296343 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:dropdown_menu:2131296346 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:range_start:2131296382 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:range_end:2131296381 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:dialog:2131296345 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:expanded:2131296347 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:collapsed:2131296291 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:snackbar_dismiss:2131296391 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:search_bar_search:2131296385 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:suggestions_available:2131296395 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_title:2131296332 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_headline:2131296320 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_year_picker_pane_title:2131296334 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_switch_to_year_selection:2131296331 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_switch_to_day_selection:2131296327 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_switch_to_next_month:2131296329 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_switch_to_previous_month:2131296330 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_navigate_to_year_description:2131296322 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_headline_description:2131296321 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_no_selection_description:2131296323 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_today_description:2131296333 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_scroll_to_later_years:2131296325 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_scroll_to_earlier_years:2131296324 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_input_title:2131296319 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_input_headline:2131296312 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_input_label:2131296317 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_input_headline_description:2131296313 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_input_no_input_description:2131296318 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_input_invalid_not_allowed:2131296315 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_input_invalid_for_pattern:2131296314 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_input_invalid_year_range:2131296316 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_switch_to_calendar_mode:2131296326 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_picker_switch_to_input_mode:2131296328 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_range_picker_title:2131296342 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_range_picker_start_headline:2131296341 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_range_picker_end_headline:2131296338 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_range_picker_scroll_to_next_month:2131296339 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_range_picker_scroll_to_previous_month:2131296340 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_range_picker_day_in_range:2131296337 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_range_input_title:2131296336 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:date_range_input_invalid_range_input:2131296335 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:m3c_bottom_sheet_pane_title:2131296368 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:bottom_sheet_drag_handle_description:2131296266 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:bottom_sheet_collapse_description:2131296264 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:bottom_sheet_dismiss_description:2131296265 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:bottom_sheet_expand_description:2131296267 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:tooltip_long_press_label:2131296417 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_am:2131296403 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_pm:2131296414 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_period_toggle_description:2131296413 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_minute_selection:2131296410 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_hour_selection:2131296406 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_hour_suffix:2131296407 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_minute_suffix:2131296411 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_hour_24h_suffix:2131296405 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_hour:2131296404 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_minute:2131296409 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_hour_text_field:2131296408 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:time_picker_minute_text_field:2131296412 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking string:tooltip_pane_description:2131296418 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:is_pooling_container_tag:2131034186 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+Marking id:report_drawn:2131034199 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 Marking id:pooling_container_listener_holder_tag:2131034198 reachable: referenced from /home/ubuntu/NGBAutoRoad-v3/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 android.content.res.Resources#getIdentifier present: true
 Web content present: false
@@ -162,22 +162,24 @@ descriptor
 ​
 hasLabelMap
 BrightnessValue
-ATIVO
 YEAR
+ATIVO
 installments
 cct
-onPinChange
 TAKEN
+onPinChange
 preferences_pb
+$this$item
 osmdroid.ExpirationExtendedDuration
 optionalModuleVersion
 Compose:abandons
 Filled.Add
-$
 java.lang.CharSequence
+$
 STOP
 com.google.protobuf.MapFieldSchemaFull
 prefsManager
+Bairro
 predictedArea
 1
 Uber
@@ -195,8 +197,8 @@ OPTIONAL_MODULE_IMAGE_CAPTIONING_RELEASE
 object
 Strategy.HighQuality
 B
-S_RESUMING_BY_RCV
 role
+S_RESUMING_BY_RCV
 E
 Selection
 H
@@ -221,13 +223,13 @@ Center
 address
 c
 ACTION_CLEAR_ACCESSIBILITY_FOCUS
-Infinity
 d
+Infinity
 modelFile
-Compose:unobserve
 e
-logSource
+Compose:unobserve
 rideHistoryId
+logSource
 h
 truncated
 effectiveDirectAddress
@@ -255,8 +257,8 @@ cloudFaceDetectionLogEvent
 PASSIVE
 RIGHT_WORD
 ModelUtils
-Checkbox
 ဌ ဈ
+Checkbox
 Multiply
 ဉ ဈဇဉ
 BOTTOM_CENTER
@@ -270,8 +272,8 @@ com.google.android.gms.mlkit.nlclassi...
 cid
 androidx.view.accessibility.Accessibi...
 pipelineNamespace
-tfliteSchemaVersion
 COMPLETING_WAITING_CHILDREN
+tfliteSchemaVersion
 THROTTLE_ALWAYS
 CLOUD_LOGO_DETECT
 osmdroid.TileDownloaderFollowRedirects
@@ -283,8 +285,8 @@ card3_border_color
 OptionalModuleUtils
 android.os.Build
 https://tiles.wmflabs.org/hikebike/
-onDismiss
 allowManualInput
+onDismiss
 kotlin.collections.List
 appName
 remoteModelOptions
@@ -317,8 +319,8 @@ block
 TOLL
 Filled.AccountBalance
 $this$Button
-byte
 TextSubstitution
+byte
 Filled.Brightness7
 CAMERA
 aggregatedOnDeviceFaceMeshLogEvent
@@ -327,12 +329,12 @@ anchorBounds
 TFLITE_UNKNOWN_ERROR
 defaultGoogleSignInAccount
 Modulate
+XResolution
 getPointerId
 onBackInvoked
-XResolution
 EXPLICITLY_REQUESTED
-onDeviceImageQualityAnalysisLogEvent
 Transport
+onDeviceImageQualityAnalysisLogEvent
 EMBARQUE
 hash
 deferred
@@ -356,19 +358,20 @@ Filled.Search
 invisible_actions
 nautical
 $initialSpacing
-LookaheadMeasuring
 ᔄ ᔄᔄᔄခဉ
-comparator
+LookaheadMeasuring
 rentalCost
+comparator
 ON_DEVICE_DOCUMENT_DETECT_CREATE
 com.ngbautoroad.data.prefs.PrefsManag...
+FATIGUE_WARNING
 Lighten
 com.ngbautoroad.data.prefs.PrefsManag...
-All
 ExifVersion
+All
 downloadFailureStatus
-onDeviceImageLabelDetectionLogEvent
 Copyright
+onDeviceImageLabelDetectionLogEvent
 NGBAutoRoad_OCR
 android.view.accessibility.extra.DATA...
 sessionTotalInferenceDurationMs
@@ -384,6 +387,7 @@ monthlyFixedCosts
 languageIdentificationOptionalModuleL...
 totalAmount
 OPTIONAL_MODULE_BARCODE_DETECTION
+200
 android.car.EXTENSIONS
 $this$surfaceColorAtElevation
 Filled.Tune
@@ -396,6 +400,7 @@ Ano
 displayCutout
 com.google.android.gms.mlkit_docscan_...
 SFIXED64_LIST_PACKED
+3300.00
 SSLv3
 DEAD_CLIENT
 ဌ ဂ
@@ -406,8 +411,8 @@ CustomModelFileMover
 NO_MODEL_LOADED
 ᔄ Лငဇ
 com.google.android.gms.vision.ocr
-RECONNECTION_TIMED_OUT
 Array
+RECONNECTION_TIMED_OUT
 OPTIONAL_MODULE_BARCODE_DETECTION_INIT
 UNKNOWN
 ဌ ခ
@@ -424,8 +429,9 @@ Centro
 DELETE_NEXT_CHAR
 ဈ ည
 financialGoalDao
-state
+relatorio_
 Excluir
+state
 vision.barcode
 com.google.android.gms.vision.text.in...
 element
@@ -438,13 +444,15 @@ NOT_FOUND
 ACTION_SCROLL_DOWN
 SELECT_RIGHT_WORD
 SelectionHandleInfo
-identifiedLanguage
 android.view.ViewRootImpl
+identifiedLanguage
 minFaceSize
 TextDecoration.
 InteroperabilityIndex
+Tempo
 FocalPlaneYResolution
 Simular
+text/csv
 Fundo
 ဈ ဉ
 CODE_SCANNER_PIPELINE_INFERENCE_ERROR
@@ -454,13 +462,13 @@ renderer
 recurringDay
 CollectionInfo
 Licenciamento
-currentPin
 Rtl
 android.hardware.type.automotive
+currentPin
 isManifestFile
 com.ngbautoroad.data.prefs.PrefsManag...
-OPTIONAL_MODULE_RELEASE_ERROR
 ToggleableState
+OPTIONAL_MODULE_RELEASE_ERROR
 MOBILE_DUN
 ordersMap.values
 onDeviceBarcodeLoadLogEvent
@@ -469,9 +477,9 @@ builder
 ဈ ဈ
 MODULE_ID
 DstIn
+WhitePoint
 getParent
 com.ngbautoroad.data.prefs.PrefsManag...
-WhitePoint
 internalQueryExecutor
 languages
 LOCAL_MODEL_INVALID
@@ -482,12 +490,12 @@ dropoffNeighborhood
 headlineSmall
 SMART_REPLY_LANG_ID_DETECTAION_FAILURE
 ON_DEVICE_SMART_REPLY_CLOSE
-onDismissRequest
 klass.interfaces
+onDismissRequest
 org.osmdroid.library
 ဈ ဈ
-brakepadCost
 ခ ဂဂဂ
+brakepadCost
 source
 DOT_MATCHES_ALL
 SelectionStart
@@ -500,19 +508,20 @@ androidx.view.accessibility.Accessibi...
 DEFERRED
 markState
 Filled.Clear
+shift_rejected
 onDeviceObjectLoadLogEvent
 CrashUtils
-LATIN_AND_KOREAN
 ChartbundleENRH
+LATIN_AND_KOREAN
 tableIds
 $map
+UINT64
 Barra
 Ganho
-UINT64
 processResultSelectReceiveCatching
 tmpfs
-peekByte
 Filled.Notifications
+peekByte
 $touchX
 herewego
 $touchY
@@ -520,8 +529,9 @@ CLIENT_TELEMETRY
 com.google.android.gms.dynamite.IDyna...
 SCORE
 com.ngbautoroad.data.prefs.PrefsManag...
-_isTerminated
+shift_last_pause_start
 GPSDateStamp
+_isTerminated
 libcore.io.Memory
 TextSelectionRange
 CREATED
@@ -554,23 +564,23 @@ identifyPossibleLanguagesResult
 MOBILE_MMS
 ninety
 android.widget.RadioButton
-onDeviceObjectCreateLogEvent
-ON_DEVICE_DI_DOWNLOAD
 required
+ON_DEVICE_DI_DOWNLOAD
+onDeviceObjectCreateLogEvent
 modelClass.constructors
 YResolution
 LOCAL_MODEL_LOADED
 pokeLong
 POISONED
 LOCAL
-translateResultStatusCode
 DOCUMENT
+translateResultStatusCode
 $isDrawing$delegate
 ACTION_SHOW_ON_SCREEN
 hardware
 IMPLICITLY_REQUESTED
-lng
 enabled_accessibility_services
+lng
 ProduceState.kt
 OpenSeaMap
 priority
@@ -587,30 +597,31 @@ Mensal
 Inativo
 ON_DEVICE_FACE_CREATE
 popupPositionProvider
-onDeviceImageCaptioningCreateLogEvent
 PrivateApi
+onDeviceImageCaptioningCreateLogEvent
 com.google.android.gms.vision.DEPENDENCY
 Outlined
 OPTIONAL_MODULE_INIT_ERROR
 migrationContainer
-VALUE_PER_KM
 ON_DEVICE_ENTITY_EXTRACTION_CLOSE
 unknown
+VALUE_PER_KM
 undefined
-android.widget.SeekBar
 headlineMedium
+android.widget.SeekBar
 producerIndex
 GPSDestBearingRef
 LineHeightStyle.Alignment.Bottom
 value.stringSet.stringsList
 com.google.android.gms.common.interna...
 labelSmall
-TAB
 SecureOff
 .immediate
+TAB
 None
 MOBILE
 errorCode
+Iniciar
 JsonObject
 Bevel
 isActive
@@ -626,8 +637,8 @@ klass
 Desconhecido
 ဌ ဌ
 ALIGN_RIGHT
-com.google.android.gms.signin.interna...
 Uploader
+com.google.android.gms.signin.interna...
 CLOSE_HANDLER_INVOKED
 MODEL_NOT_REGISTERED
 /dev/mapper
@@ -638,12 +649,12 @@ format
 http://localhost
 com.google.android.gms.signin
 SELECT_LEFT_WORD
-Cor:
 WrongConstant
+Cor:
 ဉ ဉဉ
 mlkit.quality.aesthetic
-YELLOW
 bad_hash_%s
+YELLOW
 ModelDownloadManager
 getUri
 CLOSED
@@ -664,6 +675,7 @@ next_request_ms
 TODAY
 Paraíso
 registerSelectForOnJoin
+Data
 Filled.PlayCircle
 classificationMode
 LEFT_WORD
@@ -675,21 +687,23 @@ HANDLE_LEAKED
 ᐉ ခ
 $initialY
 $initialX
+path
 onColorSelected
 Observação
-Button
 ExposureMode
+Button
 Recomposer.kt
+sortBy
 PARKING
 CutText
 $this$animateColor
-VEHICLE
 addObserver
+VEHICLE
 PixelXDimension
 ဈ ခခခခ
 profile
-STOPS
 ClearTextSubstitution
+STOPS
 CLOUD_WEB_SEARCH_DETECT
 ON_ANY
 CUSTOM_IMAGE_LABEL_DETECT
@@ -714,9 +728,9 @@ Sex
 snackbarHostState
 AGGREGATED_CUSTOM_OBJECT_INFERENCE
 disableStandaloneDynamiteLoader2
-ExitTransition.KeepUntilTransitionsFi...
 com.google.android.gms.location.inter...
 ဈ ဇ
+ExitTransition.KeepUntilTransitionsFi...
 Valor
 VALUE_PER_HOUR
 UNKNOWN_ERROR
@@ -724,16 +738,16 @@ onBackInvokedDispatcher
 composition
 HSDPA
 StripOffsets
-com.google.android.gms.vision.dynamite
 common_google_play_services_restricte...
-com.google.mlkit.internal
 kotlin.Nothing
+com.google.android.gms.vision.dynamite
+com.google.mlkit.internal
+androidx.compose.runtime.SnapshotStat...
 purchaseValue
 androidx.compose.runtime.SnapshotStat...
-androidx.compose.runtime.SnapshotStat...
 ml_sdk_instance_id
-androidx.compose.runtime.SnapshotStat...
 ISOSpeedRatings
+androidx.compose.runtime.SnapshotStat...
 androidx.compose.runtime.SnapshotStat...
 androidx.compose.runtime.SnapshotStat...
 Média
@@ -745,11 +759,11 @@ right
 EnterTransition.None
 COMPACT
 Recomposer:recompose
-/mnt
 ဈ ဈငဈ
+/mnt
 currentName
-isThickClient
 Dismissed
+isThickClient
 com.cabify.driver
 FOOD
 onDeviceDocumentCroppingLogEvent
@@ -760,8 +774,8 @@ METERED_NETWORK
 %.0f
 Filled.PlayArrow
 AwaitContinuation
-RIDE_VALUE
 CANVAS_OK
+RIDE_VALUE
 kotlin.Boolean
 CLOUD_FACE_DETECT
 REMOTE_MODEL_LOADED
@@ -790,26 +804,26 @@ bitField0_
 mlkit.nlclassifier
 ACTION_SET_SELECTION
 isCtrlPressed
-Embarq.
 DEADLINE_EXCEEDED
+Embarq.
 title
 %.2f
 Documentação
+kotlin.collections.Map
 duration
 com.ngbautoroad.data.prefs.PrefsManag...
-kotlin.collections.Map
 RecordingIC
 load
 THEMED
-osmdroid.DebugDownloading
 င ဌ
-com.ngbautoroad.data.prefs.PrefsManag...
 FocalPlaneXResolution
+osmdroid.DebugDownloading
+com.ngbautoroad.data.prefs.PrefsManag...
 Leading
 %d
 sdCard
-strings_
 classSimpleName
+strings_
 SELECT_DOWN
 location_updates_with_callback
 com.google.android.gms.vision.DEPENDE...
@@ -820,21 +834,22 @@ und
 onExpandedChange
 %s
 DynamiteLoaderV2CL
-Filled
 ON_DEVICE_IMAGE_CAPTIONING_CLOSE
+Filled
 NLCLASSIFIER_CLIENT_LIBRARY_CREATE
 OPTIONAL_MODULE_INFERENCE_ERROR
-lenientToString
 on_update
+lenientToString
 kotlin.collections.MutableIterable
 DEFAULT
-expires_index
 SensingMethod
+expires_index
 onDeviceFaceDetectionLogEvent
 classificationEnabled
-updateDisplayListIfDirty
 highestScore
+updateDisplayListIfDirty
 lastScheduledTask
+android.support.FILE_PROVIDER_PATHS
 InsertTextAtCursor
 tiles
 MODEL_DOWNLOAD
@@ -858,13 +873,13 @@ field
 TOP
 com.ngbautoroad.data.prefs.PrefsManag...
 TIMEOUT
-OPTIONAL_MODULE_TEXT_CREATE
 /%s.properties
+OPTIONAL_MODULE_TEXT_CREATE
 status
 Filled.TextIncrease
 OPTIONAL_MODULE_TEXT_INIT
-Filled.RadioButtonUnchecked
 TestTagsAsResourceId
+Filled.RadioButtonUnchecked
 InvisibleToUser
 OPTIONAL_MODULE_CREATE_ERROR
 DpSize.Unspecified
@@ -882,12 +897,13 @@ measurables
 serviceResponseIntentKey
 ဇ ဉဉဇခခဇ
 uri
+0.85
 REMOTE_CONFIG_LOAD
 modelName
 Italic
 entities
-onDeviceObjectInferenceLogEvent
 osmdroid.HardwareAcceleration
+onDeviceObjectInferenceLogEvent
 ACTION_HIDE_TOOLTIP
 TIME_OUT_FETCHING_MODEL_METADATA
 columnName
@@ -901,12 +917,12 @@ eventName
 MissingPermission
 onBackStarted
 EDGE
-combine
-TopLeft
 Filled.FileDownload
+TopLeft
+combine
 card3_border_radius
-onDeviceImageQualityAnalysisLoadLogEvent
 protection_enabled
+onDeviceImageQualityAnalysisLoadLogEvent
 CLOUD_LOGO_CREATE
 Unreached
 minMs
@@ -927,8 +943,8 @@ UNDISPATCHED
 LambdaLast
 TFLITE_INTERNAL_ERROR
 Src
-CLOUD
 SubjectDistance
+CLOUD
 peekLong
 REFUSED
 UINT32_LIST
@@ -947,6 +963,7 @@ event_payloads
 Error
 http://api.tiles.mapbox.com/v4/
 outputFormats
+BEST_HOURS
 /system/etc/vold.fstab
 bytes
 collectionItemInfo
@@ -956,11 +973,11 @@ OPTIONAL_MODULE_DOCUMENT_ENHANCE_RELEASE
 RESUME_TOKEN
 confort
 /L
-OSMPublicTransport
 LightSource
-processResultSelectReceiveOrNull
+OSMPublicTransport
 Vertical
 NATIVE_LIBRARY_LOAD_ERROR
+processResultSelectReceiveOrNull
 DENSITY_THRESHOLD
 common_google_play_services_restricte...
 navigationBarsIgnoringVisibility
@@ -974,6 +991,7 @@ maxLabels
 INTERNAL
 com.google.android.gms.mlkit_ocr_korean
 TRACE_TAG_APP
+/h
 com.google.android.gms.dynamite.IDyna...
 12
 CUT
@@ -1009,10 +1027,10 @@ langid
 OPTIONAL_MODULE_IMAGE_QUALITY_ANALYSI...
 34
 GooglePlayServicesErrorDialog
-kotlin.UInt
 Favoritos
-inputImageConstructionLogEvent
+kotlin.UInt
 hasResult
+inputImageConstructionLogEvent
 mlkit.quality.technical
 landmarkMode
 DESEMBARQUE
@@ -1020,14 +1038,14 @@ Marca
 sourceExtension
 Comfort
 STRING
-Filled.Shield
 common_google_play_services_invalid_a...
+Filled.Shield
 android.widget.EditText
 UI_IMAGE
-customModelCreateLogEvent
 Pneus
-onDeviceExplicitContentLoadLogEvent
+customModelCreateLogEvent
 InOrderOutputStreamHandler
+onDeviceExplicitContentLoadLogEvent
 NO_DECISION
 JPEGInterchangeFormat
 app_version
@@ -1040,11 +1058,11 @@ DefaultInputStreamHandler
 thresh_min_dropoff_distance
 snapshot.png
 androidx.profileinstaller.action.INST...
+ON_START
 APP_ASSET
 MOBILE_IA
-ON_START
-KEY_COMPONENT_ACTIVITY_LAUNCHED_KEYS
 android.intent.action.DOWNLOAD_COMPLETE
+KEY_COMPONENT_ACTIVITY_LAUNCHED_KEYS
 filearchive
 Outros
 valuePerHour
@@ -1067,8 +1085,8 @@ common
 pokeByte
 authenticationResultCode
 R$/kWh
-78
 registry
+78
 Desgaste
 osmdroid.gpsWaitTime
 RESOURCE_EXHAUSTED
@@ -1078,20 +1096,20 @@ detectorOptions
 $this$LazyRow
 VisionKit
 င
-layout
 debug.layout
+layout
 $this$offset
 step
 java.lang.Object
 dexopt/baseline.profm
 base
-kotlinx.coroutines.bufferedChannel.se...
 osmdroid.additionalHttpRequestProperty.
 Operacional
-DELETE_TO_LINE_END
+kotlinx.coroutines.bufferedChannel.se...
 modelLanguage
-com.google.android.gms.vision.face
+DELETE_TO_LINE_END
 Filled.CreditCard
+com.google.android.gms.vision.face
 state1
 isOdmlImage
 ဇ ဇ
@@ -1099,8 +1117,8 @@ Híbrido
 ဈ ဈဈ
 NONE
 99
-currentTabPosition
 kotlinx.coroutines.semaphore.maxSpinC...
+currentTabPosition
 ShutDown
 က က
 SELECT_PAGE_DOWN
@@ -1147,21 +1165,22 @@ android.hardware.type.embedded
 offset
 UberX
 com.ngbautoroad
-$this$layout
 2.3.3
-StopInput
+$this$layout
 com.ngbautoroad.data.prefs.PrefsManag...
-SUCCESSFUL
-Galeria
+StopInput
 DATA
+Galeria
+SUCCESSFUL
 androidx.core.view.inputmethod.Editor...
 Tabs
 SHOW_AND_FADEOUT
-putObject
-$this$ExposedDropdownMenu
-requestUptimeMs
 LTE
+putObject
+requestUptimeMs
+$this$ExposedDropdownMenu
 INSTALLATION_ID_FIS_GENERATE_AUTH_TOKEN
+12.5
 configuration
 .font
 com.ngbautoroad.data.prefs.PrefsManag...
@@ -1180,24 +1199,24 @@ TextMotion.Animated
 onFieldSelected
 intValue
 fontMetrics
-smart_reply
 GPSDestLongitudeRef
 command
+smart_reply
 androidx.activity.result.contract.act...
-Desfazer
 eventTimeMs
+Desfazer
 UNKNOWN_EVENT
 providers
 landscape
 Surge/Dinâmica
-exception
 Ter
+exception
 com.ngbautoroad.data.prefs.PrefsManag...
 year
 effectiveNodeIndexOut
 smartReplies
-AutoMirrored.Filled.ArrowBack
 androidx.activity.result.contract.ext...
+AutoMirrored.Filled.ArrowBack
 SETTINGS
 ExitTransition.None
 FirebaseLambdaLast
@@ -1207,12 +1226,12 @@ CROSSED
 Compose:sideeffects
 GPSSpeed
 ဉ ဉᐉဉ
-ᔄ ᔄᔄᔄခ
 R$/corrida
-WordBreak.Unspecified
+ᔄ ᔄᔄᔄခ
 Ȉ
-VERY_LOW
+WordBreak.Unspecified
 UNMETERED_ONLY
+VERY_LOW
 WATER
 Status
 automlImageLabelingLoadLogEvent
@@ -1221,13 +1240,13 @@ androidx.activity.result.contract.act...
 Despesas
 ranchu
 MOBILE_CBS
-com.google.protobuf.GeneratedExtensio...
 card1_model_id
-Monitorando
+com.google.protobuf.GeneratedExtensio...
 ဉ
-Filled.Collections
 providerValues
 givenName
+Monitorando
+Filled.Collections
 _handled
 DROPOFF_NEIGHBORHOOD
 version
@@ -1245,14 +1264,16 @@ ALREADY_SELECTED
 cloudTextDetectionLogEvent
 DAYS
 LayingOut
+BR
 MESSAGE
 com.google.common.base.Strings
-WIFI_P2P
+android.intent.extra.STREAM
 androidx.compose.runtime.Recomposer$r...
+WIFI_P2P
 titleMedium
-LocalInputManager
-: Л
 CUSTOM
+: Л
+LocalInputManager
 indrive
 DIA
 $tables
@@ -1269,8 +1290,8 @@ androidx.lifecycle.BundlableSavedStat...
 androidx.compose.runtime.SnapshotStat...
 this$0
 Startup
-Hoje
 ULONG
+Hoje
 GPSAltitude
 notes
 င ခင
@@ -1278,23 +1299,24 @@ notes
 Miter
 osmdroid.cacheTileOvershoot
 SFIXED32_LIST_PACKED
-leakedHandleEvent
 OPTIONAL_MODULE_IMAGE_QUALITY_ANALYSI...
+leakedHandleEvent
 ACTION_SET_PROGRESS
 $drawMode$delegate
+shift_earned
 index_
 financial_goals
 RadioButton
 RECONNECTION_TIMED_OUT_DURING_UPDATE
-averageConsumption
 http
+averageConsumption
 isUsingLegacyApi
 stateDescription
-ELECTRIC
 LIST
+ELECTRIC
 com.google.android.gms.dynamic.IObjec...
-kotlin.collections.MutableCollection
 Lavagem
+kotlin.collections.MutableCollection
 onDeviceFaceLoadLogEvent
 Em
 toxicityDetectionCreateEvent
@@ -1305,11 +1327,11 @@ ride
 LIVE
 ACTION_SCROLL_UP
 BITMAP_MASKABLE
-targetLanguage
 seqno
+targetLanguage
 isEmpty
-UserInput
 vehicle_profiles
+UserInput
 com.ngbautoroad.data.prefs.PrefsManag...
 RemoteModelUtils
 onAwaitInternalProcessResFunc
@@ -1319,15 +1341,15 @@ Measuring
 STEP_STARTED
 Previous
 START
-NO_RESULT
 PageDown
+NO_RESULT
 copyright
 SnapshotFlow.kt
 RESTRICTED_PROFILE
 release
 CUSTOM_OBJECT_CLOSE
-Go
 GPSTimeStamp
+Go
 OPTIONAL_MODULE_IMAGE_LABELING
 ACTION_CONTEXT_CLICK
 androidx.compose.runtime.collection.I...
@@ -1349,8 +1371,9 @@ payload_encoding
 RESULT_NOT_WRITABLE
 %02d:%02d:%02d
 blocked_zones_json
-androidx.compose.runtime.Recomposer$r...
+shift_rides
 MAP
+androidx.compose.runtime.Recomposer$r...
 CommonUtils
 GRANULARITY_FINE
 URI
@@ -1359,8 +1382,8 @@ valueVector
 CODE_SCANNER_UNAVAILABLE
 manufacturer
 androidx$room$IMultiInstanceInvalidat...
-LocalViewConfiguration
 Revisão
+LocalViewConfiguration
 DOWNLOADED
 Strategy.Simple
 kotlin.Long
@@ -1373,8 +1396,8 @@ _resumed
 DynamiteLoaderClassLoader.class
 weight_value_per_hour
 overlay_width
-CLOUD_IMAGE_PROPERTIES_CLOSE
 gzip
+CLOUD_IMAGE_PROPERTIES_CLOSE
 FIXED64
 Lab
 PRIVATE
@@ -1389,8 +1412,8 @@ ngb_historico_
 OPTIONAL_MODULE_DOCUMENT_CROP_INIT
 SINGLE
 Fechar
-scaled
 ActionPerformed
+scaled
 ExposureProgram
 UTC
 android.intent.action.MEDIA_MOUNTED
@@ -1410,20 +1433,20 @@ ON_DEVICE_BARCODE_DETECT
 Filled.Stop
 ဌ ငင
 N:
-LocalAutofillTree
 MetadataValueReader
+LocalAutofillTree
 getHistoricalPressure
 com.google.android.gms.chimera
 NA
-SCORE_BAR
 cn.google
+SCORE_BAR
 MES
 ImageDescription
 VOID
 FLOAT
 handleLifecycleEvent
-Indeterminate
 desconhecido
+Indeterminate
 serializer
 media
 Valor/KM
@@ -1444,8 +1467,8 @@ ON_DEVICE_TRANSLATOR_CLOSE
 transport
 ON_DEVICE_TRANSLATOR_LOAD
 pipelineIdentifier
-acceptedConfigurations
 weight_duration
+acceptedConfigurations
 documentDetectionOptionalModuleLogEvent
 layout_inflater
 Diesel
@@ -1482,21 +1505,21 @@ https://api.mapbox.com/v4/
 CLOUD_WEB_SEARCH_CLOSE
 Buscar
 GmsDynamite
+dbObj
 OPTIONAL_MODULE_SMART_REPLY_CREATE
 verticalScrollAxisRange
-dbObj
 targetVector
 Expires
 MAPBOX_ACCESS_TOKEN
 REMOVE_FROZEN
-.tmp
 flash
+.tmp
 https://overlay.openstreetmap.nl/base...
 DROPOFF_DISTANCE
 _Impl
-$this$buildSerialDescriptor
 android.view.accessibility.extra.DATA...
 kotlinx.coroutines.semaphore.segmentSize
+$this$buildSerialDescriptor
 DIGITAL_INK
 CLOUD_CROP_HINTS_CLOSE
 vendor
@@ -1506,8 +1529,8 @@ ClientTelemetry.API
 objectFieldOffset
 outBundle
 UPPER_RIGHT_CORNER
-timestamp
 stageId
+timestamp
 ComponentsConfiguration
 black
 extraLarge
@@ -1521,23 +1544,24 @@ Seguro
 GarbageCollector
 inputsFormats
 onValueChange
-java.util.ListIterator
 GPSAltitudeRef
+java.util.ListIterator
 bodySmall
 Label
 $initialWidth
 SUCCESS_CACHE
 android.view.accessibility.extra.EXTR...
 overlay_height
-GoogleCertificates
 com.google.android.gms.location.ILoca...
+Encerrar
+GoogleCertificates
 lifecycle
 transformOriginState
 Elétrico
 NewApi
 UP
-com.google.android.gms.version
 Disabled
+com.google.android.gms.version
 US
 testTag
 RoadsNL
@@ -1557,8 +1581,8 @@ TYPE_THIN
 Score
 Up
 SERVICE_VERSION_UPDATE_REQUIRED
-fields
 SceneCaptureType
+fields
 downloader
 getDescriptor
 next
@@ -1589,15 +1613,16 @@ cloudDocumentTextDetectionLogEvent
 ဈ ဉဉ
 composeView
 interactionSource
-Filled.Delete
 .lck
+Filled.Delete
+Pausar
 https://tiles.openseamap.org/seamark/
 HOURS
 com.ngbautoroad.data.prefs.PrefsManag...
 android.intent.action.VIEW
 window
-$view
 titleLarge
+$view
 $this$TextButton
 Cancelling
 displaySmall
@@ -1609,8 +1634,8 @@ UPDATE_AVAILABLE
 mddDownloadErrorCodes
 RemoteModelLoader
 ခ ခခခခခ
-DialogRedirect
 .csv
+DialogRedirect
 autoManageModelOnBackground
 EmptyCoroutineContext
 onEdit
@@ -1625,6 +1650,8 @@ double
 INSTANCE
 RelatedSoundFile
 event_metadata
+veiculos
+1200.00
 $this$measure
 showsUserInterface
 mRecreateDisplayList
@@ -1639,8 +1666,8 @@ Acessibilidade
 CHAR
 captionBarIgnoringVisibility
 Span
-kotlinx.coroutines.bufferedChannel.ex...
 onToggleCalc
+kotlinx.coroutines.bufferedChannel.ex...
 cloudCropHintDetectionLogEvent
 WrongCall
 onDeviceTranslationLogEvent
@@ -1656,8 +1683,8 @@ DOWNLOAD_FAILED
 SELECT_UP
 aggregatedOnDeviceSegmentationLogEvent
 CLOUD_WEB_SEARCH_CREATE
-_parentHandle
 IMMINENT
+_parentHandle
 SnapshotIdSet.kt
 indicator
 BYTES
@@ -1668,8 +1695,8 @@ EmojiCompatInitializer
 completedExpandBuffersAndPauseFlag
 KEY_COMPONENT_ACTIVITY_REGISTERED_RCS
 OPTIONAL_MODULE_IMAGE_QUALITY_ANALYSI...
-notification
 2
+notification
 com.google.android.gms.signin.interna...
 င ဉဈ
 java.lang.Byte
@@ -1691,8 +1718,8 @@ unexpected
 NO_RECEIVE_RESULT
 OUT_OF_RANGE
 Ltr
-Touch
 uber
+Touch
 com.google.android.gms.signin.interna...
 COMPLETE
 Trailing
@@ -1720,6 +1747,7 @@ CLOUD_LOGO_CLOSE
 android.widget.ProgressBar
 UNKNOWN_STATUS
 TopMiddle
+Filled.AttachMoney
 pickupDistance
 SCHEDULED
 CLOUD_TEXT_CLOSE
@@ -1741,14 +1769,14 @@ composeView.context
 LineHeightStyle.Alignment.Center
 titleSmall
 _COROUTINE
-kotlinx.coroutines.scheduler.resoluti...
 imageSource
+kotlinx.coroutines.scheduler.resoluti...
 MapTileArea:empty
-getType
 FocalLength
+getType
 Violações
-SUCCEEDED
 kotlin.jvm.internal.StringCompanionOb...
+SUCCEEDED
 /dev/block/vold/
 ACTION_CLICK
 ABORTED
@@ -1772,8 +1800,8 @@ osmdroid.mapViewRecycler
 CAMERA1_SOURCE_CANT_START_ERROR
 baseModel
 ACTION_IME_ENTER
-Strictness.Strict
 kotlinx.serialization.json.JsonObject
+Strictness.Strict
 ဇဉ ခဇဌ
 mounted
 ThreadLocalEventLoop
@@ -1783,8 +1811,8 @@ Proteção
 kilometer
 Placa
 com.waymo.
-HikeBikeMap
 CLOUD_DOCUMENT_TEXT_DETECT
+HikeBikeMap
 db
 Acessório
 SELECT_PREV_PARAGRAPH
@@ -1795,14 +1823,15 @@ dp
 ခ ဇခငခ
 STEP_ENDED
 Estacionamento
-MOBILE_HIPRI
 USHORT
+MOBILE_HIPRI
 inefficientWriteStringNoTag
 imageType
 image
 CODE_SCANNER_APP_NAME_UNAVAILABLE
-com.ngbautoroad.data.prefs.PrefsManag...
+shift_active
 $this$outlineCutout
+com.ngbautoroad.data.prefs.PrefsManag...
 Aceitas
 FIXED
 labelsFile
@@ -1813,8 +1842,8 @@ JobInfoScheduler
 PAGE_UP
 င ညဈခ
 detectedBarcodeFormats
-Dismiss
 com.google.android.gms.common.modulei...
+Dismiss
 END
 ACTION_ACCESSIBILITY_FOCUS
 android.provider.extra.APP_PACKAGE
@@ -1822,11 +1851,11 @@ frame
 ThumbnailImageLength
 dims
 SignInCoordinator
+origin
+MapQuest
 customModelInferenceLogEvent
 imageLabelOptionalModuleLogEvent
-MapQuest
 FAILED_PRECONDITION
-origin
 maxClientLibraryVersion
 ON_DEVICE_ENTITY_EXTRACTION_LOAD
 content
@@ -1845,8 +1874,8 @@ aggregatedOnDeviceExplicitContentLogE...
 ဇ ဈဈ
 ridesCount
 LINE_START
-individual_expenses
 Filled.Map
+individual_expenses
 getDeclaredMethod
 Filled.GppBad
 Sharpness
@@ -1872,8 +1901,8 @@ com.google.android.gms.signin.interna...
 id
 %07x
 dispatcher
-Exit
 ocr
+Exit
 MILLISECONDS
 ENUM
 Dom
@@ -1882,8 +1911,8 @@ index
 Filled.Warning
 it
 UNDECIDED
-com.ngbautoroad.data.prefs.PrefsManag...
 IndexForKey
+com.ngbautoroad.data.prefs.PrefsManag...
 installmentsPaid
 Ready
 columnsMap.values
@@ -1892,8 +1921,8 @@ Resetar
 Map
 MAPQUEST_ACCESS_TOKEN
 set_mock_location_with_callback
-charset
 CUSTOM_MODEL_LOAD
+charset
 UBER_PRIORITY
 com.google.android.apps.docs.storage....
 Max
@@ -1904,8 +1933,8 @@ IMAGE_CAPTIONING
 delegate
 က ငငကက
 CLOUD_FACE_CLOSE
-RIGHT
 OPTIONAL_MODULE_NLCLASSIFIER_CREATE
+RIGHT
 com.ngbautoroad.data.prefs.PrefsManag...
 km
 GROUP_LIST
@@ -1927,15 +1956,15 @@ DROPOFF
 UBER_X
 com.google.android.gms.location.ILoca...
 com.ngbautoroad.data.prefs.PrefsManag...
-kotlin.Number
 CRITERIA
 ON_DEVICE_DOCUMENT_DETECT_PROCESS
+kotlin.Number
 $this$drawWithContent
 Dst
 ms
 meter
-BALANCED_POWER_ACCURACY
 PhotographicSensitivity
+BALANCED_POWER_ACCURACY
 Filled.Refresh
 ON_DEVICE_SEGMENTATION_CLOSE
 EHRPD
@@ -1950,17 +1979,17 @@ code
 SELECT_LINE_LEFT
 ns
 keys
-initialPositionProvider
 androidx.compose.ui.semantics.testTag
 addFontFromBuffer
+initialPositionProvider
 DROIDX
 AUTOML_IMAGE_LABELING_LOAD
 head
-onAddField
 kotlin.UShort
+onAddField
 OPTIONAL_MODULE_LANGUAGE_ID
-Compacto
 inParcel
+Compacto
 м м м
 ok
 Aceita
@@ -1968,31 +1997,32 @@ modelDownloadLogEvent
 baseKey
 pokeByteArray
 DOUBLE_LIST
-COROUTINE_SUSPENDED
 GPSDOP
+COROUTINE_SUSPENDED
 android.widget.Spinner
 resolvedCompositionContext
 Filled.Layers
 kotlin.UByte
 ᔁ ᔁᔁᔁ
 SELECT_ALL
-LineHeightStyle.Alignment.Top
 MEDIUM_OPTIMIZATION
-com.google.protobuf.ExtensionSchemaFull
+LineHeightStyle.Alignment.Top
 pk
-Divider
+com.google.protobuf.ExtensionSchemaFull
 DIGITAL_INK_SEGMENTATION
+Divider
 sourceUnit
-Filled.Speed
 com.google.firebase.components:
+Filled.Speed
 loadDictionaryErrorCode
 contourMode
 MONTH
+pt
 createAsync
 SubSecTimeOriginal
 iterator
-yMax
 freeze
+yMax
 java.util.Map
 /data/misc/profiles/cur/0
 DOWNLOADING
@@ -2008,13 +2038,13 @@ insertReorderBarrier
 id/bubble_image
 ဌ ᐉခ
 node
-CLOUD_DOCUMENT_TEXT_CLOSE
 Min
+CLOUD_DOCUMENT_TEXT_CLOSE
 com.ninety9.driver
 com.ngbautoroad.data.prefs.PrefsManag...
 RESOLUTION_ACTIVITY_NOT_FOUND
-ro
 device
+ro
 HideKeyboard
 androidx.activity.result.contract.ext...
 RESULT_CANCELED
@@ -2022,9 +2052,9 @@ activity
 MICROSECONDS
 rw
 Efapi
-LocalLifecycleOwner
 TransportRuntime.
 INT32
+LocalLifecycleOwner
 rideHistoryDao
 Dur.
 ENUM_LIST_PACKED
@@ -2036,9 +2066,9 @@ sp
 NO_ERROR
 email
 rideValue
+animator_duration_scale
 RESOURCE
 kotlin.Enum.Companion
-animator_duration_scale
 profileinstaller_profileWrittenFor_la...
 င ငငဇငဇင
 ACCELERATION_ALLOWLIST_GET
@@ -2046,8 +2076,8 @@ ACTION_EXPAND
 com.google.android.gms.vision.text.ml...
 WRITE_SKIP_FILE
 GPSMeasureMode
-SELECT_RIGHT_CHAR
 ON_DEVICE_DI_LOAD
+SELECT_RIGHT_CHAR
 dev_mount
 getHistoricalX
 getHistoricalY
@@ -2065,8 +2095,8 @@ createdAt
 SERVICE_MISSING_PERMISSION
 ReusedSlotId
 ဉ ဈဉ
-REMOTE_CONFIG_FRC_FETCH
 Filled.Lock
+REMOTE_CONFIG_FRC_FETCH
 Filled.Accessibility
 putBoolean
 us
@@ -2083,6 +2113,7 @@ thresh_min_value_per_hour
 failure
 BASE_DIGITAL_INK
 serviceActionBundleKey
+yearly
 OPTIONAL_MODULE_BARCODE_DETECTION_REL...
 MULTILINE
 ON_DEVICE_BARCODE_CREATE
@@ -2111,8 +2142,8 @@ location
 getInstance
 $this$TopAppBar
 Filled.PauseCircle
-NETWORK_UNMETERED
 GPSProcessingMethod
+NETWORK_UNMETERED
 onSubmit
 isAutoImported
 ImageConvertUtils
@@ -2128,8 +2159,8 @@ yMin
 bodyLarge
 refHolder
 deserializer
-onDeviceExplicitContentCreateLogEvent
 ACTION_ARGUMENT_SELECTION_START_INT
+onDeviceExplicitContentCreateLogEvent
 ShowKeyboard
 totalCriteria
 SpatialFrequencyResponse
@@ -2149,9 +2180,9 @@ ColorAnimation
 Outdoors
 UNAUTHENTICATED
 longValue
-BYTEBUFFER
-GooglePlayServicesUtil
 promo
+GooglePlayServicesUtil
+BYTEBUFFER
 CODE_SCANNER_CAMERA_PERMISSION_NOT_GR...
 onOpenGallery
 get
@@ -2161,8 +2192,8 @@ https://wms.chartbundle.com/tms/v1.0/...
 blocked_pickup_neighborhoods
 socMetaBuildId
 Custom
-CREDIT_CARD
 Ϫ  ဈ ဈᐉϪဈ
+CREDIT_CARD
 isBold
 DUMMY
 android.view.accessibility.extra.DATA...
@@ -2178,9 +2209,9 @@ data
 processResultSelectSend
 HSPAP
 clientLibraryVersion
-LocalConfiguration
 ON_DEVICE_TEXT_CREATE
 originalImageSize
+LocalConfiguration
 translate
 Filled.ArrowDropDown
 IsDialog
@@ -2191,14 +2222,14 @@ PERMISSION_DENIED
 kotlinx.serialization.json.pool.size
 NotReady
 LocalHapticFeedback
-TextMotion.Static
 kotlin.jvm.internal.EnumCompanionObject
+TextMotion.Static
 Ganhos
 LineHeightStyle.Trim.Both
 android.widget.TextView
-cameraSource
-onConfirm
 proto
+onConfirm
+cameraSource
 geofences_with_callback
 no_model_name
 CLOUD_SAFE_SEARCH_CLOSE
@@ -2215,9 +2246,9 @@ GPSSatellites
 com.machfrankfurt.android
 onPinChanged
 GPSDestLatitude
+DateTimeOriginal
 CopyText
 sqLiteQuery
-DateTimeOriginal
 CUSTOM_OBJECT_INFERENCE
 mlkit.ocr.common
 rotationDegrees
@@ -2233,15 +2264,16 @@ JPEGInterchangeFormatLength
 java.util.Iterator
 focusProperties
 ᐉ
-confidence
 org.robolectric.Robolectric
-elapsedUs
+confidence
 https://wms.chartbundle.com/tms/v1.0/...
+elapsedUs
 pinInput
 RESULT_IO_EXCEPTION
 intent
 RejectedExecutionException
 Filled.Star
+Lucro
 boolean
 ValidCredentials
 modelInitializationMs
@@ -2252,6 +2284,7 @@ GetCurrentLocation
 MOBILE_IMS
 TransactionDispatcher
 valueCase_
+rides
 java.lang.Integer
 BackendRegistry
 ON_DEVICE_DI_CLOSE
@@ -2260,10 +2293,10 @@ unimplemented
 layoutDirection
 vehicleType
 requester_app_package
+optional
 firstQuartileMs
 identifyLanguageConfidenceThreshold
 CONNECTION_SUSPENDED_DURING_CALL
-optional
 Orientation
 textSelectionRange
 outputLength
@@ -2275,14 +2308,15 @@ LOCATION
 TileStates
 HEREWEGO_APPCODE
 Eldorado
-contentPadding
 CloudMadeStandardTiles
+contentPadding
 displayName
 emoji2.text.DefaultEmojiConfig
 ImageLength
-nlClassifierOptionalModuleLogEvent
 Prefix
+nlClassifierOptionalModuleLogEvent
 onLockProcessResult
+weekly
 targetVersion
 SignInClientImpl
 ဉ
@@ -2290,9 +2324,10 @@ Etanol
 AccountAccessor
 ON_DEVICE_TEXT_LOAD
 EXTRA_BENCHMARK_OPERATION
-id/bubble_subdescription
 င ငငင
+id/bubble_subdescription
 SUCCESS
+STOP_SUGGESTION
 kotlin.String
 MODEL_UPDATE
 event_id
@@ -2302,8 +2337,8 @@ Combustível/Energia
 imperial
 OPTIONAL_MODULE_NLCLASSIFIER
 POST
-Start
 expenseDao
+Start
 ColorSpace
 OPTIONAL_MODULE_IMAGE_QUALITY_ANALYSI...
 CUSTOM_OBJECT_LOAD
@@ -2311,29 +2346,29 @@ isTagEnabled
 INPUT_IMAGE_CONSTRUCTION
 payload
 driverThresholds
-SOURCE_UNKNOWN
 handledErrors
+SOURCE_UNKNOWN
 ACTION_SCROLL_FORWARD
 SIGN_IN_REQUIRED
-costPerKm
 bufferEndSegment
+costPerKm
 Filled.ArrowBack
 intervalKm
-get_last_location_with_request
 eventUptimeMs
+get_last_location_with_request
 com.google.firebase.components.Compon...
 SIGN_IN_FAILED
 preferredHardwareConfigs
-Editar
 preferencesProto.preferencesMap
+Editar
 gps
 com.google.android.gms.signin.interna...
 list
 OpenTopoMap
 DateTimeDigitized
 com.google.android.location.internal....
-DESLIGAR
 CAR_PAYMENT
+DESLIGAR
 ACCELERATION_ANALYTICS
 Bottom
 End
@@ -2349,12 +2384,12 @@ locale
 OPTIONAL_MODULE_TEXT_INFERENCE
 firebaseProjectId
 RESULT_DELETE_SKIP_FILE_SUCCESS
-WordBreak.None
 SDK_INT
+WordBreak.None
 AGGREGATED_AUTO_ML_IMAGE_LABELING_INF...
+OBJ
 CLOUD_DOCUMENT_TEXT_CREATE
 osmdroid
-OBJ
 ZoomMax
 ည ခ
 kotlinx.coroutines.main.delay
@@ -2365,8 +2400,8 @@ jobscheduler
 OPTIONAL_MODULE_DOCUMENT_ENHANCE_PROCESS
 deqIdx
 Admin
-compose:lazylist:prefetch:measure
 GPSImgDirection
+compose:lazylist:prefetch:measure
 TOXICITY_DETECTION_CREATE_EVENT
 Indicator
 service
@@ -2387,6 +2422,7 @@ MODEL_NOT_DOWNLOADED
 InactivePendingWork
 androidx.profileinstaller.action.SAVE...
 Adicionar
+shift_paused_duration
 onToggleService
 CUSTOM_MODEL_CLOSE
 TYPE_THICK
@@ -2399,22 +2435,22 @@ tireLifeKm
 write
 StateDescription
 customErrors
-Filled.TrendingUp
 COMBINED
 SensorLeftBorder
 GPSDestLatitudeRef
+Filled.TrendingUp
 period
 toggleableState
 EmojiSupportMatch.Default
 view.rootView
-Square
 GPSStatus
-isIncludedInCalc
+Square
 extraSmall
+isIncludedInCalc
 thresholds
 $this$animateFloat
-cloudWebSearchDetectionLogEvent
 YCbCrCoefficients
+cloudWebSearchDetectionLogEvent
 floorLabel
 CUSTOM_MODEL_CREATE
 https://tile.openstreetmap.org/
@@ -2433,8 +2469,8 @@ ON_DEVICE_IMAGE_QUALITY_ANALYSIS_CREATE
 CUSTOM_IMAGE_LABELING
 loggingInitializationMs
 estimatedTotal
-java.lang.String
 ExifIFDPointer
+java.lang.String
 AUTOML_IMAGE_LABELING_CLOSE
 kotlinx.serialization.json.JsonUnquot...
 ORANGE
@@ -2443,33 +2479,33 @@ pickupNeighborhood
 %.1fx
 LICENSING
 onFieldMoved
-zbai
 HorizontalScrollAxisRange
+zbai
 zbaj
 zbak
 Unspecified
 zbal
 zbam
-Default
 SEGURO
+Default
 resultStatus
 zbaa
 BASE_ENTITY_EXTRACTION
 zbab
 zbac
-GRANULARITY_COARSE
 zbad
-Desembarque
+GRANULARITY_COARSE
 zbae
+Desembarque
 zbaf
-FIREBASE_ML_SDK
 zbag
+FIREBASE_ML_SDK
 zbah
 thresh_min_passenger_rating
 startZoomLevel
 AGGREGATED_ON_DEVICE_EXPLICIT_CONTENT...
-entity
 RemoteModel
+entity
 New
 Salvar
 downloadHttpResponseCode
@@ -2484,9 +2520,9 @@ CLOUD_SAFE_SEARCH_DETECT
 com.android.
 Filled.AdminPanelSettings
 void
-GASOLINE
-_cur
 mStableInsets
+_cur
+GASOLINE
 Funilaria/Pintura
 ganhos
 DATA_TYPE_ERROR
@@ -2497,8 +2533,8 @@ REAL
 imageByteSize
 Versão
 _id
-com.ngbautoroad.data.prefs.PrefsManag...
 OPTIONAL_MODULE_NLCLASSIFIER_INIT
+com.ngbautoroad.data.prefs.PrefsManag...
 kotlin.Throwable
 RequestFocus
 parkedWorkersStack
@@ -2506,28 +2542,28 @@ NO_VALUE
 LocationResult
 oilChangeCost
 lightnessEnhancementParam
+a.l7
 kotlin.Annotation
+ON_DEVICE_DOCUMENT_DETECT_LOAD
 SkipSubtreeAndContinueTraversal
 com.google.android.gms.signin.interna...
-ON_DEVICE_DOCUMENT_DETECT_LOAD
 GPSTrackRef
 REDO
 /dev/block/vold
-ᔀ ᔀကကဇကဈ
 Projeção
+ᔀ ᔀကကဇကဈ
 WIMAX
 Invalid
 ACCELERATION_ALLOWLIST_FETCH
 buttons
 BITMAP
-MEDIAPIPE_ERROR
 SubjectLocation
+MEDIAPIPE_ERROR
 mandatorySystemGestures
 DigitalZoomRatio
 intrface
 com.nest.
 Combustão
-a.k7
 ZoomMin
 valueDesc
 requestedPreviewWidth
@@ -2536,8 +2572,8 @@ initialExtras
 assetFilePath
 DstOut
 benchmarkStatus
-common_google_play_services_sign_in_f...
 fileName
+common_google_play_services_sign_in_f...
 getByte
 accessibility
 mFieldsMask
@@ -2566,16 +2602,16 @@ GetTextLayoutResult
 ဂ
 SELECT_LINE_END
 colors
-$this$Tab
 OPTIONAL_MODULE_IMAGE_LABELING_INFERENCE
+$this$Tab
 backend:
 ComposeInternal
 AGGREGATED_ON_DEVICE_DOCUMENT_DETECT_...
 liveRegion
 com.ngbautoroad.data.prefs.PrefsManag...
 Brotas
-STANDARD
 Filled.DirectionsCar
+STANDARD
 setRemoveOnCancelPolicy
 receive
 PHONE_HOLDER
@@ -2598,14 +2634,14 @@ Seminário
 $dbRef
 existingFields
 Compose:Composer.dispose
-Compose
 ON_DEVICE_POSE_PRELOAD
 Container
+Compose
 maxResults
 java.lang.Short
 tile
-android.widget.Button
 toxicityDetectionInferenceEvent
+android.widget.Button
 _closeCause
 has
 MODEL_TYPE_MISUSE
@@ -2627,51 +2663,52 @@ detectedFaces
 Enter
 Filled.Build
 updated
-INTERRUPTED_RCV
 CABIFY
+INTERRUPTED_RCV
 MESSAGE_LIST
 SQLiteBlobTooBigException
 onDeviceImageLabelLoadLogEvent
 font_variation_settings
 DpAnimation
 common_google_play_services_network_e...
-common_google_play_services_invalid_a...
 application_build
+common_google_play_services_invalid_a...
 Tudo
 EmojiSupportMatch.None
 personDetectionMode
 Stylus
 ON_DEVICE_SMART_REPLY_DETECT
-https://
 SEALED
+https://
 com.ngbautoroad.STOP_SERVICE
 NO_OWNER
-SIGNED
 isSuccessful
+SIGNED
 PICKUP
 codeScannerScanApiEvent
 ဌ
 Password
+18/06/2026
 name_ulr_private
 validationTestResult
-Fab
 DNGVersion
-indriver
+Fab
 INTERNAL_ERROR
+indriver
 captionBar
 GREEN
 pts
 generic
-weight_value_per_km
 BOOL_LIST
+weight_value_per_km
 BOOL
 com.google.android.gms.signin.interna...
 ANDROID_MEDIA_IMAGE
 https://c.tile.opentopomap.org/
-COMPLETING_RETRY
 ApertureValue
-Filled.Visibility
+COMPLETING_RETRY
 blockedNeighborhoods
+Filled.Visibility
 com.google.android.gms.common.interna...
 OrBuilderList
 errorSpace
@@ -2680,8 +2717,8 @@ android.widget.ImageView
 ACCESSIBILITY_CLICKABLE_SPAN_ID
 circles
 imeAction
-smartReplyOptionalModuleLogEvent
 tips
+smartReplyOptionalModuleLogEvent
 ACTION_PAGE_LEFT
 CARD
 LOWER_LEFT_CORNER
@@ -2700,8 +2737,8 @@ Serviços
 closeHandler
 CustomActions
 ဇ
-BUFFERED
 $callback
+BUFFERED
 Sáb
 approximater
 java.lang.Throwable
@@ -2717,8 +2754,8 @@ onSetActive
 ဈ
 QueryDispatcher
 INITIALIZED
-cloudLandmarkDetectionLogEvent
 awaiter
+cloudLandmarkDetectionLogEvent
 mlkit.ocr.chinese
 CFAPattern
 hostState
@@ -2730,17 +2767,17 @@ keep_screen_on
 com.ngbautoroad.data.prefs.PrefsManag...
 LATIN_AND_CHINESE
 MAPQUEST_MAPID
-currentColor
 SBYTE
+currentColor
 JsonArray
 earnings
-ဉ
 FIXED32_LIST
+ဉ
 Localização
 char
 motorola
-identifyAllLanguagesConfidenceThreshold
 Entrar
+identifyAllLanguagesConfidenceThreshold
 card1_name
 onUpdate
 small
@@ -2755,8 +2792,8 @@ selected_model_id
 isRecurringAnnual
 to_be_validated_model.tmp
 KEY_COMPONENT_ACTIVITY_REGISTERED_KEYS
-MobileAtlas
 SubSecTime
+MobileAtlas
 trackingId
 java.lang.Cloneable
 င င$ဌ
@@ -2783,6 +2820,7 @@ https://wms.chartbundle.com/tms/v1.0/...
 င
 Idle
 CANCELED
+RESUMO
 HardLight
 displayMedium
 common_google_play_services_resolutio...
@@ -2790,20 +2828,20 @@ androidx.compose.runtime.RecomposerKt...
 loadDurationMs
 kotlin.String.Companion
 padding
-LocalDensity
 process
+LocalDensity
 ActiveParent
 ACTION_SHOW_TOOLTIP
 jClass
-value_
 CUSTOM_IMAGE_LABEL_LOAD
+value_
 Filled.BatteryChargingFull
 addFontFromAssetManager
 DstOver
 dd/MM/yyyy
 timestampUs
-value.string
 mAttachInfo
+value.string
 classes.dex
 REMOTE_CONFIG_FETCH
 Remover
@@ -2811,8 +2849,8 @@ Left
 common_google_play_services_sign_in_f...
 kotlin.Cloneable
 ngb_autoroad_prefs
-Liberdade
 onAdd
+Liberdade
 GPSDestBearing
 qosTier
 Decimal
@@ -2822,8 +2860,8 @@ kotlin.reflect.jvm.internal.Reflectio...
 mounted_ro
 Todos
 COLLAPSED
-cleanedAndPointers
 HAS_BEARING_ACCURACY_MASK
+cleanedAndPointers
 DEFAULT_TEST_TAG
 unspecified
 SFIXED32_LIST
@@ -2837,6 +2875,7 @@ cancellation
 timezoneOffsetSeconds
 ON_DEVICE_IMAGE_CAPTIONING_INFERENCE
 Flex
+7.2
 weight_ride_value
 context.noBackupFilesDir
 aggregatedOnDeviceTextDetectionLogEvent
@@ -2852,8 +2891,8 @@ confidenceScore
 RESULT_DESIRED_FORMAT_UNSUPPORTED
 tail
 Itapuã
-SELECT_LINE_RIGHT
 CODE_SCANNER_SCAN_API
+SELECT_LINE_RIGHT
 PERMIT
 transition
 android.os.SystemProperties
@@ -2905,17 +2944,17 @@ CLOUD_IMAGE_PROPERTIES_CREATE
 MLKitImageUtils
 SubjectArea
 Configurações
-Temático
 ProfileInstaller
+Temático
 unusedTag
 com.google.protobuf.GeneratedMessage
 java.lang.Boolean
 vehicleId
 maxImages
-Semana
 Room
-owner
+Semana
 GSM
+owner
 MlKitLegacyMigration
 ExifInterface
 com.google.android.gms.common.telemet...
@@ -2937,6 +2976,7 @@ action
 rideDuration
 MENSAL
 uberx
+4500.00
 $this$keyframes
 liters
 RESOLUTION_REQUIRED
@@ -2950,18 +2990,19 @@ fontSize
 androidx.datastore.preferences.protob...
 arch_disk_io_
 textEnhancementParam
-LocalClipboardManager
 rideType
+LocalClipboardManager
 SamplesPerPixel
+BEST_RIDE_TYPES
 ACTION_CLEAR_SELECTION
 Right
 errorInfo
 ALWAYS
 Off
 file
-currentOdometer
-BYTE_STRING
 YCbCrSubSampling
+BYTE_STRING
+currentOdometer
 typeConverters
 mlkit.ocr.japanese
 Final
@@ -2984,24 +3025,25 @@ $this$null
 KEY_COMPONENT_ACTIVITY_PENDING_RESULT
 CAMERA1_SOURCE_NO_SUITABLE_FPS_ERROR
 zoom_level
-ContinueTraversal
 mVisibleInsets
+ContinueTraversal
 Build
 find
 onActivate
+Jun/2026
 selected
 DecoupledTextDelegate
 Accept
 painter
-MAINTENANCE
-Descrição
 AUTO
-ᔄ ᔄᔄᔄ
+Descrição
+MAINTENANCE
 SCANNER_AUTO_ZOOM_FIRST_ATTEMPT
+ᔄ ᔄᔄᔄ
 true
 SSHORT
-com.google.android.gms.mlkit_ocr_japa...
 င
+com.google.android.gms.mlkit_ocr_japa...
 ACTION_SCROLL_RIGHT
 ON_DEVICE_SMART_REPLY_BLACKLIST_UPDATE
 OPTIONAL_MODULE_SMART_REPLY_INIT
@@ -3023,12 +3065,12 @@ parentCompositionContext
 Destino
 ON_DEVICE_DOCUMENT_CROP_PROCESS
 androidx.compose.runtime.DefaultChore...
-$this$LazyVerticalGrid
 Fiets
+$this$LazyVerticalGrid
 androidx.datastore.preferences.protob...
 Completed
-UNINITIALIZED
 callback
+UNINITIALIZED
 Лᐉ
 writer
 ACTION_PASTE
@@ -3041,6 +3083,7 @@ UBER_BLACK
 apiKey
 customModelLoadLogEvent
 NEVER
+Exportar
 scoreType
 CENTER
 Unknown
@@ -3084,6 +3127,7 @@ colorHex
 zbd
 zbg
 zbf
+Retomar
 zbi
 zbh
 zbk
@@ -3093,29 +3137,29 @@ zbl
 zbo
 mlkit.docscan.detect
 zbn
-oilChangeKm
 kotlin.Function
+oilChangeKm
 zbq
 zbp
 CLOUD_TEXT_DETECT
 zbs
 zbr
 Aumentar
-onDeviceFaceMeshCreateLogEvent
 zbu
+onDeviceFaceMeshCreateLogEvent
 zbt
 zbw
 zbv
-zby
 LTE_CA
+zby
 zbx
-id/bubble_title
 AGGREGATED_ON_DEVICE_DOCUMENT_ENHANCE...
+id/bubble_title
 zbz
 ဉ ခ
 ACTION_PAGE_DOWN
-Trevo
 classes_to_restore
+Trevo
 isTraversalGroup
 mlkit.image.caption
 Recusada
@@ -3126,16 +3170,16 @@ aggregatedAutomlImageLabelingInferenc...
 SECONDS
 CLOUD_SAFE_SEARCH_CREATE
 SQLiteEventStore
-TransportDark
 p.second
+TransportDark
 inferenceDurationStats
 eventCode
 recurringDuration
 face
 Pioneer
 CLOUDMADE_KEY
-ဉ ဉ
 osmdroid.DebugMapView
+ဉ ဉ
 GPSDestDistance
 /proc/mounts
 operation
@@ -3170,8 +3214,8 @@ SMART_REPLY
 androidx.lifecycle.internal.SavedStat...
 osmdroid.tileFileSystemMaxQueueSize
 expires
-PROXY
 AnimateToPoint
+PROXY
 mlkit.ocr.korean
 Direito
 barcode_ui
@@ -3185,20 +3229,22 @@ PARCELA
 AGGREGATED_ON_DEVICE_SEGMENTATION
 android.view.accessibility.extra.EXTR...
 UBER_FLASH
+Km/L
 UNRECOGNIZED
-use_safe_parcelable_in_intents
 SetProgress
+use_safe_parcelable_in_intents
 kotlinx.coroutines.test.internal.Test...
+financeiro
 DELETE_NEXT_WORD
 osmdroid.tileDownloadMaxQueueSize
 PassThroughCoarseClassifier
 aggregatedOnDeviceImageQualityAnalysi...
 Veículos
 Filled.Draw
-Semanal
 Location
-Strictness.Normal
+Semanal
 onWeightChange
+Strictness.Normal
 prefix
 imageInfo
 LiveRegion
@@ -3207,15 +3253,15 @@ ActualAndroid.android.kt
 getViewRootImpl
 childCoordinates
 RemoteModelSource
-delimiter
 superclass
+delimiter
 Voltar
 zip
 application/json
 Aval.
 IDEN
-LEFT_CHAR
 java.util.Set
+LEFT_CHAR
 readIfAbsent
 Suffix
 Switch
@@ -3223,8 +3269,8 @@ Duração
 result_code
 UNMETERED_OR_DAILY
 DELETE_SKIP_FILE
-onDeviceImageLabelCreateLogEvent
 androidx.compose.ui.semantics.id
+onDeviceImageLabelCreateLogEvent
 market://details
 createFromFamiliesWithDefault
 ActivityResultRegistry
@@ -3249,20 +3295,20 @@ androidx.profileinstaller.action.BENC...
 estrelas
 scannerAutoZoomEvent
 ည ခဉဂ
-Cores
 $this$Canvas
+Cores
 firebaseModelName
 Filled.LocationOff
 performanceMode
 SensorTopBorder
 java.lang.Comparable
-documentCroppingOptionalModuleLogEvent
 ChartbundleWAC
+documentCroppingOptionalModuleLogEvent
 DstAtop
 NLCLASSIFIER_CLIENT_LIBRARY
 UnfocusedEmpty
-ဈ ဂဂဂ
 SCANNER_AUTO_ZOOM_RESUME
+ဈ ဂဂဂ
 Done
 MODEL_HASH_MISMATCH
 Diminuir
@@ -3292,23 +3338,23 @@ LOW_POWER
 Softlight
 SERVICE_INVALID
 MODEL_INFO_DOWNLOAD_NO_HASH
-Content
 ThumbnailImage
+Content
 file_id
 INSERT
 Software
 replacement
 Filled.Edit
-ime
-AndroidOwner:measureAndLayout
 $onBackInvoked
+AndroidOwner:measureAndLayout
+ime
 ON_DEVICE_ENTITY_EXTRACTION_ANNOTATE
 androidx.datastore.preferences.protob...
 android.text.EmojiConsistency
-TOXICITY_DETECTION_LOAD_EVENT
 Config
-ᐉ ခ
+TOXICITY_DETECTION_LOAD_EVENT
 ACTION_CUT
+ᐉ ခ
 $this$applyTonalElevation
 kotlin.Byte
 ဉ
@@ -3318,8 +3364,8 @@ array
 CLOUD_CROP_HINTS_CREATE
 FLEX
 Zoom
-journalMode
 SelectableGroup
+journalMode
 WEEK
 value
 REUSABLE_CLAIMED
@@ -3335,8 +3381,8 @@ Parcela/Financiamento
 int
 REMOTE_EXCEPTION
 stages
-customLocalModelOptions
 င ဈငငခ
+customLocalModelOptions
 UBER_GREEN
 ဌ ဌဌခဇ
 imageCaptioningOptionalModuleLogEvent
@@ -3354,8 +3400,8 @@ com.google.app.id
 R$%.2f
 androidx.view.accessibility.Accessibi...
 getUncaughtExceptionPreHandler
-Desativada
 ON_DEVICE_TRANSLATOR_DOWNLOAD
+Desativada
 SERVICE_DISABLED
 VerbatimTts
 isColdCall
@@ -3381,8 +3427,8 @@ onDeviceSmartReplyLogEvent
 android.settings.action.MANAGE_OVERLA...
 JPEG
 android.settings.ACCESSIBILITY_SETTINGS
-ContentOrLtr
 AUTOML_IMAGE_LABELING
+ContentOrLtr
 onCancel
 30000
 EmojiCompat.EmojiCompatInitializer.run
@@ -3419,13 +3465,13 @@ classificationConfidence
 JsonNull
 Critérios
 addSuppressed
-Veículo
-com.google.android.gms.mlkit_ocr_common
 ThumbnailImageWidth
+com.google.android.gms.mlkit_ocr_common
+Veículo
 com.ngbautoroad.data.prefs.PrefsManag...
 RESULT_OK
-androidx.core.view.inputmethod.Editor...
 GOOD
+androidx.core.view.inputmethod.Editor...
 nextRequestWaitMillis
 add
 isAccelerated
@@ -3444,15 +3490,15 @@ ACTION_CLEAR_FOCUS
 mbtiles
 PixelYDimension
 ACTION_SCROLL_BACKWARD
-WordBreak.Phrase
 FlashpixVersion
+WordBreak.Phrase
 androidx.compose.runtime.collection.I...
 WhiteBalance
 kotlinx.serialization.json.JsonNull
 com.google.android.gms.common.interna...
 scope
-Down
 Distância
+Down
 MOBILE_EMERGENCY
 androidx.view.accessibility.Accessibi...
 maintenanceCost
@@ -3465,8 +3511,8 @@ ACTION_DRAG_DROP
 androidx.compose.runtime.SdkStubsFall...
 Offset.Unspecified
 com.ngbautoroad.data.prefs.PrefsManag...
-maintenanceIntervalKm
 ImeAction
+maintenanceIntervalKm
 downloadStatus
 ROOM
 Palmital
@@ -3485,32 +3531,32 @@ UINT64_LIST_PACKED
 LITERAL
 FileSource
 FocalLengthIn35mmFilm
-eventType
 totalInitializationMs
+eventType
 $this$graphicsLayer
 CUSTOM_OBJECT_CREATE
 putFloat
 dynamiteLoader
-FLOA
 insertIndex
+FLOA
 .dp
 ON_DEVICE_IMAGE_LABEL_LOAD
 STATE_CANCELLED
 DOCUMENTACAO
 Snackbar
-Strictness.Loose
-Filled.Undo
 RESULT_INSTALL_SKIP_FILE_SUCCESS
-other
+Filled.Undo
+Strictness.Loose
 partiallyHandledErrors
+other
 ALREADY_EXISTS
-putDouble
 ON_DEVICE_FACE_LOAD
+putDouble
 ON_DEVICE_FACE_CLOSE
 androidx.view.accessibility.Accessibi...
 .em
-PICKUP_NEIGHBORHOOD
 com.google.android.gms.common.api.int...
+PICKUP_NEIGHBORHOOD
 CHARACTER_PALETTE
 UPDATE
 Width
@@ -3536,17 +3582,19 @@ Compression
 ATOMIC
 kotlin.collections.Collection
 modifier
+rating
 body
 points
 mode
 vehicleProfileDao
 com.google.android.gms.dynamiteloader...
 ON_DEVICE_IMAGE_QUALITY_ANALYSIS_LOAD
-Rendimento/Hora
+Ranking
 FUEL
+Rendimento/Hora
 resolvedState
-onDeviceDocumentEnhancementLoadLogEvent
 CLOUD_IMAGE_PROPERTIES_DETECT
+onDeviceDocumentEnhancementLoadLogEvent
 OPTIONAL_MODULE_DOCUMENT_CROP_CREATE
 Hyphens.Auto
 API_DISABLED_FOR_CONNECTION
@@ -3558,12 +3606,13 @@ systemGestures
 SQLiteMisuseException
 documentEnhancementOptionalModuleLogE...
 mcc_mnc
-MagnifierPositionInRoot
 StorageUtils
+MagnifierPositionInRoot
 INSTALLATION_ID_INIT
 expense
-unit
 java.util.List
+unit
+monthly
 imeAnimationTarget
 kotlin.Int
 sensor
@@ -3573,22 +3622,22 @@ osmdroid.tileFileSystemThreads
 addNode
 ON_DEVICE_LANGUAGE_IDENTIFICATION_CREATE
 COMPLETING_ALREADY
-osmdroid.ExpirationOverride
 POLY_OBJ
+osmdroid.ExpirationOverride
 Alvorada
 flp_debug_updates
 java.lang.Iterable
 AGGREGATED_CUSTOM_IMAGE_LABEL_DETECTION
-mlkit.docscan.enhance
 MakerNote
+mlkit.docscan.enhance
 kotlinx.coroutines.DefaultExecutor.ke...
 supportedFormats
 YCbCrPositioning
 packageName
-Modifier
 scenarioName
-Collapse
+Modifier
 ON_DEVICE_DOCUMENT_CROP_CREATE
+Collapse
 com.ngbautoroad.ui.editor.EditorField
 CABIFY_STANDARD
 Keyboard
@@ -3598,8 +3647,8 @@ gcore_
 paddingValues
 Alimentação
 until
-context_id
 SLONG
+context_id
 xMax
 Main
 reason
@@ -3609,11 +3658,12 @@ R$/Km
 tableName
 FabPosition.End
 GoogleApiHandler
+.pdf
 androidx.datastore.preferences.protob...
 ဈ ဌဇင
+jar
 backendName
 ERROR
-jar
 api
 NOTHING
 SERVICE_UPDATING
@@ -3682,15 +3732,16 @@ AccessibilityDelegate
 ON_DEVICE_FACE_MESH_CLOSE
 name
 OPTIONAL_MODULE_IMAGE_CAPTIONING_INIT
+neighborhood
 onRename
 km/kWh
 distance
 onDeviceDocumentCroppingCreateLogEvent
 gemf
-java.lang.module.ModuleDescriptor
 description
-pipelineAccelerationInferenceEvents
+java.lang.module.ModuleDescriptor
 Filled.DeleteForever
+pipelineAccelerationInferenceEvents
 id/bubble_description
 IMAGE_LABELING
 4.4.0
@@ -3705,11 +3756,11 @@ Dispatchers.Main
 TraversalIndex
 collectionInfo
 android.settings.APP_NOTIFICATION_SET...
-R$/KM
-Cancelled
 notify_manager
-callbackName
+Cancelled
+R$/KM
 getEmptyRegistry
+callbackName
 PrimaryChromaticities
 blacklistErrorCode
 osmdroid.cachePath
@@ -3725,8 +3776,8 @@ appVersion
 aborted
 _isCompleted
 updateDownloadConditions
-.sp
 BOTTOM
+.sp
 aggregatedOnDeviceFaceDetectionLogEvent
 ENTITY_EXTRACTION
 Confiança
@@ -3739,13 +3790,13 @@ ExposureTime
 ConnectionStatusConfig
 inputState
 SINT64_LIST
-OPTIONAL_MODULE_TEXT_RELEASE
 SFIXED64
+OPTIONAL_MODULE_TEXT_RELEASE
 com.google.android.datatransport.events
 ဉ ဈ
 ဈ ခ
-com.ngbautoroad.data.prefs.PrefsManag...
 Darken
+com.ngbautoroad.data.prefs.PrefsManag...
 .jpeg
 .png
 ConnectionTracker
@@ -3754,16 +3805,16 @@ kotlin.Short
 phone
 bounds
 style
-BLOCKING
 GPSTrack
+BLOCKING
 card
 BOOL_LIST_PACKED
 %
 $
 Dispatchers.Unconfined
+ဉ ဉ
 tappableElementIgnoringVisibility
 com.ngbautoroad.ui.editor.CustomCardL...
-ဉ ဉ
 media_projection
 ON_DEVICE_POSE_INFERENCE
 requestedPreviewHeight
@@ -3773,6 +3824,7 @@ android.permission.ACCESS_FINE_LOCATION
 buildLevel
 AnimateToGeoPoint
 mContentInsets
+shift_accepted
 resuming_sender
 AerialWithLabels
 ဌ ငဈ
@@ -3789,8 +3841,8 @@ extra_download_id
 SCANNER_AUTO_ZOOM_AUTO_RESET
 sendSegment
 StartInput
-com.google.android.gms.signin.interna...
 SFIXED32
+com.google.android.gms.signin.interna...
 BODYWORK
 kotlin.Any
 ocr_enabled
@@ -3803,8 +3855,8 @@ LocalLayoutDirection
 isManifestModel
 _reusableCancellableContinuation
 android.view.View
-nauticalMile
 HAS_VERTICAL_ACCURACY_MASK
+nauticalMile
 keyboardActions
 android.view.accessibility.action.ARG...
 $params
@@ -3812,6 +3864,8 @@ DONE
 package
 R$/Litro
 https://auth.cloudmade.com/token/
+.fileprovider
+Turno
 putInt
 updateEnabledCallbacks
 ဈ ဈЛခ
@@ -3826,21 +3880,21 @@ DropdownList
 nonContourDetectedFaces
 editableText
 com.google.android.gms.dynamite.descr...
-kotlin.collections.Iterator
 CLOSED_EMPTY
+kotlin.collections.Iterator
 SecureOn
 540e7e93d3ccda1c729909a8997e3c29
 job
 com.ngbautoroad.data.prefs.PrefsManag...
 TYPE_GMV
-systemBars
 preferencesMap
+systemBars
 SupportSQLite
 PageRight
 $bitmap
 confirmButton
-INT
 OPTIONAL_MODULE_IMAGE_LABELING_RELEASE
+INT
 SetCenterPoint
 onNameChange
 database
@@ -3848,13 +3902,13 @@ kotlin.Enum
 backEvent
 overlay_font_scale
 com.google.android.gms.signin.service...
-ဌ ငင
 SCANNER_AUTO_ZOOM_SCAN_SUCCESS
-externalSdCard
+ဌ ငင
 Histórico
-Flash
+externalSdCard
 Filled.Cancel
 SensorBottomBorder
+Flash
 ACTION_PREVIOUS_HTML_ELEMENT
 amount
 CLOB
@@ -3862,11 +3916,11 @@ BRAKES
 com.ngbautoroad.data.prefs.PrefsManag...
 textDetectionOptionalModuleLogEvent
 androidx.lifecycle.savedstate.vm.tag
-Spinal
 WindowInsetsCompat
+Spinal
 getX
-getY
 INT32_LIST
+getY
 inline
 android_id
 CLOUD_FACE_CREATE
@@ -3874,8 +3928,8 @@ OPTIONAL_MODULE_BARCODE_DETECTION_INF...
 com.ngbautoroad.data.prefs.PrefsManag...
 criteriaUsed
 MODEL_FORMAT_INVALID
-STATE_COMPLETED
 Black
+STATE_COMPLETED
 /mnt/sdcard
 OPTIONAL_MODULE_CUSTOM_IMAGE_LABELING...
 neighbourhood
@@ -3883,8 +3937,8 @@ ModuleInstall.API
 getSuppressed
 TFLITE_VERSION_INCOMPATIBLE
 HSPA
-cloudImageLabelDetectionLogEvent
 ဈ ငဈခဇဇ
+cloudImageLabelDetectionLogEvent
 callingSource
 kotlinx.serialization.json.JsonElement
 chartbundle.com
@@ -3892,13 +3946,13 @@ SHOULD_BUFFER
 TD_SCDMA
 99Pop
 traceCounter
-com.google.android.gms.mlkit_ocr_chinese
 canceled
+com.google.android.gms.mlkit_ocr_chinese
 kotlin.Unit
 MODEL_INFO_DOWNLOAD_UNSUCCESSFUL_HTTP...
+ContentDescription
 DpOffset.Unspecified
 71679b20670b4e27f78d699438700ba3
-ContentDescription
 fieldType
 com.google.android.gms.vision.text.ml...
 YUV_420_888
@@ -3913,9 +3967,9 @@ com.google.android.gms.mlkit_quality_...
 RIGHT_CHAR
 nlclassifier
 Selected
-http://openptmap.org/tiles/
-androidx.compose.text.SpanStyle
 seq
+androidx.compose.text.SpanStyle
+http://openptmap.org/tiles/
 completion
 LINE_END
 set
@@ -3930,8 +3984,8 @@ LEFT_CENTER
 getPressure
 Promo
 DOUB
-cardWidth
 ACTION_NEXT_AT_MOVEMENT_GRANULARITY
+cardWidth
 room_fts_content_sync_
 CLOUD_CROP_HINTS_DETECT
 ReferentialEqualityPolicy
@@ -3939,24 +3993,26 @@ DOWN
 SCANNER_AUTO_ZOOM_AUTO_ZOOM
 INT64_LIST
 logMissingMethod
+Relatório
 applicationBuild
 ACTION_DRAG_CANCEL
 Fixos
 androidx.view.accessibility.Accessibi...
 Underline
 com.google.mlkit.vision.text.aidls.IT...
-isClearcutClient
 valuePerKm
+isClearcutClient
 imageWidth
-Failed
 preferences_
+Failed
 Color
-ဉ ᐉဇဈ
 com.google.android.gms.mlkit_quality_...
+ဉ ᐉဇဈ
 SELECT_END
-RectangleShape
 androidx.datastore.preferences.protob...
+RectangleShape
 ShowTextSubstitution
+shift_paused
 com.ngbautoroad.data.prefs.PrefsManag...
 bubble_channel
 card2_name
@@ -3964,14 +4020,14 @@ ACTION_LONG_CLICK
 SRATIONAL
 INSURANCE
 active_card_slot
-getFloat
 GPRS
+getFloat
 putLong
 androidx.test.services.storage.runfiles
 ON_DEVICE_OBJECT_LOAD
 withFrameNanos
-င ညခ
 corridas
+င ညခ
 ခ ခ
 Neighbourhood
 Hue
@@ -3994,6 +4050,7 @@ clipboard
 DateTime
 ဈ ခဈ
 output
+Filled.Share
 BottomBar
 java.lang.Character
 ON_DEVICE_TRANSLATOR_TRANSLATE
@@ -4011,26 +4068,26 @@ THROTTLE_BACKGROUND
 AGGREGATED_ON_DEVICE_BARCODE_DETECTION
 params
 isFaceMeshEnabled
-gpuInfo
 featureLevel
+gpuInfo
 ON_DEVICE_ENTITY_EXTRACTION_CREATE
 getInt
 systemInfo
 OPTIONAL_MODULE_FACE_DETECTION_CREATE
 obfuscatedIdentifier
 com.ngbautoroad.data.prefs.PrefsManag...
-eventsCount
 Cmyk
+eventsCount
 hts/frbslgigp.ogepscmv/ieo/eaybtho
 intrinsicMeasurable
 extras
-PASSENGER_RATING
-plate
 Gastos
 Filled.Favorite
+plate
+PASSENGER_RATING
 ACTION_POINTER_INDEX_SHIFT
-cycle
 ON_DEVICE_SMART_REPLY_LOAD
+cycle
 parentExpenseId
 bundle
 OPTIONAL_MODULE_DOCUMENT_DETECT_INIT
@@ -4046,8 +4103,8 @@ contourDetectedFaces
 င
 android.widget.ScrollView
 THUMB
-com.google.android.gms.common.modulei...
 ON_DEVICE_EXPLICIT_CONTENT_LOAD
+com.google.android.gms.common.modulei...
 6.1.15
 com.ngbautoroad.data.prefs.PrefsManag...
 ALL
@@ -4059,12 +4116,13 @@ suffix
 CloudMadeSmallTiles
 Ativar
 40281e30780c7721040d1e4664194beb
-င ဈခခ
 _size
+င ဈခခ
 RemoteModelFileManager
 download
 avgMs
 ဉ ကဇᐉ
+shift_prefs
 TextFieldInputState
 API_UNAVAILABLE
 NO_NETWORK_CONNECTION
@@ -4074,8 +4132,8 @@ com.google.android.gms.signin.interna...
 pokeInt
 %s.BlazeGenerated%sLoader
 streamModeSmoothingRatio
-NULL
 TOO_LATE_TO_CANCEL
+NULL
 level
 .preferences_pb
 com.google.protobuf.UnknownFieldSetSc...
@@ -4095,8 +4153,8 @@ Exif
 LINE_LEFT
 consumed
 ANO
-menuBounds
 overlay_opacity
+menuBounds
 peekByteArray
 NV16
 com.google.android.gms.location.inter...
@@ -4108,10 +4166,10 @@ receivers
 DASHBOARD
 ACTION_SCROLL_LEFT
 YV12
-Mês
 backend_name
-HIGHEST
+Mês
 kotlin.Comparable
+HIGHEST
 Height
 groupSlotIndex
 TILES_OK
@@ -4121,15 +4179,16 @@ remoteConfigLogEvent
 weight_passenger_rating
 targetAmount
 UserComment
+16.60
 topPlatform
-isModelDownloadedLogEvent
 osmdroid.tileDownloadThreads
+isModelDownloadedLogEvent
 nlClassifierClientLibraryLogEvent
 TRACK
 GPSInfoIFDPointer
 ဂ ဉဉ
-android.intent.action.MEDIA_UNMOUNTED
 DefaultCropSize
+android.intent.action.MEDIA_UNMOUNTED
 tilesource
 _LifecycleAdapter
 OPTIONAL_MODULE_IMAGE_LABELING_INIT
@@ -4145,11 +4204,13 @@ SEMANA
 registerSelectForSend
 Overlay
 $this$SubcomposeLayout
+AVOID_AREA
 TextDecoration.None
 NV21
 Landscape
-enqIdx
 SpectralSensitivity
+enqIdx
+BEST_NEIGHBORHOODS
 invoker
 mlkit.smartreply
 ACTION_COLLAPSE
@@ -4180,8 +4241,8 @@ AGGREGATED_ON_DEVICE_OBJECT_INFERENCE
 INSTALLATION_ID_REFRESH_TEMPORARY_TOKEN
 overlay_channel
 runFrameLoop
-_prev
 com.ngbautoroad.data.prefs.PrefsManag...
+_prev
 bubble_enabled
 Metas
 SINT32_LIST_PACKED
@@ -4205,8 +4266,8 @@ ON_DEVICE_EXPLICIT_CONTENT_CREATE
 query
 java.util.Collection
 CLOSE_HANDLER_CLOSED
-REREGISTER
 com.google.android.gms.vision.text.in...
+REREGISTER
 thresh_max_pickup_distance
 Ȉ Ȉ
 hint
@@ -4217,14 +4278,14 @@ card3_text_color
 PREV_PARAGRAPH
 removeObserver
 CLOUD_LANDMARK_DETECT
+FLOAT_LIST
 Líder
 cabify
-FLOAT_LIST
 MlKitCleaner
 OsmDroid
 com.google.mlkit.vision.text.aidls.IT...
-BASE
 ImageProcessingIFDPointer
+BASE
 onAwaitInternalRegFunc
 backing
 $this$DisposableEffect
@@ -4234,8 +4295,8 @@ com.google.android.gms.mlkit_docscan_...
 modelNamespace
 brakepadLifeKm
 androidx.compose.runtime.PausableMono...
-TextLayout:initLayout
 Saturation
+TextLayout:initLayout
 AGGREGATED_ON_DEVICE_FACE_MESH_DETECTION
 documentCornerConfidence
 CUSTOM_IMAGE_LABEL_CLOSE
@@ -4243,8 +4304,8 @@ androidx.core.app.NotificationCompat$...
 DELETE_PREV_WORD
 ဉ ဇᐉဉ
 getAttributionTag
-initialDownloadConditions
 underlyingInteractionSource
+initialDownloadConditions
 Compose:onRemembered
 REMOTE_MODEL_INVALID
 statusBarsIgnoringVisibility
@@ -4255,6 +4316,7 @@ blocked_dropoff_neighborhoods
 SrcOut
 NO_VALID_MODEL
 ACTION_PREVIOUS_AT_MOVEMENT_GRANULARITY
+﻿
 INT64_LIST_PACKED
 transport_name
 triggerName
@@ -4267,12 +4329,12 @@ children
 BingMaps
 JsonLiteral
 ဌ ဉဉဉ
-cloudLogoDetectionLogEvent
 ON_DEVICE_OBJECT_CLOSE
+cloudLogoDetectionLogEvent
 ဈ က
 objectInfos
-Finished
 IsShowingTextSubstitution
+Finished
 ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT
 SQUARE
 goal
@@ -4286,11 +4348,12 @@ PreviewImageLength
 doubleValue
 android.support.text.emoji.emojiCompa...
 logEvent
+shift_start
 Borda
 Modelo
 ခ င
-ခ ဇည
 EVDO_0
+ခ ဇည
 Next
 င င
 Package
@@ -4302,6 +4365,7 @@ android.support.action.semanticAction
 java.lang.Double
 RIDE_TYPE
 range
+EARNING_PATTERN
 $this$clearAndSetSemantics
 m/s
 modelInfo
@@ -4316,8 +4380,8 @@ loaderVersion
 MANUFACTURER
 /mnt/secure
 cardHeight
-LocalTextToolbar
 osmdroid.cacheMapTileCount
+LocalTextToolbar
 ShutterSpeedValue
 elements
 android.settings.REQUEST_IGNORE_BATTE...
@@ -4331,8 +4395,9 @@ ON_RESUME
 BASE_TRANSLATE
 NEXT_PARAGRAPH
 inject_location_with_callback
-clientLibraryName
 API_VERSION_UPDATE_REQUIRED
+clientLibraryName
+shift_goal
 asyncTraceBegin
 JpgFromRaw
 InteroperabilityIFDPointer
@@ -4344,8 +4409,8 @@ FIXED64_LIST_PACKED
 NewSubfileType
 Inherit
 EmojiCompat.FontRequestEmojiCompatCon...
-SYNCHRONIZED
 PageUp
+SYNCHRONIZED
 innerTextField
 RESULT_UNSUPPORTED_ART_VERSION
 ACTION_COPY
@@ -4371,6 +4436,7 @@ goldfish
 PhotometricInterpretation
 gallery_favorites
 tile_data
+android.intent.action.SEND
 onToggleFavorite
 com.google.protobuf.CodedOutputStream
 ဉ ကဇ
@@ -4378,40 +4444,41 @@ tappableElement
 runMiniBenchmark
 BAD
 Renomear
+jar:file:
 Supporting
 removeIndex
-jar:file:
 ON_STOP
 kotlin.CharSequence
 ON_DEVICE_POSE_CREATE
 getPointerCount
 .path
+Custo/Km
 migrations
-com.google.android.wearable.app
 FLOAT_LIST_PACKED
+com.google.android.wearable.app
 SrcAtop
 CUSTOM_MODEL_RUN
 Popup:
-LocalWindowInfo
 category
+LocalWindowInfo
 CAR_WASH
 Marking id:left:2131034188 used because it matches string pool constant left
 Marking id:blocking:2131034156 used because it matches string pool constant block
-Marking string:states:2131296385 used because it matches string pool constant state
+Marking string:states:2131296393 used because it matches string pool constant state
 Marking attr:shortcutMatchRequired:2130772016 used because it matches string pool constant short
-Marking string:unknown:2131296408 used because it matches string pool constant unknown
-Marking string:format_distance_feet:2131296346 used because it matches string pool constant format
-Marking string:format_distance_kilometers:2131296347 used because it matches string pool constant format
-Marking string:format_distance_meters:2131296348 used because it matches string pool constant format
-Marking string:format_distance_miles:2131296349 used because it matches string pool constant format
-Marking string:format_distance_nautical_miles:2131296350 used because it matches string pool constant format
-Marking string:format_distance_only_foot:2131296351 used because it matches string pool constant format
-Marking string:format_distance_only_kilometer:2131296352 used because it matches string pool constant format
-Marking string:format_distance_only_meter:2131296353 used because it matches string pool constant format
-Marking string:format_distance_only_mile:2131296354 used because it matches string pool constant format
-Marking string:format_distance_only_nautical_mile:2131296355 used because it matches string pool constant format
-Marking string:format_distance_value_unit:2131296356 used because it matches string pool constant format
-Marking string:template_percent:2131296390 used because it matches string pool constant temp
+Marking string:unknown:2131296420 used because it matches string pool constant unknown
+Marking string:format_distance_feet:2131296350 used because it matches string pool constant format
+Marking string:format_distance_kilometers:2131296351 used because it matches string pool constant format
+Marking string:format_distance_meters:2131296352 used because it matches string pool constant format
+Marking string:format_distance_miles:2131296353 used because it matches string pool constant format
+Marking string:format_distance_nautical_miles:2131296354 used because it matches string pool constant format
+Marking string:format_distance_only_foot:2131296355 used because it matches string pool constant format
+Marking string:format_distance_only_kilometer:2131296356 used because it matches string pool constant format
+Marking string:format_distance_only_meter:2131296357 used because it matches string pool constant format
+Marking string:format_distance_only_mile:2131296358 used because it matches string pool constant format
+Marking string:format_distance_only_nautical_mile:2131296359 used because it matches string pool constant format
+Marking string:format_distance_value_unit:2131296360 used because it matches string pool constant format
+Marking string:template_percent:2131296402 used because it matches string pool constant temp
 Marking id:right:2131034200 used because it matches string pool constant right
 Marking id:right_icon:2131034201 used because it matches string pool constant right
 Marking id:right_side:2131034202 used because it matches string pool constant right
@@ -4421,12 +4488,12 @@ Marking id:text:2131034218 used because it matches string pool constant text
 Marking id:text2:2131034219 used because it matches string pool constant text
 Marking attr:statusBarBackground:2130772018 used because it matches string pool constant status
 Marking integer:status_bar_notification_info_maxnum:2131099649 used because it matches string pool constant status
-Marking string:status_bar_notification_info_overflow:2131296386 used because it matches string pool constant status
-Marking string:map_mode:2131296361 used because it matches string pool constant map
-Marking string:mapbox:2131296362 used because it matches string pool constant map
-Marking string:mapnik:2131296363 used because it matches string pool constant map
-Marking string:mapquest_aerial:2131296364 used because it matches string pool constant map
-Marking string:mapquest_osm:2131296365 used because it matches string pool constant map
+Marking string:status_bar_notification_info_overflow:2131296394 used because it matches string pool constant status
+Marking string:map_mode:2131296369 used because it matches string pool constant map
+Marking string:mapbox:2131296370 used because it matches string pool constant map
+Marking string:mapnik:2131296371 used because it matches string pool constant map
+Marking string:mapquest_aerial:2131296372 used because it matches string pool constant map
+Marking string:mapquest_osm:2131296373 used because it matches string pool constant map
 Marking attr:uri:2130772021 used because it matches string pool constant uri
 Marking drawable:bonuspack_bubble:2130968576 used because it matches string pool constant bonus
 Marking layout:bonuspack_bubble:2131165184 used because it matches string pool constant bonus
@@ -4461,24 +4528,24 @@ Marking drawable:common_google_signin_btn_text_light:2130968594 used because it 
 Marking drawable:common_google_signin_btn_text_light_focused:2130968595 used because it matches string pool constant common
 Marking drawable:common_google_signin_btn_text_light_normal:2130968596 used because it matches string pool constant common
 Marking drawable:common_google_signin_btn_text_light_normal_background:2130968597 used because it matches string pool constant common
-Marking string:common_google_play_services_enable_button:2131296288 used because it matches string pool constant common
-Marking string:common_google_play_services_enable_text:2131296289 used because it matches string pool constant common
-Marking string:common_google_play_services_enable_title:2131296290 used because it matches string pool constant common
-Marking string:common_google_play_services_install_button:2131296291 used because it matches string pool constant common
-Marking string:common_google_play_services_install_text:2131296292 used because it matches string pool constant common
-Marking string:common_google_play_services_install_title:2131296293 used because it matches string pool constant common
-Marking string:common_google_play_services_notification_channel_name:2131296294 used because it matches string pool constant common
-Marking string:common_google_play_services_notification_ticker:2131296295 used because it matches string pool constant common
-Marking string:common_google_play_services_unknown_issue:2131296296 used because it matches string pool constant common
-Marking string:common_google_play_services_unsupported_text:2131296297 used because it matches string pool constant common
-Marking string:common_google_play_services_update_button:2131296298 used because it matches string pool constant common
-Marking string:common_google_play_services_update_text:2131296299 used because it matches string pool constant common
-Marking string:common_google_play_services_update_title:2131296300 used because it matches string pool constant common
-Marking string:common_google_play_services_updating_text:2131296301 used because it matches string pool constant common
-Marking string:common_google_play_services_wear_update_text:2131296302 used because it matches string pool constant common
-Marking string:common_open_on_phone:2131296303 used because it matches string pool constant common
-Marking string:common_signin_button_text:2131296304 used because it matches string pool constant common
-Marking string:common_signin_button_text_long:2131296305 used because it matches string pool constant common
+Marking string:common_google_play_services_enable_button:2131296292 used because it matches string pool constant common
+Marking string:common_google_play_services_enable_text:2131296293 used because it matches string pool constant common
+Marking string:common_google_play_services_enable_title:2131296294 used because it matches string pool constant common
+Marking string:common_google_play_services_install_button:2131296295 used because it matches string pool constant common
+Marking string:common_google_play_services_install_text:2131296296 used because it matches string pool constant common
+Marking string:common_google_play_services_install_title:2131296297 used because it matches string pool constant common
+Marking string:common_google_play_services_notification_channel_name:2131296298 used because it matches string pool constant common
+Marking string:common_google_play_services_notification_ticker:2131296299 used because it matches string pool constant common
+Marking string:common_google_play_services_unknown_issue:2131296300 used because it matches string pool constant common
+Marking string:common_google_play_services_unsupported_text:2131296301 used because it matches string pool constant common
+Marking string:common_google_play_services_update_button:2131296302 used because it matches string pool constant common
+Marking string:common_google_play_services_update_text:2131296303 used because it matches string pool constant common
+Marking string:common_google_play_services_update_title:2131296304 used because it matches string pool constant common
+Marking string:common_google_play_services_updating_text:2131296305 used because it matches string pool constant common
+Marking string:common_google_play_services_wear_update_text:2131296306 used because it matches string pool constant common
+Marking string:common_open_on_phone:2131296307 used because it matches string pool constant common
+Marking string:common_signin_button_text:2131296308 used because it matches string pool constant common
+Marking string:common_signin_button_text_long:2131296309 used because it matches string pool constant common
 Marking attr:layout_anchor:2130771997 used because it matches string pool constant layout
 Marking attr:layout_anchorGravity:2130771998 used because it matches string pool constant layout
 Marking attr:layout_behavior:2130771999 used because it matches string pool constant layout
@@ -4533,50 +4600,50 @@ Marking attr:enterAnim:2130771978 used because it matches string pool constant e
 Marking id:end:2131034174 used because it matches string pool constant en
 Marking id:hide_ime_id:2131034179 used because it matches string pool constant hi
 Marking id:hide_in_inspector_tag:2131034180 used because it matches string pool constant hi
-Marking string:hills:2131296357 used because it matches string pool constant hi
+Marking string:hills:2131296361 used because it matches string pool constant hi
 Marking id:italic:2131034187 used because it matches string pool constant it
 Marking id:bubble_image:2131034159 used because it matches string pool constant id/bubble_image
 Marking attr:route:2130772014 used because it matches string pool constant ro
 Marking drawable:round_navigation_white_48:2130968636 used because it matches string pool constant ro
-Marking string:roads_nl:2131296375 used because it matches string pool constant ro
+Marking string:roads_nl:2131296383 used because it matches string pool constant ro
 Marking id:top:2131034222 used because it matches string pool constant to
-Marking string:tooltip_description:2131296403 used because it matches string pool constant to
-Marking string:tooltip_label:2131296404 used because it matches string pool constant to
-Marking string:tooltip_long_press_label:2131296405 used because it matches string pool constant to
-Marking string:tooltip_pane_description:2131296406 used because it matches string pool constant to
-Marking string:topo:2131296407 used because it matches string pool constant to
+Marking string:tooltip_description:2131296415 used because it matches string pool constant to
+Marking string:tooltip_label:2131296416 used because it matches string pool constant to
+Marking string:tooltip_long_press_label:2131296417 used because it matches string pool constant to
+Marking string:tooltip_pane_description:2131296418 used because it matches string pool constant to
+Marking string:topo:2131296419 used because it matches string pool constant to
 Marking attr:destination:2130771977 used because it matches string pool constant destination
-Marking string:date_input_headline:2131296308 used because it matches string pool constant date
-Marking string:date_input_headline_description:2131296309 used because it matches string pool constant date
-Marking string:date_input_invalid_for_pattern:2131296310 used because it matches string pool constant date
-Marking string:date_input_invalid_not_allowed:2131296311 used because it matches string pool constant date
-Marking string:date_input_invalid_year_range:2131296312 used because it matches string pool constant date
-Marking string:date_input_label:2131296313 used because it matches string pool constant date
-Marking string:date_input_no_input_description:2131296314 used because it matches string pool constant date
-Marking string:date_input_title:2131296315 used because it matches string pool constant date
-Marking string:date_picker_headline:2131296316 used because it matches string pool constant date
-Marking string:date_picker_headline_description:2131296317 used because it matches string pool constant date
-Marking string:date_picker_navigate_to_year_description:2131296318 used because it matches string pool constant date
-Marking string:date_picker_no_selection_description:2131296319 used because it matches string pool constant date
-Marking string:date_picker_scroll_to_earlier_years:2131296320 used because it matches string pool constant date
-Marking string:date_picker_scroll_to_later_years:2131296321 used because it matches string pool constant date
-Marking string:date_picker_switch_to_calendar_mode:2131296322 used because it matches string pool constant date
-Marking string:date_picker_switch_to_day_selection:2131296323 used because it matches string pool constant date
-Marking string:date_picker_switch_to_input_mode:2131296324 used because it matches string pool constant date
-Marking string:date_picker_switch_to_next_month:2131296325 used because it matches string pool constant date
-Marking string:date_picker_switch_to_previous_month:2131296326 used because it matches string pool constant date
-Marking string:date_picker_switch_to_year_selection:2131296327 used because it matches string pool constant date
-Marking string:date_picker_title:2131296328 used because it matches string pool constant date
-Marking string:date_picker_today_description:2131296329 used because it matches string pool constant date
-Marking string:date_picker_year_picker_pane_title:2131296330 used because it matches string pool constant date
-Marking string:date_range_input_invalid_range_input:2131296331 used because it matches string pool constant date
-Marking string:date_range_input_title:2131296332 used because it matches string pool constant date
-Marking string:date_range_picker_day_in_range:2131296333 used because it matches string pool constant date
-Marking string:date_range_picker_end_headline:2131296334 used because it matches string pool constant date
-Marking string:date_range_picker_scroll_to_next_month:2131296335 used because it matches string pool constant date
-Marking string:date_range_picker_scroll_to_previous_month:2131296336 used because it matches string pool constant date
-Marking string:date_range_picker_start_headline:2131296337 used because it matches string pool constant date
-Marking string:date_range_picker_title:2131296338 used because it matches string pool constant date
+Marking string:date_input_headline:2131296312 used because it matches string pool constant date
+Marking string:date_input_headline_description:2131296313 used because it matches string pool constant date
+Marking string:date_input_invalid_for_pattern:2131296314 used because it matches string pool constant date
+Marking string:date_input_invalid_not_allowed:2131296315 used because it matches string pool constant date
+Marking string:date_input_invalid_year_range:2131296316 used because it matches string pool constant date
+Marking string:date_input_label:2131296317 used because it matches string pool constant date
+Marking string:date_input_no_input_description:2131296318 used because it matches string pool constant date
+Marking string:date_input_title:2131296319 used because it matches string pool constant date
+Marking string:date_picker_headline:2131296320 used because it matches string pool constant date
+Marking string:date_picker_headline_description:2131296321 used because it matches string pool constant date
+Marking string:date_picker_navigate_to_year_description:2131296322 used because it matches string pool constant date
+Marking string:date_picker_no_selection_description:2131296323 used because it matches string pool constant date
+Marking string:date_picker_scroll_to_earlier_years:2131296324 used because it matches string pool constant date
+Marking string:date_picker_scroll_to_later_years:2131296325 used because it matches string pool constant date
+Marking string:date_picker_switch_to_calendar_mode:2131296326 used because it matches string pool constant date
+Marking string:date_picker_switch_to_day_selection:2131296327 used because it matches string pool constant date
+Marking string:date_picker_switch_to_input_mode:2131296328 used because it matches string pool constant date
+Marking string:date_picker_switch_to_next_month:2131296329 used because it matches string pool constant date
+Marking string:date_picker_switch_to_previous_month:2131296330 used because it matches string pool constant date
+Marking string:date_picker_switch_to_year_selection:2131296331 used because it matches string pool constant date
+Marking string:date_picker_title:2131296332 used because it matches string pool constant date
+Marking string:date_picker_today_description:2131296333 used because it matches string pool constant date
+Marking string:date_picker_year_picker_pane_title:2131296334 used because it matches string pool constant date
+Marking string:date_range_input_invalid_range_input:2131296335 used because it matches string pool constant date
+Marking string:date_range_input_title:2131296336 used because it matches string pool constant date
+Marking string:date_range_picker_day_in_range:2131296337 used because it matches string pool constant date
+Marking string:date_range_picker_end_headline:2131296338 used because it matches string pool constant date
+Marking string:date_range_picker_scroll_to_next_month:2131296339 used because it matches string pool constant date
+Marking string:date_range_picker_scroll_to_previous_month:2131296340 used because it matches string pool constant date
+Marking string:date_range_picker_start_headline:2131296341 used because it matches string pool constant date
+Marking string:date_range_picker_title:2131296342 used because it matches string pool constant date
 Marking attr:data:2130771975 used because it matches string pool constant data
 Marking attr:dataPattern:2130771976 used because it matches string pool constant data
 Marking id:line1:2131034190 used because it matches string pool constant line
@@ -4623,8 +4690,8 @@ Marking id:action_divider:2131034146 used because it matches string pool constan
 Marking id:action_image:2131034147 used because it matches string pool constant action
 Marking id:action_text:2131034148 used because it matches string pool constant action
 Marking id:actions:2131034149 used because it matches string pool constant action
-Marking string:mapbox:2131296362 used because it matches string pool constant mapbox
-Marking string:selected:2131296378 used because it matches string pool constant selected
+Marking string:mapbox:2131296370 used because it matches string pool constant mapbox
+Marking string:selected:2131296386 used because it matches string pool constant selected
 Marking id:bubble_title:2131034162 used because it matches string pool constant id/bubble_title
 Marking layout:ime_base_split_test_activity:2131165186 used because it matches string pool constant ime
 Marking layout:ime_secondary_split_test_activity:2131165187 used because it matches string pool constant ime
@@ -4677,17 +4744,17 @@ Marking id:bubble_description:2131034158 used because it matches string pool con
 Marking id:icon:2131034181 used because it matches string pool constant icon
 Marking id:icon_group:2131034182 used because it matches string pool constant icon
 Marking id:icon_only:2131034183 used because it matches string pool constant icon
-Marking string:set_mode_hide_me:2131296379 used because it matches string pool constant set
-Marking string:set_mode_offline:2131296380 used because it matches string pool constant set
-Marking string:set_mode_online:2131296381 used because it matches string pool constant set
-Marking string:set_mode_show_me:2131296382 used because it matches string pool constant set
-Marking string:selected:2131296378 used because it matches string pool constant select
-Marking string:cyclemap:2131296307 used because it matches string pool constant cycle
+Marking string:set_mode_hide_me:2131296387 used because it matches string pool constant set
+Marking string:set_mode_offline:2131296388 used because it matches string pool constant set
+Marking string:set_mode_online:2131296389 used because it matches string pool constant set
+Marking string:set_mode_show_me:2131296390 used because it matches string pool constant set
+Marking string:selected:2131296386 used because it matches string pool constant select
+Marking string:cyclemap:2131296311 used because it matches string pool constant cycle
 Marking attr:keylines:2130771994 used because it matches string pool constant key
 Marking attr:destination:2130771977 used because it matches string pool constant dest
 Marking attr:queryPatterns:2130772012 used because it matches string pool constant query
-Marking string:range_end:2131296373 used because it matches string pool constant range
-Marking string:range_start:2131296374 used because it matches string pool constant range
+Marking string:range_end:2131296381 used because it matches string pool constant range
+Marking string:range_start:2131296382 used because it matches string pool constant range
 @attr/action : reachable=true
 @attr/alpha : reachable=false
 @attr/argType : reachable=false
@@ -5429,135 +5496,135 @@ The root reachable resources are:
  string:bottom_sheet_dismiss_description:2131296265
  string:bottom_sheet_drag_handle_description:2131296266
  string:bottom_sheet_expand_description:2131296267
- string:cacheManagerCancelBody:2131296268
- string:cacheManagerCancelTitle:2131296269
- string:cacheManagerCleanFailed:2131296270
- string:cacheManagerCleaningTitle:2131296271
- string:cacheManagerDownloadingTitle:2131296272
- string:cacheManagerFailed:2131296273
- string:cacheManagerHandlingMessage:2131296274
- string:cacheManagerNo:2131296275
- string:cacheManagerUnsupportedSource:2131296276
- string:cacheManagerYes:2131296277
- string:close_drawer:2131296285
- string:close_sheet:2131296286
- string:collapsed:2131296287
- string:common_google_play_services_enable_button:2131296288
- string:common_google_play_services_enable_text:2131296289
- string:common_google_play_services_enable_title:2131296290
- string:common_google_play_services_install_button:2131296291
- string:common_google_play_services_install_text:2131296292
- string:common_google_play_services_install_title:2131296293
- string:common_google_play_services_notification_channel_name:2131296294
- string:common_google_play_services_notification_ticker:2131296295
- string:common_google_play_services_unknown_issue:2131296296
- string:common_google_play_services_unsupported_text:2131296297
- string:common_google_play_services_update_button:2131296298
- string:common_google_play_services_update_text:2131296299
- string:common_google_play_services_update_title:2131296300
- string:common_google_play_services_updating_text:2131296301
- string:common_google_play_services_wear_update_text:2131296302
- string:common_open_on_phone:2131296303
- string:common_signin_button_text:2131296304
- string:common_signin_button_text_long:2131296305
- string:compass:2131296306
- string:cyclemap:2131296307
- string:date_input_headline:2131296308
- string:date_input_headline_description:2131296309
- string:date_input_invalid_for_pattern:2131296310
- string:date_input_invalid_not_allowed:2131296311
- string:date_input_invalid_year_range:2131296312
- string:date_input_label:2131296313
- string:date_input_no_input_description:2131296314
- string:date_input_title:2131296315
- string:date_picker_headline:2131296316
- string:date_picker_headline_description:2131296317
- string:date_picker_navigate_to_year_description:2131296318
- string:date_picker_no_selection_description:2131296319
- string:date_picker_scroll_to_earlier_years:2131296320
- string:date_picker_scroll_to_later_years:2131296321
- string:date_picker_switch_to_calendar_mode:2131296322
- string:date_picker_switch_to_day_selection:2131296323
- string:date_picker_switch_to_input_mode:2131296324
- string:date_picker_switch_to_next_month:2131296325
- string:date_picker_switch_to_previous_month:2131296326
- string:date_picker_switch_to_year_selection:2131296327
- string:date_picker_title:2131296328
- string:date_picker_today_description:2131296329
- string:date_picker_year_picker_pane_title:2131296330
- string:date_range_input_invalid_range_input:2131296331
- string:date_range_input_title:2131296332
- string:date_range_picker_day_in_range:2131296333
- string:date_range_picker_end_headline:2131296334
- string:date_range_picker_scroll_to_next_month:2131296335
- string:date_range_picker_scroll_to_previous_month:2131296336
- string:date_range_picker_start_headline:2131296337
- string:date_range_picker_title:2131296338
- string:default_error_message:2131296339
- string:default_popup_window_title:2131296340
- string:dialog:2131296341
- string:dropdown_menu:2131296342
- string:expanded:2131296343
- string:format_distance_feet:2131296346
- string:format_distance_kilometers:2131296347
- string:format_distance_meters:2131296348
- string:format_distance_miles:2131296349
- string:format_distance_nautical_miles:2131296350
- string:format_distance_only_foot:2131296351
- string:format_distance_only_kilometer:2131296352
- string:format_distance_only_meter:2131296353
- string:format_distance_only_mile:2131296354
- string:format_distance_only_nautical_mile:2131296355
- string:format_distance_value_unit:2131296356
- string:hills:2131296357
- string:in_progress:2131296358
- string:indeterminate:2131296359
- string:m3c_bottom_sheet_pane_title:2131296360
- string:map_mode:2131296361
- string:mapbox:2131296362
- string:mapnik:2131296363
- string:mapquest_aerial:2131296364
- string:mapquest_osm:2131296365
- string:my_location:2131296366
- string:navigation_menu:2131296367
- string:not_selected:2131296368
- string:off:2131296369
- string:on:2131296371
- string:range_end:2131296373
- string:range_start:2131296374
- string:roads_nl:2131296375
- string:search_bar_search:2131296377
- string:selected:2131296378
- string:set_mode_hide_me:2131296379
- string:set_mode_offline:2131296380
- string:set_mode_online:2131296381
- string:set_mode_show_me:2131296382
- string:snackbar_dismiss:2131296383
- string:snapshot:2131296384
- string:states:2131296385
- string:status_bar_notification_info_overflow:2131296386
- string:suggestions_available:2131296387
- string:switch_role:2131296388
- string:tab:2131296389
- string:template_percent:2131296390
- string:time_picker_am:2131296391
- string:time_picker_hour:2131296392
- string:time_picker_hour_24h_suffix:2131296393
- string:time_picker_hour_selection:2131296394
- string:time_picker_hour_suffix:2131296395
- string:time_picker_hour_text_field:2131296396
- string:time_picker_minute:2131296397
- string:time_picker_minute_selection:2131296398
- string:time_picker_minute_suffix:2131296399
- string:time_picker_minute_text_field:2131296400
- string:time_picker_period_toggle_description:2131296401
- string:time_picker_pm:2131296402
- string:tooltip_description:2131296403
- string:tooltip_label:2131296404
- string:tooltip_long_press_label:2131296405
- string:tooltip_pane_description:2131296406
- string:topo:2131296407
- string:unknown:2131296408
+ string:cacheManagerCancelBody:2131296272
+ string:cacheManagerCancelTitle:2131296273
+ string:cacheManagerCleanFailed:2131296274
+ string:cacheManagerCleaningTitle:2131296275
+ string:cacheManagerDownloadingTitle:2131296276
+ string:cacheManagerFailed:2131296277
+ string:cacheManagerHandlingMessage:2131296278
+ string:cacheManagerNo:2131296279
+ string:cacheManagerUnsupportedSource:2131296280
+ string:cacheManagerYes:2131296281
+ string:close_drawer:2131296289
+ string:close_sheet:2131296290
+ string:collapsed:2131296291
+ string:common_google_play_services_enable_button:2131296292
+ string:common_google_play_services_enable_text:2131296293
+ string:common_google_play_services_enable_title:2131296294
+ string:common_google_play_services_install_button:2131296295
+ string:common_google_play_services_install_text:2131296296
+ string:common_google_play_services_install_title:2131296297
+ string:common_google_play_services_notification_channel_name:2131296298
+ string:common_google_play_services_notification_ticker:2131296299
+ string:common_google_play_services_unknown_issue:2131296300
+ string:common_google_play_services_unsupported_text:2131296301
+ string:common_google_play_services_update_button:2131296302
+ string:common_google_play_services_update_text:2131296303
+ string:common_google_play_services_update_title:2131296304
+ string:common_google_play_services_updating_text:2131296305
+ string:common_google_play_services_wear_update_text:2131296306
+ string:common_open_on_phone:2131296307
+ string:common_signin_button_text:2131296308
+ string:common_signin_button_text_long:2131296309
+ string:compass:2131296310
+ string:cyclemap:2131296311
+ string:date_input_headline:2131296312
+ string:date_input_headline_description:2131296313
+ string:date_input_invalid_for_pattern:2131296314
+ string:date_input_invalid_not_allowed:2131296315
+ string:date_input_invalid_year_range:2131296316
+ string:date_input_label:2131296317
+ string:date_input_no_input_description:2131296318
+ string:date_input_title:2131296319
+ string:date_picker_headline:2131296320
+ string:date_picker_headline_description:2131296321
+ string:date_picker_navigate_to_year_description:2131296322
+ string:date_picker_no_selection_description:2131296323
+ string:date_picker_scroll_to_earlier_years:2131296324
+ string:date_picker_scroll_to_later_years:2131296325
+ string:date_picker_switch_to_calendar_mode:2131296326
+ string:date_picker_switch_to_day_selection:2131296327
+ string:date_picker_switch_to_input_mode:2131296328
+ string:date_picker_switch_to_next_month:2131296329
+ string:date_picker_switch_to_previous_month:2131296330
+ string:date_picker_switch_to_year_selection:2131296331
+ string:date_picker_title:2131296332
+ string:date_picker_today_description:2131296333
+ string:date_picker_year_picker_pane_title:2131296334
+ string:date_range_input_invalid_range_input:2131296335
+ string:date_range_input_title:2131296336
+ string:date_range_picker_day_in_range:2131296337
+ string:date_range_picker_end_headline:2131296338
+ string:date_range_picker_scroll_to_next_month:2131296339
+ string:date_range_picker_scroll_to_previous_month:2131296340
+ string:date_range_picker_start_headline:2131296341
+ string:date_range_picker_title:2131296342
+ string:default_error_message:2131296343
+ string:default_popup_window_title:2131296344
+ string:dialog:2131296345
+ string:dropdown_menu:2131296346
+ string:expanded:2131296347
+ string:format_distance_feet:2131296350
+ string:format_distance_kilometers:2131296351
+ string:format_distance_meters:2131296352
+ string:format_distance_miles:2131296353
+ string:format_distance_nautical_miles:2131296354
+ string:format_distance_only_foot:2131296355
+ string:format_distance_only_kilometer:2131296356
+ string:format_distance_only_meter:2131296357
+ string:format_distance_only_mile:2131296358
+ string:format_distance_only_nautical_mile:2131296359
+ string:format_distance_value_unit:2131296360
+ string:hills:2131296361
+ string:in_progress:2131296362
+ string:indeterminate:2131296363
+ string:m3c_bottom_sheet_pane_title:2131296368
+ string:map_mode:2131296369
+ string:mapbox:2131296370
+ string:mapnik:2131296371
+ string:mapquest_aerial:2131296372
+ string:mapquest_osm:2131296373
+ string:my_location:2131296374
+ string:navigation_menu:2131296375
+ string:not_selected:2131296376
+ string:off:2131296377
+ string:on:2131296379
+ string:range_end:2131296381
+ string:range_start:2131296382
+ string:roads_nl:2131296383
+ string:search_bar_search:2131296385
+ string:selected:2131296386
+ string:set_mode_hide_me:2131296387
+ string:set_mode_offline:2131296388
+ string:set_mode_online:2131296389
+ string:set_mode_show_me:2131296390
+ string:snackbar_dismiss:2131296391
+ string:snapshot:2131296392
+ string:states:2131296393
+ string:status_bar_notification_info_overflow:2131296394
+ string:suggestions_available:2131296395
+ string:switch_role:2131296396
+ string:tab:2131296397
+ string:template_percent:2131296402
+ string:time_picker_am:2131296403
+ string:time_picker_hour:2131296404
+ string:time_picker_hour_24h_suffix:2131296405
+ string:time_picker_hour_selection:2131296406
+ string:time_picker_hour_suffix:2131296407
+ string:time_picker_hour_text_field:2131296408
+ string:time_picker_minute:2131296409
+ string:time_picker_minute_selection:2131296410
+ string:time_picker_minute_suffix:2131296411
+ string:time_picker_minute_text_field:2131296412
+ string:time_picker_period_toggle_description:2131296413
+ string:time_picker_pm:2131296414
+ string:tooltip_description:2131296415
+ string:tooltip_label:2131296416
+ string:tooltip_long_press_label:2131296417
+ string:tooltip_pane_description:2131296418
+ string:topo:2131296419
+ string:unknown:2131296420
  style:DialogWindowTheme:2131361792
  style:TextAppearance_Compat_Notification:2131361795
  style:TextAppearance_Compat_Notification_Info:2131361796
@@ -5621,18 +5688,18 @@ Unused resources are:
  string:about:2131296256
  string:about_message:2131296257
  string:bing:2131296263
- string:call_notification_answer_action:2131296278
- string:call_notification_answer_video_action:2131296279
- string:call_notification_decline_action:2131296280
- string:call_notification_hang_up_action:2131296281
- string:call_notification_incoming_text:2131296282
- string:call_notification_ongoing_text:2131296283
- string:call_notification_screening_text:2131296284
- string:fiets_nl:2131296344
- string:first_fix_message:2131296345
- string:offline:2131296370
- string:public_transport:2131296372
- string:samples:2131296376
+ string:call_notification_answer_action:2131296282
+ string:call_notification_answer_video_action:2131296283
+ string:call_notification_decline_action:2131296284
+ string:call_notification_hang_up_action:2131296285
+ string:call_notification_incoming_text:2131296286
+ string:call_notification_ongoing_text:2131296287
+ string:call_notification_screening_text:2131296288
+ string:fiets_nl:2131296348
+ string:first_fix_message:2131296349
+ string:offline:2131296378
+ string:public_transport:2131296380
+ string:samples:2131296384
  style:FloatingDialogTheme:2131361793
  style:FloatingDialogWindowTheme:2131361794
  style:Widget_Support_CoordinatorLayout:2131361803

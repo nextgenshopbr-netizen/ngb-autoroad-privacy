@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:ns1="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_name">NGBAutoRoad</string>
     <string msgid="6128938260108474660" name="bottom_sheet_collapse_description">"Contrae la hoja inferior"</string>
     <string msgid="1918297411568599192" name="bottom_sheet_dismiss_description">"Cierra la hoja inferior"</string>
     <string msgid="7772321844937772780" name="bottom_sheet_drag_handle_description">"Controlador de arrastre"</string>
     <string msgid="4324434199045499117" name="bottom_sheet_expand_description">"Despliega la hoja inferior"</string>
+    <string name="btn_pause">Pausar</string>
+    <string name="btn_resume">Reanudar</string>
+    <string name="btn_start">Iniciar</string>
+    <string name="btn_stop">Detener</string>
     <string msgid="881409763997275156" name="call_notification_answer_action">"Responder"</string>
     <string msgid="8793775615905189152" name="call_notification_answer_video_action">"Vídeo"</string>
     <string msgid="3229508546291798546" name="call_notification_decline_action">"Rechazar"</string>
@@ -70,6 +75,10 @@
     <string msgid="5974471714631304645" name="expanded">"Desplegado"</string>
     <string msgid="6827826412747255547" name="in_progress">"En curso"</string>
     <string msgid="7933458017204019916" name="indeterminate">"Marcado parcialmente"</string>
+    <string name="label_earnings">Ganancias</string>
+    <string name="label_expenses">Gastos</string>
+    <string name="label_profit">Lucro</string>
+    <string name="label_rides">Viajes</string>
     <string msgid="542007171693138492" name="navigation_menu">"Menú de navegación"</string>
     <string msgid="6610465462668679431" name="not_selected">"No seleccionado"</string>
     <string msgid="875452955155264703" name="off">"Desactivado"</string>
@@ -83,6 +92,10 @@
     <string msgid="7189888345201419934" name="suggestions_available">"Sugerencias a continuación"</string>
     <string msgid="2561197295334830845" name="switch_role">"Interruptor"</string>
     <string msgid="1672349317127674378" name="tab">"Pestaña"</string>
+    <string name="tab_cards">Tarjetas</string>
+    <string name="tab_finance">Finanzas</string>
+    <string name="tab_home">Inicio</string>
+    <string name="tab_settings">Ajustes</string>
     <string msgid="5946805113151406391" name="template_percent">"<ns1:g id="PERCENTAGE">%1$d</ns1:g> por cien."</string>
     <string msgid="5096144640014509074" name="time_picker_am">"AM"</string>
     <string msgid="7241191970823415723" name="time_picker_hour">"Hora"</string>
