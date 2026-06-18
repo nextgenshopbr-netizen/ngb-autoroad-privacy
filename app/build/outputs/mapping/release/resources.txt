@@ -543,7 +543,6 @@ Embarque
 km/L
 pair
 Paragraph
-Sunset
 com.google.android.gms.mlkit.langid
 PASTE
 manifest.json
@@ -2287,6 +2286,7 @@ ACTION_PRESS_AND_HOLD
 kotlinx.coroutines.DefaultExecutor
 MODULE_VERSION
 notnull
+LOCATION
 TileStates
 HEREWEGO_APPCODE
 Eldorado
@@ -2736,7 +2736,6 @@ vision.face
 OPTIONAL_MODULE_DOCUMENT_ENHANCE_INIT
 /data/misc/profiles/cur/0/
 effectiveNodeIndex
-Glass
 tabs
 kotlin.collections.ArrayList
 onSelect
@@ -2763,6 +2762,7 @@ JsonArray
 earnings
 ဉ
 FIXED32_LIST
+Localização
 char
 motorola
 identifyAllLanguagesConfidenceThreshold
@@ -3176,9 +3176,9 @@ ica
 ShuttingDown
 com.google.android.gms.mlkit_image_ca...
 ဉ ခဌဇ
-4.3.0
 PasteText
 ON_DEVICE_IMAGE_CAPTIONING_CREATE
+4.3.1
 DESC
 FontFamily.Default
 slotName
@@ -3232,6 +3232,7 @@ Strictness.Normal
 prefix
 imageInfo
 LiveRegion
+FINANCIAL
 getViewRootImpl
 childCoordinates
 RemoteModelSource
@@ -3572,6 +3573,7 @@ com.google.android.gms.dynamiteloader...
 ON_DEVICE_IMAGE_QUALITY_ANALYSIS_LOAD
 resolvedState
 FUEL
+Rendimento/Hora
 onDeviceDocumentEnhancementLoadLogEvent
 CLOUD_IMAGE_PROPERTIES_DETECT
 OPTIONAL_MODULE_DOCUMENT_CROP_CREATE
