@@ -1,0 +1,13 @@
+# Gradle
+.gradle/
+build/
+!app/build/outputs/apk/release/
+
+# IDE
+.idea/
+*.iml
+local.properties
+
+# OS
+.DS_Store
+Thumbs.db

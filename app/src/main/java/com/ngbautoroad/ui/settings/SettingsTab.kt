@@ -45,6 +45,9 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.ngbautoroad.ui.theme.*
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,17 +57,10 @@ fun SettingsTab(prefsManager: PrefsManager) {
     val serviceEnabled by prefsManager.serviceEnabledFlow.collectAsState(initial = false)
     val ocrEnabled by prefsManager.ocrEnabledFlow.collectAsState(initial = true)
     val protectionEnabled by prefsManager.protectionEnabledFlow.collectAsState(initial = false)
-    val blockedPickup by prefsManager.blockedPickupFlow.collectAsState(initial = emptyList())
-    val blockedDropoff by prefsManager.blockedDropoffFlow.collectAsState(initial = emptyList())
     val overlayWidth by prefsManager.overlayWidthFlow.collectAsState(initial = 320)
     val overlayFontScale by prefsManager.overlayFontScaleFlow.collectAsState(initial = 1.0f)
     val keepScreenOn by prefsManager.keepScreenOnFlow.collectAsState(initial = false)
 
-    var showAddPickup by remember { mutableStateOf(false) }
-    var showAddDropoff by remember { mutableStateOf(false) }
-    var newNeighborhoodName by remember { mutableStateOf("") }
-    var newNeighborhoodWeight by remember { mutableIntStateOf(20) }
-    var showZoneMapInfo by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
@@ -484,8 +480,20 @@ fun SettingsTab(prefsManager: PrefsManager) {
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                // v5.2.0: Permissões reativas - atualizam ao voltar do settings
+                val lifecycleOwner = LocalLifecycleOwner.current
+                var permissionRefreshKey by remember { mutableIntStateOf(0) }
+                DisposableEffect(lifecycleOwner) {
+                    val observer = LifecycleEventObserver { _, event ->
+                        if (event == Lifecycle.Event.ON_RESUME) {
+                            permissionRefreshKey++
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                }
                 // 1. Acessibilidade
-                val isAccessibilityEnabled = remember {
+                val isAccessibilityEnabled = remember(permissionRefreshKey) {
                     try {
                         val enabledServices = Settings.Secure.getString(
                             context.contentResolver,
@@ -507,7 +515,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // 2. Sobreposição de tela
-                val isOverlayEnabled = Settings.canDrawOverlays(context)
+                val isOverlayEnabled = remember(permissionRefreshKey) { Settings.canDrawOverlays(context) }
                 PermissionCheckItem(
                     title = "Sobreposição de Tela",
                     description = "Exibir card sobre outros apps",
@@ -525,11 +533,13 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // 3. Notificações
-                val isNotificationEnabled = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    androidx.core.content.ContextCompat.checkSelfPermission(
-                        context, android.Manifest.permission.POST_NOTIFICATIONS
-                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                } else true
+                val isNotificationEnabled = remember(permissionRefreshKey) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        androidx.core.content.ContextCompat.checkSelfPermission(
+                            context, android.Manifest.permission.POST_NOTIFICATIONS
+                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    } else true
+                }
                 PermissionCheckItem(
                     title = "Notificações",
                     description = "Manter serviço ativo em background (obrigatório)",
@@ -549,7 +559,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
 
                 // 4. Otimização de bateria
                 val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
-                val isIgnoringBattery = pm.isIgnoringBatteryOptimizations(context.packageName)
+                val isIgnoringBattery = remember(permissionRefreshKey) { pm.isIgnoringBatteryOptimizations(context.packageName) }
                 PermissionCheckItem(
                     title = "Sem Restrição de Bateria",
                     description = "Impedir que o sistema mate o serviço",
@@ -600,233 +610,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // === ZONAS BLOQUEADAS (MAPA) ===
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Map, contentDescription = "Mapa", tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Zonas Bloqueadas",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    IconButton(onClick = { showZoneMapInfo = !showZoneMapInfo }) {
-                        Icon(Icons.Default.Info, contentDescription = "Info")
-                    }
-                }
-
-                if (showZoneMapInfo) {
-                    Text(
-                        text = "Desenhe áreas no mapa para bloquear embarque ou desembarque. " +
-                                "Use os botões rápidos abaixo para ativar/desativar zonas sem excluí-las.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                // Botão para abrir mapa
-                Button(
-                    onClick = {
-                        val intent = Intent(context, com.ngbautoroad.ui.map.ZoneMapActivity::class.java)
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(Icons.Default.EditLocation, contentDescription = "Editar zona")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Abrir Mapa de Zonas")
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // === BAIRROS BLOQUEADOS - EMBARQUE ===
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Bairros Bloqueados (Embarque)",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    IconButton(onClick = { showAddPickup = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Adicionar")
-                    }
-                }
-
-                if (blockedPickup.isEmpty()) {
-                    Text(
-                        "Nenhum bairro bloqueado",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                blockedPickup.forEach { (name, weight) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(name, style = MaterialTheme.typography.bodyMedium)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "-${weight}pts",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            IconButton(onClick = {
-                                scope.launch {
-                                    prefsManager.saveBlockedPickup(blockedPickup.filter { it.first != name })
-                                }
-                            }) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "Remover",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (showAddPickup) {
-                    NeighborhoodInput(
-                        name = newNeighborhoodName,
-                        weight = newNeighborhoodWeight,
-                        onNameChange = { newNeighborhoodName = it },
-                        onWeightChange = { newNeighborhoodWeight = it },
-                        onAdd = {
-                            if (newNeighborhoodName.isNotBlank()) {
-                                // v5.1.0: Aceitar múltiplos bairros separados por vírgula
-                                val names = newNeighborhoodName.split(",").map { it.trim() }.filter { it.isNotBlank() }
-                                scope.launch {
-                                    prefsManager.saveBlockedPickup(
-                                        blockedPickup + names.map { it to newNeighborhoodWeight }
-                                    )
-                                }
-                                newNeighborhoodName = ""
-                                newNeighborhoodWeight = 20
-                                showAddPickup = false
-                            }
-                        },
-                        onCancel = { showAddPickup = false }
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // === BAIRROS BLOQUEADOS - DESTINO ===
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Bairros Bloqueados (Destino)",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    IconButton(onClick = { showAddDropoff = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Adicionar")
-                    }
-                }
-
-                if (blockedDropoff.isEmpty()) {
-                    Text(
-                        "Nenhum bairro bloqueado",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                blockedDropoff.forEach { (name, weight) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(name, style = MaterialTheme.typography.bodyMedium)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "-${weight}pts",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            IconButton(onClick = {
-                                scope.launch {
-                                    prefsManager.saveBlockedDropoff(blockedDropoff.filter { it.first != name })
-                                }
-                            }) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "Remover",
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (showAddDropoff) {
-                    NeighborhoodInput(
-                        name = newNeighborhoodName,
-                        weight = newNeighborhoodWeight,
-                        onNameChange = { newNeighborhoodName = it },
-                        onWeightChange = { newNeighborhoodWeight = it },
-                        onAdd = {
-                            if (newNeighborhoodName.isNotBlank()) {
-                                // v5.1.0: Aceitar múltiplos bairros separados por vírgula
-                                val names = newNeighborhoodName.split(",").map { it.trim() }.filter { it.isNotBlank() }
-                                scope.launch {
-                                    prefsManager.saveBlockedDropoff(
-                                        blockedDropoff + names.map { it to newNeighborhoodWeight }
-                                    )
-                                }
-                                newNeighborhoodName = ""
-                                newNeighborhoodWeight = 20
-                                showAddDropoff = false
-                            }
-                        },
-                        onCancel = { showAddDropoff = false }
-                    )
-                }
-            }
-        }
-
         Spacer(modifier = Modifier.height(24.dp))
-
         // App Info - Gesto secreto: 7 toques abre Admin
         var tapCount by remember { mutableIntStateOf(0) }
         var lastTapTime by remember { mutableLongStateOf(0L) }

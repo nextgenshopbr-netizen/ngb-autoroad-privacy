@@ -555,13 +555,18 @@ fun ProjectionTab(
         isLoading = true
         errorMessage = null
         try {
-            projection = engine.projectFinances(selectedPeriod)
-            whatIfResults = engine.simulateWhatIf(selectedPeriod)
-            if (projection?.projectedEarnings == 0.0 && projection?.projectedRides == 0) {
+            val result = engine.projectFinances(selectedPeriod)
+            val whatIf = engine.simulateWhatIf(selectedPeriod)
+            projection = result
+            whatIfResults = whatIf
+            if (result.projectedEarnings == 0.0 && result.projectedRides == 0) {
                 errorMessage = "Sem dados suficientes. Registre corridas e ganhos para gerar projeções."
             }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e // Não capturar CancellationException
         } catch (e: Exception) {
             errorMessage = "Erro ao calcular projeção: ${e.message ?: "desconhecido"}"
+            android.util.Log.e("ProjectionTab", "Erro projeção", e)
         }
         isLoading = false
     }
@@ -611,7 +616,7 @@ fun ProjectionTab(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Confiança: ", fontSize = 12.sp)
                 LinearProgressIndicator(
-                    progress = (proj.confidenceLevel / 100.0).toFloat(),
+                    progress = (proj.confidenceLevel / 100.0).toFloat().coerceIn(0f, 1f),
                     modifier = Modifier.weight(1f).height(6.dp),
                     color = when {
                         proj.confidenceLevel >= 80 -> ScoreGreen

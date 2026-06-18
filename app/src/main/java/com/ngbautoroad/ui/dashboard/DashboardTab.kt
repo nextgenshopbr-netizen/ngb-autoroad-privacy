@@ -44,8 +44,15 @@ import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.ui.finance.FinanceActivity
 import com.ngbautoroad.ui.features.FeaturesActivity
 import com.ngbautoroad.ui.theme.*
+import com.ngbautoroad.domain.ShiftManager
+import com.ngbautoroad.domain.ShiftState
+import com.ngbautoroad.service.OverlayService
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import java.util.*
@@ -123,8 +130,13 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Botão Controle Financeiro (topo)
+        // v5.2.0: Card de Turno integrado na Dashboard
         val context = LocalContext.current
+        ShiftDashboardCard(context, scope, prefsManager)
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Botão Controle Financeiro (topo)
         Button(
             onClick = {
                 context.startActivity(Intent(context, FinanceActivity::class.java))
@@ -699,6 +711,283 @@ fun PeriodColumn(period: String, rides: Int, earnings: Double, avgScore: Double)
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+// ============================================================================
+// v5.2.0: CARD DE TURNO NA DASHBOARD
+// Integrado com ShiftManager e meta financeira
+// ============================================================================
+@Composable
+fun ShiftDashboardCard(
+    context: android.content.Context,
+    scope: kotlinx.coroutines.CoroutineScope,
+    prefsManager: PrefsManager
+) {
+    val shiftManager = remember { ShiftManager(context) }
+    var shiftState by remember { mutableStateOf(shiftManager.loadState()) }
+    var goalInput by remember { mutableStateOf(shiftState.goalValue.let { if (it > 0) it.toInt().toString() else "200" }) }
+    var showGoalEdit by remember { mutableStateOf(false) }
+
+    // Atualizar estado a cada 30s quando turno ativo
+    LaunchedEffect(shiftState.isActive, shiftState.isPaused) {
+        while (shiftState.isActive && !shiftState.isPaused) {
+            delay(30_000L)
+            shiftState = shiftManager.loadState()
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                shiftState.isActive && shiftState.goalReached -> Color(0xFF1B5E20)
+                shiftState.isActive -> MaterialTheme.colorScheme.primaryContainer
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            }
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            if (!shiftState.isActive) {
+                // === TURNO INATIVO: Botão Iniciar ===
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Turno",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "Meta: R$ $goalInput",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Botão editar meta
+                        IconButton(onClick = { showGoalEdit = !showGoalEdit }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar meta")
+                        }
+                        // Botão Iniciar Turno
+                        Button(
+                            onClick = {
+                                val goal = goalInput.toDoubleOrNull() ?: 200.0
+                                shiftState = shiftManager.startShift(goal)
+                                // Ativar todos os serviços ao iniciar turno
+                                scope.launch {
+                                    prefsManager.setServiceEnabled(true)
+                                    prefsManager.setProtectionEnabled(true)
+                                    try { OverlayService.start(context) } catch (_: Exception) {}
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ScoreGreen
+                            )
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = "Iniciar")
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Iniciar Turno", color = Color.White)
+                        }
+                    }
+                }
+                // Campo de edição de meta
+                if (showGoalEdit) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = goalInput,
+                            onValueChange = { goalInput = it.filter { c -> c.isDigit() || c == '.' } },
+                            label = { Text("Meta do dia (R$)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.weight(1f),
+                            singleLine = true
+                        )
+                        Button(onClick = {
+                            showGoalEdit = false
+                            // Sincronizar meta com financeiro
+                            scope.launch {
+                                try {
+                                    val finDb = FinanceDatabase.getInstance(context)
+                                    val goalDao = finDb.financialGoalDao()
+                                    val goalValue = goalInput.toDoubleOrNull() ?: 200.0
+                                    // Verificar se já existe meta diária
+                                    val existingGoals = goalDao.getActiveGoalsSync()
+                                    val dailyGoal = existingGoals.firstOrNull { it.period == "DIA" }
+                                    if (dailyGoal != null) {
+                                        goalDao.update(dailyGoal.copy(targetAmount = goalValue))
+                                    } else {
+                                        goalDao.insert(
+                                            com.ngbautoroad.data.db.FinancialGoalEntity(
+                                                title = "Meta Diária",
+                                                targetAmount = goalValue,
+                                                period = "DIA",
+                                                isActive = true
+                                            )
+                                        )
+                                    }
+                                } catch (_: Exception) {}
+                            }
+                        }) {
+                            Text("Salvar")
+                        }
+                    }
+                }
+            } else {
+                // === TURNO ATIVO: Mostrar progresso ===
+                val textColor = if (shiftState.goalReached) Color.White else Color.Unspecified
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        if (shiftState.isPaused) "Turno Pausado" else "Turno Ativo",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor
+                    )
+                    if (shiftState.goalReached) {
+                        Text(
+                            "META ATINGIDA!",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF76FF03)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                // Barra de progresso da meta
+                LinearProgressIndicator(
+                    progress = shiftState.goalProgress.coerceIn(0f, 1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = if (shiftState.goalReached) Color(0xFF76FF03) else ScoreGreen,
+                    trackColor = if (shiftState.goalReached) Color.White.copy(alpha = 0.3f)
+                        else MaterialTheme.colorScheme.surfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "R$ ${"%.2f".format(shiftState.totalEarned)} / R$ ${"%.0f".format(shiftState.goalValue)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (shiftState.goalReached) Color.White.copy(alpha = 0.8f)
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                // Métricas do turno
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Tempo", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.7f))
+                        Text(
+                            "${shiftState.elapsedMinutes} min",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("R$/h", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.7f))
+                        Text(
+                            "R$ ${"%.2f".format(shiftState.valuePerHour)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Corridas", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.7f))
+                        Text(
+                            "${shiftState.ridesCount}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Aceitas/Rec.", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.7f))
+                        Text(
+                            "${shiftState.ridesAccepted}/${shiftState.ridesRejected}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                // Botões de controle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (shiftState.isPaused) {
+                        Button(
+                            onClick = { shiftState = shiftManager.resumeShift(shiftState) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = ScoreGreen)
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = "Retomar")
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Retomar", color = Color.White)
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { shiftState = shiftManager.pauseShift(shiftState) },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Pause, contentDescription = "Pausar")
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Pausar")
+                        }
+                    }
+                    Button(
+                        onClick = {
+                            // Salvar histórico do turno antes de encerrar
+                            scope.launch {
+                                try {
+                                    val finDb = FinanceDatabase.getInstance(context)
+                                    val shiftHistoryPrefs = context.getSharedPreferences("shift_history", android.content.Context.MODE_PRIVATE)
+                                    val historyCount = shiftHistoryPrefs.getInt("count", 0)
+                                    shiftHistoryPrefs.edit()
+                                        .putLong("shift_${historyCount}_start", shiftState.startTimeMs)
+                                        .putLong("shift_${historyCount}_end", System.currentTimeMillis())
+                                        .putFloat("shift_${historyCount}_earned", shiftState.totalEarned.toFloat())
+                                        .putInt("shift_${historyCount}_rides", shiftState.ridesCount)
+                                        .putInt("shift_${historyCount}_accepted", shiftState.ridesAccepted)
+                                        .putInt("shift_${historyCount}_rejected", shiftState.ridesRejected)
+                                        .putFloat("shift_${historyCount}_goal", shiftState.goalValue.toFloat())
+                                        .putLong("shift_${historyCount}_elapsed", shiftState.elapsedMs)
+                                        .putInt("count", historyCount + 1)
+                                        .apply()
+                                } catch (_: Exception) {}
+                            }
+                            shiftState = shiftManager.endShift()
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))
+                    ) {
+                        Icon(Icons.Default.Stop, contentDescription = "Encerrar", tint = Color.White)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Finalizar", color = Color.White)
+                    }
+                }
+            }
         }
     }
 }

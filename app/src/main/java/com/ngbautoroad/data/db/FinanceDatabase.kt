@@ -262,6 +262,8 @@ interface FinancialGoalDao {
 
     @Query("SELECT * FROM financial_goals ORDER BY createdAt DESC")
     fun getAllGoals(): Flow<List<FinancialGoalEntity>>
+    @Query("SELECT * FROM financial_goals WHERE isActive = 1 ORDER BY createdAt DESC")
+    suspend fun getActiveGoalsSync(): List<FinancialGoalEntity>
 }
 
 // === Resultado de queries de relatório ===

@@ -64,6 +64,24 @@ fun ShiftTab() {
     var state by remember { mutableStateOf(shiftManager.loadState()) }
     var goalInput by remember { mutableStateOf("200") }
 
+    // v5.2.0: Carregar histórico de turnos
+    val shiftHistory = remember {
+        val prefs = context.getSharedPreferences("shift_history", android.content.Context.MODE_PRIVATE)
+        val count = prefs.getInt("count", 0)
+        (0 until count).reversed().map { i ->
+            ShiftHistoryItem(
+                startMs = prefs.getLong("shift_${i}_start", 0L),
+                endMs = prefs.getLong("shift_${i}_end", 0L),
+                earned = prefs.getFloat("shift_${i}_earned", 0f).toDouble(),
+                rides = prefs.getInt("shift_${i}_rides", 0),
+                accepted = prefs.getInt("shift_${i}_accepted", 0),
+                rejected = prefs.getInt("shift_${i}_rejected", 0),
+                goal = prefs.getFloat("shift_${i}_goal", 200f).toDouble(),
+                elapsedMs = prefs.getLong("shift_${i}_elapsed", 0L)
+            )
+        }
+    }
+
     LaunchedEffect(state.isActive) {
         while (state.isActive && !state.isPaused) { delay(60_000L); state = shiftManager.loadState() }
     }
@@ -74,12 +92,7 @@ fun ShiftTab() {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Iniciar Turno", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        OutlinedTextField(value = goalInput, onValueChange = { goalInput = it },
-                            label = { Text("Meta (R$)") }, modifier = Modifier.fillMaxWidth())
-                        Button(onClick = {
-                            val goal = goalInput.toDoubleOrNull() ?: 200.0
-                            state = shiftManager.startShift(goal)
-                        }, modifier = Modifier.fillMaxWidth()) { Text("Iniciar") }
+                        Text("Use o bot\u00e3o na Dashboard para iniciar um turno", fontSize = 12.sp, color = Color.Gray)
                     }
                 }
             } else {
@@ -90,7 +103,7 @@ fun ShiftTab() {
                         Text("Turno Ativo", fontWeight = FontWeight.Bold, fontSize = 20.sp,
                             color = if (state.goalReached) Color.White else Color.Unspecified)
                         if (state.goalReached) Text("META ATINGIDA!", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        LinearProgressIndicator(progress = state.goalProgress, modifier = Modifier.fillMaxWidth().height(8.dp))
+                        LinearProgressIndicator(progress = state.goalProgress.coerceIn(0f, 1f), modifier = Modifier.fillMaxWidth().height(8.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column { Text("Tempo"); Text("${state.elapsedMinutes} min", fontWeight = FontWeight.Bold) }
                             Column { Text("Ganho"); Text("R$ ${"%.2f".format(state.totalEarned)}", fontWeight = FontWeight.Bold) }
@@ -106,6 +119,73 @@ fun ShiftTab() {
                             Button(onClick = { state = shiftManager.endShift() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red)) { Text("Encerrar", color = Color.White) }
                         }
                     }
+                }
+            }
+        }
+        // v5.2.0: Histórico de Turnos
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Histórico de Turnos", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            if (shiftHistory.isEmpty()) {
+                Text("Nenhum turno finalizado ainda.", fontSize = 12.sp, color = Color.Gray)
+            }
+        }
+        items(shiftHistory) { item ->
+            ShiftHistoryCard(item)
+        }
+    }
+}
+
+data class ShiftHistoryItem(
+    val startMs: Long,
+    val endMs: Long,
+    val earned: Double,
+    val rides: Int,
+    val accepted: Int,
+    val rejected: Int,
+    val goal: Double,
+    val elapsedMs: Long
+)
+
+@Composable
+fun ShiftHistoryCard(item: ShiftHistoryItem) {
+    val dateFormat = java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault())
+    val startStr = if (item.startMs > 0) dateFormat.format(java.util.Date(item.startMs)) else "-"
+    val endStr = if (item.endMs > 0) dateFormat.format(java.util.Date(item.endMs)) else "-"
+    val elapsedMin = item.elapsedMs / 60_000L
+    val elapsedHours = item.elapsedMs / 3_600_000.0
+    val valuePerHour = if (elapsedHours > 0) item.earned / elapsedHours else 0.0
+    val goalReached = item.earned >= item.goal
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (goalReached) Color(0xFF1B5E20).copy(alpha = 0.1f)
+                else MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("$startStr \u2192 $endStr", fontSize = 12.sp, color = Color.Gray)
+                if (goalReached) Text("\u2705 Meta", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("Ganho", fontSize = 10.sp, color = Color.Gray)
+                    Text("R$ ${"%.2f".format(item.earned)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Tempo", fontSize = 10.sp, color = Color.Gray)
+                    Text("${elapsedMin} min", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("R$/h", fontSize = 10.sp, color = Color.Gray)
+                    Text("R$ ${"%.2f".format(valuePerHour)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("Corridas", fontSize = 10.sp, color = Color.Gray)
+                    Text("${item.rides} (${item.accepted}/${item.rejected})", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }

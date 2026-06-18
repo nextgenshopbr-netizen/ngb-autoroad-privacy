@@ -230,8 +230,14 @@ fun CardTab(prefsManager: PrefsManager) {
                             }
                             // Gerar corrida aleatória
                             val ride = generateRandomRide()
-                            // v5.1.0: Iniciar OverlayService com retry automático
-                            OverlayService.start(context)
+                            // v5.2.0: Iniciar OverlayService com proteção extra
+                            try {
+                                OverlayService.start(context)
+                            } catch (e: Exception) {
+                                android.util.Log.e("CardTab", "Falha ao iniciar serviço", e)
+                                android.widget.Toast.makeText(context, "Falha ao iniciar serviço: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                                return@launch
+                            }
                             // Aguardar até 3 tentativas (3x800ms = 2.4s máx)
                             var retries = 0
                             var callback = OverlayService.onRideDetected
@@ -246,7 +252,15 @@ fun CardTab(prefsManager: PrefsManager) {
                                 android.widget.Toast.makeText(context, "Serviço não iniciou. Verifique permissão de acessibilidade.", android.widget.Toast.LENGTH_LONG).show()
                             }
                         } catch (e: Exception) {
-                            android.widget.Toast.makeText(context, "Erro ao testar: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                            val msg = when {
+                                e.javaClass.simpleName.contains("ForegroundService") ->
+                                    "Não foi possível iniciar o serviço em background. Tente novamente."
+                                e.javaClass.simpleName.contains("Security") ->
+                                    "Permissão negada. Verifique as configurações do app."
+                                else -> "Erro ao testar: ${e.message}"
+                            }
+                            android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                            android.util.Log.e("CardTab", "Testar Real erro", e)
                         }
                     }
                 },

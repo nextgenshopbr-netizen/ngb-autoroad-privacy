@@ -275,9 +275,13 @@ class OverlayService : Service(),
             if (isOverlayVisible) {
                 hideOverlay()
             }
-            createOverlay()
-            // v5.0.0: Auto-dismiss configurável (30s padrão)
-            startAutoDismissTimer()
+            try {
+                createOverlay()
+                // v5.0.0: Auto-dismiss configurável (30s padrão)
+                startAutoDismissTimer()
+            } catch (e: Exception) {
+                android.util.Log.e("OverlayService", "Erro ao criar overlay: ${e.message}", e)
+            }
         }
     }
 
@@ -309,8 +313,10 @@ class OverlayService : Service(),
         val widthPx = (overlayWidth * density).toInt()
 
         // Item 4.2: Restaurar posição salva
-        val savedX = runBlocking { prefsManager.overlayPositionXFlow.first() }
-        val savedY = runBlocking { prefsManager.overlayPositionYFlow.first() }
+        // v5.2.0: Removido runBlocking que causava crash - usar posição padrão (0,0)
+        // A posição será carregada assincronamente após criação
+        val savedX = 0
+        val savedY = 0
 
         val params = WindowManager.LayoutParams(
             widthPx,
