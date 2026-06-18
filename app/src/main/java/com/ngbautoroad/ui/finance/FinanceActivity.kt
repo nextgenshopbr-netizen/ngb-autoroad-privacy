@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -793,21 +794,22 @@ fun VehicleTab(vehicleConfigDao: VehicleConfigDao) {
     val scope = rememberCoroutineScope()
     val savedConfig by vehicleConfigDao.getConfig().collectAsState(initial = null)
 
-    var vehicleType by remember { mutableStateOf("COMBUSTION") }
-    var fuelType by remember { mutableStateOf("FLEX") }
-    var consumption by remember { mutableStateOf("") }
-    var fuelPrice by remember { mutableStateOf("") }
-    var brand by remember { mutableStateOf("") }
-    var model by remember { mutableStateOf("") }
-    var year by remember { mutableStateOf("") }
-    var plate by remember { mutableStateOf("") }
-    var monthlyFixed by remember { mutableStateOf("") }
-    var isOwned by remember { mutableStateOf(true) }
-    var rentalCost by remember { mutableStateOf("") }
-    var loaded by remember { mutableStateOf(false) }
+    // rememberSaveable garante que os dados sobrevivem à troca de aba
+    var vehicleType by rememberSaveable { mutableStateOf("COMBUSTION") }
+    var fuelType by rememberSaveable { mutableStateOf("FLEX") }
+    var consumption by rememberSaveable { mutableStateOf("") }
+    var fuelPrice by rememberSaveable { mutableStateOf("") }
+    var brand by rememberSaveable { mutableStateOf("") }
+    var model by rememberSaveable { mutableStateOf("") }
+    var year by rememberSaveable { mutableStateOf("") }
+    var plate by rememberSaveable { mutableStateOf("") }
+    var monthlyFixed by rememberSaveable { mutableStateOf("") }
+    var isOwned by rememberSaveable { mutableStateOf(true) }
+    var rentalCost by rememberSaveable { mutableStateOf("") }
+    var loaded by rememberSaveable { mutableStateOf(false) }
 
-    // Carregar dados salvos - sincroniza apenas na primeira vez que o config aparece
-    LaunchedEffect(savedConfig) {
+    // LaunchedEffect por id: dispara apenas quando o registro é carregado pela primeira vez
+    LaunchedEffect(savedConfig?.id) {
         val cfg = savedConfig ?: return@LaunchedEffect
         if (!loaded) {
             vehicleType = cfg.vehicleType
@@ -825,9 +827,13 @@ fun VehicleTab(vehicleConfigDao: VehicleConfigDao) {
         }
     }
 
-    val avgConsumption = consumption.toDoubleOrNull() ?: 0.0
-    val price = fuelPrice.toDoubleOrNull() ?: 0.0
-    val costPerKm = if (avgConsumption > 0) price / avgConsumption else 0.0
+    // Normaliza vírgula para ponto (teclado BR digita vírgula como separador decimal)
+    fun String.toDoubleLocale(): Double = this.replace(",", ".").trim().toDoubleOrNull() ?: 0.0
+
+    val avgConsumption = consumption.toDoubleLocale()
+    val price = fuelPrice.toDoubleLocale()
+    // Fórmula: R$/L ÷ km/L = R$/km
+    val costPerKm = if (avgConsumption > 0.0) price / avgConsumption else 0.0
 
     Column(
         modifier = Modifier
@@ -970,14 +976,14 @@ fun VehicleTab(vehicleConfigDao: VehicleConfigDao) {
                         fuelType = fuelType,
                         brand = brand,
                         model = model,
-                        year = year.toIntOrNull() ?: 0,
+                        year = year.replace(",",".").trim().toDoubleOrNull()?.toInt() ?: year.toIntOrNull() ?: 0,
                         plate = plate,
                         averageConsumption = avgConsumption,
                         fuelPrice = price,
                         costPerKm = costPerKm,
-                        monthlyFixedCosts = monthlyFixed.toDoubleOrNull() ?: 0.0,
+                        monthlyFixedCosts = monthlyFixed.replace(",",".").trim().toDoubleOrNull() ?: 0.0,
                         isOwned = isOwned,
-                        rentalCost = rentalCost.toDoubleOrNull() ?: 0.0
+                        rentalCost = rentalCost.replace(",",".").trim().toDoubleOrNull() ?: 0.0
                     ))
                 }
             },
