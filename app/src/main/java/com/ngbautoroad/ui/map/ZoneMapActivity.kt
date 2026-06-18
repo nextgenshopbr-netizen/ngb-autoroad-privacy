@@ -204,7 +204,8 @@ fun ZoneMapScreen(prefsManager: PrefsManager, activity: ComponentActivity) {
             )
         },
         floatingActionButton = {
-            Column(horizontalAlignment = Alignment.End) {
+            // v5.1.1: Ocultar FABs quando a lista de zonas está aberta
+            if (!showZoneList) Column(horizontalAlignment = Alignment.End) {
                 if (isDrawing) {
                     // Salvar zona
                     if (currentPoints.size >= 3) {
