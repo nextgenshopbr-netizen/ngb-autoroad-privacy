@@ -230,10 +230,21 @@ fun CardTab(prefsManager: PrefsManager) {
                             }
                             // Gerar corrida aleatória
                             val ride = generateRandomRide()
-                            // Iniciar OverlayService e disparar corrida real
+                            // v5.1.0: Iniciar OverlayService com retry automático
                             OverlayService.start(context)
-                            delay(500) // Delay maior para garantir que o serviço iniciou
-                            OverlayService.onRideDetected?.invoke(ride)
+                            // Aguardar até 3 tentativas (3x800ms = 2.4s máx)
+                            var retries = 0
+                            var callback = OverlayService.onRideDetected
+                            while (callback == null && retries < 3) {
+                                delay(800)
+                                callback = OverlayService.onRideDetected
+                                retries++
+                            }
+                            if (callback != null) {
+                                callback.invoke(ride)
+                            } else {
+                                android.widget.Toast.makeText(context, "Serviço não iniciou. Verifique permissão de acessibilidade.", android.widget.Toast.LENGTH_LONG).show()
+                            }
                         } catch (e: Exception) {
                             android.widget.Toast.makeText(context, "Erro ao testar: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                         }

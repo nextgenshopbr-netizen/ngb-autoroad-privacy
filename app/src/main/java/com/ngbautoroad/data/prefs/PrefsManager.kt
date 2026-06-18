@@ -467,6 +467,17 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    // v5.1.0: Dark Mode
+    private val KEY_DARK_MODE = stringPreferencesKey("dark_mode") // "system", "light", "dark"
+    val darkModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_DARK_MODE] ?: "system"
+    }
+    suspend fun saveDarkMode(mode: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_DARK_MODE] = mode
+        }
+    }
+
     suspend fun resetAll() {
         context.dataStore.edit { it.clear() }
     }

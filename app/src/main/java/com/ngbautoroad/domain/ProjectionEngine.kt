@@ -16,6 +16,8 @@ package com.ngbautoroad.domain
 // ============================================================================
 
 import com.ngbautoroad.data.db.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.util.Calendar
 
 /**
@@ -33,7 +35,7 @@ class ProjectionEngine(
      * Projeta ganhos/custos/lucro para o período solicitado.
      * Usa média ponderada dos últimos 30 dias como base.
      */
-    suspend fun projectFinances(period: String): FinancialProjection {
+    suspend fun projectFinances(period: String): FinancialProjection = withContext(Dispatchers.IO) {
         val vehicle = vehicleProfileDao.getActiveVehicleSync()
         val costPerKm = vehicle?.costPerKm ?: 0.30 // Fallback: R$0.30/km
 
@@ -108,7 +110,7 @@ class ProjectionEngine(
             else -> 20.0
         }
 
-        return FinancialProjection(
+        FinancialProjection(
             period = period,
             projectedEarnings = projEarnings,
             projectedFuelCost = projFuelCost,
@@ -133,7 +135,7 @@ class ProjectionEngine(
      * Usa o histórico de corridas classificadas (boas/médias/ruins) para calcular
      * o que teria acontecido se o motorista tivesse aceitado todas de um tipo.
      */
-    suspend fun simulateWhatIf(period: String): List<WhatIfResult> {
+    suspend fun simulateWhatIf(period: String): List<WhatIfResult> = withContext(Dispatchers.IO) {
         val vehicle = vehicleProfileDao.getActiveVehicleSync()
         val costPerKm = vehicle?.costPerKm ?: 0.30
 
@@ -144,7 +146,7 @@ class ProjectionEngine(
         val startDate = cal.timeInMillis
 
         val allRides = rideHistoryDao.getRidesByPeriodSync(startDate, endDate)
-        if (allRides.isEmpty()) return emptyList()
+        if (allRides.isEmpty()) return@withContext emptyList()
 
         // Classificar corridas por qualidade (score)
         val goodRides = allRides.filter { it.score >= 70 }
@@ -261,7 +263,7 @@ class ProjectionEngine(
             avgPerHour = if (mixTotalHours > 0) mixTotalEarnings / mixTotalHours else 0.0
         ))
 
-        return scenarios
+        scenarios
     }
 
     // ========================================================================

@@ -42,6 +42,7 @@ import com.ngbautoroad.data.db.FinanceDatabase
 import com.ngbautoroad.data.model.DashboardData
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.ui.finance.FinanceActivity
+import com.ngbautoroad.ui.features.FeaturesActivity
 import com.ngbautoroad.ui.theme.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.*
@@ -136,6 +137,20 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
             Icon(Icons.Default.AccountBalance, contentDescription = "Financeiro")
             Spacer(modifier = Modifier.width(8.dp))
             Text("Controle Financeiro")
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Botão Recursos Avançados (Turno, Ranking, IA, Relatório, Exportar)
+        OutlinedButton(
+            onClick = {
+                context.startActivity(Intent(context, FeaturesActivity::class.java))
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.AutoAwesome, contentDescription = "Recursos")
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Recursos Avançados")
         }
 
         Spacer(modifier = Modifier.height(16.dp))

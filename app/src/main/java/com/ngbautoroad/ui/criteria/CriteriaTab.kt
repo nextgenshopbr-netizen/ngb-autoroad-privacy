@@ -23,22 +23,28 @@ package com.ngbautoroad.ui.criteria
 //   - Feedback visual: borda vermelha quando valor fora do range
 // ============================================================================
 
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ngbautoroad.data.model.CriteriaWeights
 import com.ngbautoroad.data.model.DriverThresholds
 import com.ngbautoroad.data.prefs.PrefsManager
@@ -50,9 +56,16 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun CriteriaTab(prefsManager: PrefsManager) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val weights by prefsManager.criteriaWeightsFlow.collectAsState(initial = CriteriaWeights())
     val thresholds by prefsManager.driverThresholdsFlow.collectAsState(initial = DriverThresholds())
+    val blockedPickup by prefsManager.blockedPickupFlow.collectAsState(initial = emptyList())
+    val blockedDropoff by prefsManager.blockedDropoffFlow.collectAsState(initial = emptyList())
+    var showAddPickup by remember { mutableStateOf(false) }
+    var showAddDropoff by remember { mutableStateOf(false) }
+    var newNeighborhoodName by remember { mutableStateOf("") }
+    var newNeighborhoodWeight by remember { mutableIntStateOf(20) }
 
     var showThresholds by remember { mutableStateOf(true) }
     val scrollState = rememberScrollState()
@@ -337,6 +350,230 @@ fun CriteriaTab(prefsManager: PrefsManager) {
                 "Reduza os pesos para no máximo 100 pontos antes de salvar",
                 style = MaterialTheme.typography.labelSmall,
                 color = ScoreRed
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Divider()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ================================================================
+        // SEÇÃO: ZONAS BLOQUEADAS (Editor de Mapa)
+        // v5.1.0: Movido de Config para Critérios (faz mais sentido aqui)
+        // ================================================================
+        Text(
+            text = "Zonas Bloqueadas",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = "Desenhe áreas no mapa para bloquear embarque/desembarque no cálculo de Score",
+            style = MaterialTheme.typography.bodySmall,
+            color = ScoreOrange
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = {
+                val intent = Intent(context, com.ngbautoroad.ui.map.ZoneMapActivity::class.java)
+                context.startActivity(intent)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Icon(Icons.Default.EditLocation, contentDescription = "Editar zona")
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Abrir Editor de Zonas")
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // ================================================================
+        // SEÇÃO: BAIRROS BLOQUEADOS (Embarque + Destino)
+        // v5.1.0: Movido de Config para Critérios
+        // ================================================================
+        Text(
+            text = "Bairros Bloqueados",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = "Bairros que penalizam o Score. Separe múltiplos por vírgula.",
+            style = MaterialTheme.typography.bodySmall,
+            color = ScoreOrange
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Bairros Embarque
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Embarque", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    IconButton(onClick = { showAddPickup = true }) {
+                        Icon(Icons.Default.Add, contentDescription = "Adicionar")
+                    }
+                }
+                if (blockedPickup.isEmpty()) {
+                    Text("Nenhum bairro bloqueado", fontSize = 12.sp, color = ScoreOrange)
+                } else {
+                    blockedPickup.forEach { (name, weight) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("$name (-$weight pts)", fontSize = 12.sp)
+                            IconButton(onClick = {
+                                scope.launch {
+                                    prefsManager.saveBlockedPickup(blockedPickup.filter { it.first != name })
+                                }
+                            }) {
+                                Icon(Icons.Default.Close, contentDescription = "Remover", modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Bairros Destino
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Destino", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    IconButton(onClick = { showAddDropoff = true }) {
+                        Icon(Icons.Default.Add, contentDescription = "Adicionar")
+                    }
+                }
+                if (blockedDropoff.isEmpty()) {
+                    Text("Nenhum bairro bloqueado", fontSize = 12.sp, color = ScoreOrange)
+                } else {
+                    blockedDropoff.forEach { (name, weight) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("$name (-$weight pts)", fontSize = 12.sp)
+                            IconButton(onClick = {
+                                scope.launch {
+                                    prefsManager.saveBlockedDropoff(blockedDropoff.filter { it.first != name })
+                                }
+                            }) {
+                                Icon(Icons.Default.Close, contentDescription = "Remover", modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Dialog para adicionar bairro de embarque
+        if (showAddPickup) {
+            AlertDialog(
+                onDismissRequest = { showAddPickup = false },
+                title = { Text("Adicionar Bairro (Embarque)") },
+                text = {
+                    Column {
+                        Text("Separe múltiplos bairros por vírgula", fontSize = 11.sp, color = ScoreOrange)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = newNeighborhoodName,
+                            onValueChange = { newNeighborhoodName = it },
+                            label = { Text("Nome(s) do bairro") },
+                            placeholder = { Text("Ex: Centro, Liberdade, Moema") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Penalidade: $newNeighborhoodWeight pts", fontSize = 12.sp)
+                        Slider(
+                            value = newNeighborhoodWeight.toFloat(),
+                            onValueChange = { newNeighborhoodWeight = it.toInt() },
+                            valueRange = 5f..50f,
+                            steps = 8
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (newNeighborhoodName.isNotBlank()) {
+                            val names = newNeighborhoodName.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                            scope.launch {
+                                prefsManager.saveBlockedPickup(
+                                    blockedPickup + names.map { it to newNeighborhoodWeight }
+                                )
+                            }
+                            newNeighborhoodName = ""
+                            newNeighborhoodWeight = 20
+                            showAddPickup = false
+                        }
+                    }) { Text("Adicionar") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAddPickup = false }) { Text("Cancelar") }
+                }
+            )
+        }
+
+        // Dialog para adicionar bairro de destino
+        if (showAddDropoff) {
+            AlertDialog(
+                onDismissRequest = { showAddDropoff = false },
+                title = { Text("Adicionar Bairro (Destino)") },
+                text = {
+                    Column {
+                        Text("Separe múltiplos bairros por vírgula", fontSize = 11.sp, color = ScoreOrange)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = newNeighborhoodName,
+                            onValueChange = { newNeighborhoodName = it },
+                            label = { Text("Nome(s) do bairro") },
+                            placeholder = { Text("Ex: Capão Redondo, Grajaú") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Penalidade: $newNeighborhoodWeight pts", fontSize = 12.sp)
+                        Slider(
+                            value = newNeighborhoodWeight.toFloat(),
+                            onValueChange = { newNeighborhoodWeight = it.toInt() },
+                            valueRange = 5f..50f,
+                            steps = 8
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (newNeighborhoodName.isNotBlank()) {
+                            val names = newNeighborhoodName.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                            scope.launch {
+                                prefsManager.saveBlockedDropoff(
+                                    blockedDropoff + names.map { it to newNeighborhoodWeight }
+                                )
+                            }
+                            newNeighborhoodName = ""
+                            newNeighborhoodWeight = 20
+                            showAddDropoff = false
+                        }
+                    }) { Text("Adicionar") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAddDropoff = false }) { Text("Cancelar") }
+                }
             )
         }
     }

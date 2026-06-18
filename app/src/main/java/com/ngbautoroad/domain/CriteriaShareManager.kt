@@ -9,7 +9,7 @@ import java.io.File
 class CriteriaShareManager(private val context: Context) {
     fun exportCriteria(criteria: Map<String, Any>): File {
         val json = JSONObject(criteria)
-        json.put("app_version", "4.5.0")
+        json.put("app_version", com.ngbautoroad.BuildConfig.VERSION_NAME)
         json.put("export_timestamp", System.currentTimeMillis())
         val file = File(context.cacheDir, "ngb_criteria_${System.currentTimeMillis()}.json")
         file.writeText(json.toString(2))

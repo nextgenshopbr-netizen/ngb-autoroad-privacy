@@ -116,6 +116,9 @@ fun ZoneMapScreen(prefsManager: PrefsManager, activity: ComponentActivity) {
     var mapData by remember { mutableStateOf(ZoneMapData()) }
     var isDrawing by remember { mutableStateOf(false) }
     var currentPoints by remember { mutableStateOf<List<ZoneGeoPoint>>(emptyList()) }
+    // v5.1.0: undoSnapshots salva snapshot completo a cada ACTION_UP (dedo levantado)
+    // Desfazer restaura o estado ANTES do último toque, não ponto a ponto
+    var undoSnapshots by remember { mutableStateOf<List<List<ZoneGeoPoint>>>(emptyList()) }
     var drawMode by remember { mutableStateOf("DROPOFF") }
     var showNameDialog by remember { mutableStateOf(false) }
     var newZoneName by remember { mutableStateOf("") }
@@ -213,11 +216,14 @@ fun ZoneMapScreen(prefsManager: PrefsManager, activity: ComponentActivity) {
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                     }
-                    // Desfazer último ponto
-                    if (currentPoints.isNotEmpty()) {
+                    // v5.1.0: Desfazer restaura snapshot completo do último segmento
+                    if (undoSnapshots.isNotEmpty()) {
                         FloatingActionButton(
                             onClick = {
-                                currentPoints = currentPoints.dropLast(1)
+                                // Restaurar o snapshot mais recente (estado antes do último toque)
+                                val lastSnapshot = undoSnapshots.last()
+                                undoSnapshots = undoSnapshots.dropLast(1)
+                                currentPoints = lastSnapshot
                                 // Atualizar polyline
                                 mapViewRef?.let { map ->
                                     map.overlays.removeAll { it is Polyline }
@@ -231,6 +237,8 @@ fun ZoneMapScreen(prefsManager: PrefsManager, activity: ComponentActivity) {
                                             setPoints(currentPoints.map { OsmGeoPoint(it.lat, it.lng) })
                                         }
                                         map.overlays.add(polyline)
+                                    } else {
+                                        map.overlays.removeAll { it is Polyline }
                                     }
                                     map.invalidate()
                                 }
@@ -323,7 +331,18 @@ fun ZoneMapScreen(prefsManager: PrefsManager, activity: ComponentActivity) {
                     map.setOnTouchListener { _, event ->
                         if (isDrawing) {
                             when (event.action) {
-                                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                                MotionEvent.ACTION_DOWN -> {
+                                    // v5.1.0: Salvar snapshot ANTES de iniciar novo segmento
+                                    undoSnapshots = undoSnapshots + listOf(currentPoints.toList())
+                                    // Manter no máximo 20 snapshots
+                                    if (undoSnapshots.size > 20) undoSnapshots = undoSnapshots.drop(1)
+                                    val projection = map.projection
+                                    val geoPoint = projection.fromPixels(event.x.toInt(), event.y.toInt()) as OsmGeoPoint
+                                    currentPoints = currentPoints + ZoneGeoPoint(geoPoint.latitude, geoPoint.longitude)
+                                    map.invalidate()
+                                    true
+                                }
+                                MotionEvent.ACTION_MOVE -> {
                                     val projection = map.projection
                                     val geoPoint = projection.fromPixels(event.x.toInt(), event.y.toInt()) as OsmGeoPoint
                                     val newPoint = ZoneGeoPoint(geoPoint.latitude, geoPoint.longitude)

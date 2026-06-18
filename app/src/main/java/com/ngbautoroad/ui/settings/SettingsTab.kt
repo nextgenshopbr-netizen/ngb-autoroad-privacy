@@ -82,6 +82,37 @@ fun SettingsTab(prefsManager: PrefsManager) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // === TEMA (DARK MODE) v5.1.0 ===
+        val darkMode by prefsManager.darkModeFlow.collectAsState(initial = "system")
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.DarkMode,
+                        contentDescription = "Tema",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Tema do App", fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("system" to "Sistema", "light" to "Claro", "dark" to "Escuro").forEach { (key, label) ->
+                        FilterChip(
+                            selected = darkMode == key,
+                            onClick = { scope.launch { prefsManager.saveDarkMode(key) } },
+                            label = { Text(label, fontSize = 12.sp) }
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         // === MANTER TELA LIGADA ===
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -547,6 +578,23 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     color = statusColor,
                     fontWeight = FontWeight.Bold
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // v5.1.0: Botão Verificar Permissões (abre config do app)
+                OutlinedButton(
+                    onClick = {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = android.net.Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Security, contentDescription = "Verificar")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Verificar Permissões do App")
+                }
             }
         }
 
@@ -672,9 +720,11 @@ fun SettingsTab(prefsManager: PrefsManager) {
                         onWeightChange = { newNeighborhoodWeight = it },
                         onAdd = {
                             if (newNeighborhoodName.isNotBlank()) {
+                                // v5.1.0: Aceitar múltiplos bairros separados por vírgula
+                                val names = newNeighborhoodName.split(",").map { it.trim() }.filter { it.isNotBlank() }
                                 scope.launch {
                                     prefsManager.saveBlockedPickup(
-                                        blockedPickup + (newNeighborhoodName to newNeighborhoodWeight)
+                                        blockedPickup + names.map { it to newNeighborhoodWeight }
                                     )
                                 }
                                 newNeighborhoodName = ""
@@ -757,9 +807,11 @@ fun SettingsTab(prefsManager: PrefsManager) {
                         onWeightChange = { newNeighborhoodWeight = it },
                         onAdd = {
                             if (newNeighborhoodName.isNotBlank()) {
+                                // v5.1.0: Aceitar múltiplos bairros separados por vírgula
+                                val names = newNeighborhoodName.split(",").map { it.trim() }.filter { it.isNotBlank() }
                                 scope.launch {
                                     prefsManager.saveBlockedDropoff(
-                                        blockedDropoff + (newNeighborhoodName to newNeighborhoodWeight)
+                                        blockedDropoff + names.map { it to newNeighborhoodWeight }
                                     )
                                 }
                                 newNeighborhoodName = ""
@@ -780,7 +832,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
         var lastTapTime by remember { mutableLongStateOf(0L) }
 
         Text(
-            text = "NGB AutoRoad v3.2.0",
+            text = "NGB AutoRoad v${com.ngbautoroad.BuildConfig.VERSION_NAME}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier

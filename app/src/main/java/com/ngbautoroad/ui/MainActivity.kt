@@ -40,6 +40,7 @@ import com.ngbautoroad.ui.criteria.CriteriaTab
 import com.ngbautoroad.ui.dashboard.DashboardTab
 import com.ngbautoroad.ui.history.HistoryTab
 import com.ngbautoroad.ui.settings.SettingsTab
+import androidx.compose.foundation.isSystemInDarkTheme
 import com.ngbautoroad.ui.theme.NGBAutoRoadTheme
 
 class MainActivity : ComponentActivity() {
@@ -87,7 +88,14 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            NGBAutoRoadTheme {
+            // v5.1.0: Dark mode dinâmico baseado na preferência do usuário
+            val darkModePref by prefsManager.darkModeFlow.collectAsState(initial = "system")
+            val isDark = when (darkModePref) {
+                "dark" -> true
+                "light" -> false
+                else -> isSystemInDarkTheme()
+            }
+            NGBAutoRoadTheme(darkTheme = isDark) {
                 MainScreen(prefsManager = prefsManager, database = database)
             }
         }
@@ -112,7 +120,7 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text("NGB AutoRoad v4.5.0")
+                    Text("NGB AutoRoad v${com.ngbautoroad.BuildConfig.VERSION_NAME}")
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
