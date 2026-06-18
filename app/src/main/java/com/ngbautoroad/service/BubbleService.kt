@@ -77,6 +77,8 @@ class BubbleService : Service() {
         fun updateVisibility(visible: Boolean) {
             instance?.setBubbleVisible(visible)
         }
+
+        fun isRunning(): Boolean = instance != null
     }
 
     private var windowManager: WindowManager? = null

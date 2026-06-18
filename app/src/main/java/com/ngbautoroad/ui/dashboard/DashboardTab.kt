@@ -60,9 +60,6 @@ import java.util.*
 @Composable
 fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
     val scope = rememberCoroutineScope()
-    val serviceEnabled by prefsManager.serviceEnabledFlow.collectAsState(initial = false)
-    val protectionEnabled by prefsManager.protectionEnabledFlow.collectAsState(initial = false)
-
     // Calcular timestamps
     val calendar = Calendar.getInstance()
     calendar.set(Calendar.HOUR_OF_DAY, 0)
@@ -102,8 +99,8 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
                 bestRideToday = todayRides.maxOfOrNull { it.rideValue } ?: 0.0,
                 averageValuePerKm = todayRides.filter { it.dropoffDistance > 0 }.map { it.valuePerKm }.let { if (it.isEmpty()) 0.0 else it.average() },
                 topPlatform = todayRides.groupBy { it.platform }.maxByOrNull { it.value.size }?.key ?: "-",
-                serviceActive = serviceEnabled,
-                protectionActive = protectionEnabled
+                serviceActive = false,
+                protectionActive = false
             )
         }
     }.collectAsState(initial = DashboardData())
@@ -116,20 +113,6 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // Status bar
-        StatusBar(
-            serviceActive = serviceEnabled,
-            protectionActive = protectionEnabled,
-            onToggleService = {
-                scope.launch { prefsManager.setServiceEnabled(!serviceEnabled) }
-            },
-            onToggleProtection = {
-                scope.launch { prefsManager.setProtectionEnabled(!protectionEnabled) }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
         // v5.2.0: Card de Turno integrado na Dashboard
         val context = LocalContext.current
         ShiftDashboardCard(context, scope, prefsManager)

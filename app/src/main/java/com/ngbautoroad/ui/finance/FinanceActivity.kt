@@ -427,7 +427,12 @@ fun EarningCard(earning: EarningEntity, onEdit: () -> Unit, onDelete: () -> Unit
                 }
                 if (earning.ridesCount > 0 || earning.distance > 0) {
                     Text(
-                        "${earning.ridesCount} corrida(s) • %.1f km • ${earning.duration} min".format(earning.distance),
+                        run {
+                            val h = earning.duration / 60
+                            val m = earning.duration % 60
+                            val timeStr = if (h > 0) "${h}h${m.toString().padStart(2,'0')}" else "${m}min"
+                            "${earning.ridesCount} corrida(s) • %.1f km • $timeStr".format(earning.distance)
+                        },
                         fontSize = 11.sp, color = Color.Gray
                     )
                 }
@@ -462,7 +467,16 @@ fun AddEarningDialog(existingEarning: EarningEntity?, onDismiss: () -> Unit, onC
     var tips by remember { mutableStateOf(if (isEditing && existingEarning!!.tips > 0) "%.2f".format(existingEarning.tips) else "") }
     var bonus by remember { mutableStateOf(if (isEditing && existingEarning!!.bonus > 0) "%.2f".format(existingEarning.bonus) else "") }
     var distance by remember { mutableStateOf(if (isEditing && existingEarning!!.distance > 0) "%.1f".format(existingEarning.distance) else "") }
-    var duration by remember { mutableStateOf(if (isEditing && existingEarning!!.duration > 0) "${existingEarning.duration}" else "") }
+    // duration armazenado em minutos, exibido como H:mm
+    var duration by remember {
+        mutableStateOf(
+            if (isEditing && existingEarning!!.duration > 0) {
+                val h = existingEarning.duration / 60
+                val m = existingEarning.duration % 60
+                if (h > 0) "$h:${m.toString().padStart(2, '0')}" else "0:${m.toString().padStart(2, '0')}"
+            } else ""
+        )
+    }
     var rides by remember { mutableStateOf(if (isEditing && existingEarning!!.ridesCount > 0) "${existingEarning.ridesCount}" else "") }
     var description by remember { mutableStateOf(existingEarning?.description ?: "") }
     var period by remember { mutableStateOf(existingEarning?.period ?: "DIA") }
@@ -530,14 +544,27 @@ fun AddEarningDialog(existingEarning: EarningEntity?, onDismiss: () -> Unit, onC
                         modifier = Modifier.weight(1f), singleLine = true
                     )
                     OutlinedTextField(
-                        value = duration, onValueChange = { duration = it },
-                        label = { Text("Min") },
+                        value = duration,
+                        onValueChange = { raw ->
+                            // Aceita dígitos e ':', auto-formata para H:mm
+                            val digits = raw.filter { it.isDigit() }
+                            duration = when {
+                                digits.length <= 2 -> digits
+                                else -> {
+                                    val h = digits.dropLast(2).trimStart('0').ifEmpty { "0" }
+                                    val m = digits.takeLast(2)
+                                    "$h:$m"
+                                }
+                            }
+                        },
+                        label = { Text("H:mm") },
+                        placeholder = { Text("0:00") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f), singleLine = true
                     )
                     OutlinedTextField(
                         value = rides, onValueChange = { rides = it },
-                        label = { Text("Corridas") },
+                        label = { Text("Qtd.") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.weight(1f), singleLine = true
                     )
@@ -561,7 +588,17 @@ fun AddEarningDialog(existingEarning: EarningEntity?, onDismiss: () -> Unit, onC
                         tips = tips.toDoubleLocale(),
                         bonus = bonus.toDoubleLocale(),
                         distance = distance.toDoubleLocale(),
-                        duration = duration.trim().toIntOrNull() ?: 0,
+                        duration = run {
+                            val raw = duration.trim()
+                            if (raw.contains(':')) {
+                                val parts = raw.split(':')
+                                val h = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                                val m = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                h * 60 + m
+                            } else {
+                                raw.toIntOrNull() ?: 0
+                            }
+                        },
                         ridesCount = rides.trim().toIntOrNull()?.coerceAtLeast(0) ?: 0,
                         description = description.trim(),
                         period = period,

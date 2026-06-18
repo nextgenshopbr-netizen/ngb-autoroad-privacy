@@ -40,6 +40,8 @@ import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.service.BubbleService
 import com.ngbautoroad.service.OcrCaptureService
 import com.ngbautoroad.service.OverlayService
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -604,6 +606,264 @@ fun SettingsTab(prefsManager: PrefsManager) {
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        // === STATUS DO SISTEMA ===
+        SystemStatusCard(context, scope, prefsManager)
+
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun SystemStatusCard(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, prefsManager: PrefsManager) {
+    // Logs em memória por serviço
+    var overlayLogs by remember { mutableStateOf(listOf<String>()) }
+    var bubbleLogs by remember { mutableStateOf(listOf<String>()) }
+    var showOverlayLogs by remember { mutableStateOf(false) }
+    var showBubbleLogs by remember { mutableStateOf(false) }
+
+    val overlayRunning = remember { mutableStateOf(OverlayService.isRunning()) }
+    val bubbleRunning = remember { mutableStateOf(com.ngbautoroad.service.BubbleService.isRunning()) }
+
+    // Atualizar status a cada 2s
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(2000L)
+            overlayRunning.value = OverlayService.isRunning()
+            bubbleRunning.value = com.ngbautoroad.service.BubbleService.isRunning()
+        }
+    }
+
+    fun addLog(logs: List<String>, msg: String): List<String> {
+        val ts = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())
+        return (listOf("[$ts] $msg") + logs).take(50)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                "Status do Sistema",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Controle e logs dos serviços em execução",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // === Overlay Service ===
+            ServiceStatusRow(
+                name = "Overlay (Card)",
+                description = "Exibe o card sobre outros apps",
+                isRunning = overlayRunning.value,
+                showLogs = showOverlayLogs,
+                logs = overlayLogs,
+                onToggleLogs = { showOverlayLogs = !showOverlayLogs },
+                onStart = {
+                    try {
+                        OverlayService.start(context)
+                        overlayLogs = addLog(overlayLogs, "Serviço iniciado")
+                        overlayRunning.value = true
+                    } catch (e: Exception) {
+                        overlayLogs = addLog(overlayLogs, "ERRO ao iniciar: ${e.message}")
+                    }
+                },
+                onStop = {
+                    try {
+                        OverlayService.stop(context)
+                        overlayLogs = addLog(overlayLogs, "Serviço parado")
+                        overlayRunning.value = false
+                    } catch (e: Exception) {
+                        overlayLogs = addLog(overlayLogs, "ERRO ao parar: ${e.message}")
+                    }
+                },
+                onRestart = {
+                    try {
+                        OverlayService.stop(context)
+                        kotlinx.coroutines.GlobalScope.launch {
+                            kotlinx.coroutines.delay(500L)
+                            OverlayService.start(context)
+                        }
+                        overlayLogs = addLog(overlayLogs, "Serviço reiniciado")
+                    } catch (e: Exception) {
+                        overlayLogs = addLog(overlayLogs, "ERRO ao reiniciar: ${e.message}")
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Divider()
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // === Bubble Service ===
+            ServiceStatusRow(
+                name = "Botão Flutuante",
+                description = "Ícone lateral de acesso rápido",
+                isRunning = bubbleRunning.value,
+                showLogs = showBubbleLogs,
+                logs = bubbleLogs,
+                onToggleLogs = { showBubbleLogs = !showBubbleLogs },
+                onStart = {
+                    try {
+                        com.ngbautoroad.service.BubbleService.start(context)
+                        bubbleLogs = addLog(bubbleLogs, "Serviço iniciado")
+                        bubbleRunning.value = true
+                    } catch (e: Exception) {
+                        bubbleLogs = addLog(bubbleLogs, "ERRO ao iniciar: ${e.message}")
+                    }
+                },
+                onStop = {
+                    try {
+                        com.ngbautoroad.service.BubbleService.stop(context)
+                        bubbleLogs = addLog(bubbleLogs, "Serviço parado")
+                        bubbleRunning.value = false
+                    } catch (e: Exception) {
+                        bubbleLogs = addLog(bubbleLogs, "ERRO ao parar: ${e.message}")
+                    }
+                },
+                onRestart = {
+                    try {
+                        com.ngbautoroad.service.BubbleService.stop(context)
+                        kotlinx.coroutines.GlobalScope.launch {
+                            kotlinx.coroutines.delay(500L)
+                            com.ngbautoroad.service.BubbleService.start(context)
+                        }
+                        bubbleLogs = addLog(bubbleLogs, "Serviço reiniciado")
+                    } catch (e: Exception) {
+                        bubbleLogs = addLog(bubbleLogs, "ERRO ao reiniciar: ${e.message}")
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun ServiceStatusRow(
+    name: String,
+    description: String,
+    isRunning: Boolean,
+    showLogs: Boolean,
+    logs: List<String>,
+    onToggleLogs: () -> Unit,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+    onRestart: () -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        if (isRunning) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                        contentDescription = null,
+                        tint = if (isRunning) ScoreGreen else ScoreRed,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                }
+                Text(
+                    description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    if (isRunning) "● Rodando" else "○ Parado",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isRunning) ScoreGreen else ScoreRed
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        // Botões de controle
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (!isRunning) {
+                OutlinedButton(
+                    onClick = onStart,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Iniciar", fontSize = 12.sp)
+                }
+            } else {
+                OutlinedButton(
+                    onClick = onStop,
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Parar", fontSize = 12.sp)
+                }
+            }
+            OutlinedButton(
+                onClick = onRestart,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Reiniciar", fontSize = 12.sp)
+            }
+            OutlinedButton(
+                onClick = onToggleLogs,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Icon(Icons.Default.List, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Logs", fontSize = 12.sp)
+            }
+        }
+        // Painel de logs
+        if (showLogs) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                ) {
+                    if (logs.isEmpty()) {
+                        Text(
+                            "Nenhum log registrado",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        logs.forEach { log ->
+                            Text(
+                                log,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (log.contains("ERRO")) ScoreRed
+                                    else MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(vertical = 1.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
