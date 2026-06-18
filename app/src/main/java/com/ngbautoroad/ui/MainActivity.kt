@@ -69,14 +69,14 @@ enum class TabItem(val title: String, val icon: ImageVector) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableStateOf(0) }
     val tabs = TabItem.entries.toTypedArray()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("NGB AutoRoad v3.2.1")
+                    Text("NGB AutoRoad v3.2.2")
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,

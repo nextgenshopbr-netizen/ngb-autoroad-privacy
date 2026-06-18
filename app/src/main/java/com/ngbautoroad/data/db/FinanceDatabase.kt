@@ -15,6 +15,9 @@ data class ExpenseEntity(
     val date: Long = System.currentTimeMillis(),
     val isRecurring: Boolean = false,
     val recurringDay: Int = 1,
+    val recurringDays: String = "",        // Dias da semana: "1,2,3,4,5" (seg-sex)
+    val recurringDuration: Int = 0,        // Por quantos dias se repete (0 = indefinido)
+    val recurringEndDate: Long = 0,        // Data final da recorrência (0 = sem fim)
     val liters: Double? = null,
     val pricePerLiter: Double? = null,
     val odometer: Int? = null,
@@ -30,9 +33,11 @@ data class EarningEntity(
     val bonus: Double = 0.0,
     val distance: Double = 0.0,
     val duration: Int = 0,
-    val ridesCount: Int = 1,
+    val ridesCount: Int = 0,
     val date: Long = System.currentTimeMillis(),
-    val description: String = ""
+    val description: String = "",
+    val period: String = "DIA",            // DIA, SEMANA, MES
+    val isAutoImported: Boolean = false    // Se foi importado automaticamente
 )
 
 @Entity(tableName = "maintenance_reminders")
@@ -45,6 +50,34 @@ data class ReminderEntity(
     val intervalDays: Int = 0,
     val intervalKm: Int = 0,
     val isActive: Boolean = true
+)
+
+@Entity(tableName = "vehicle_config")
+data class VehicleConfigEntity(
+    @PrimaryKey val id: Int = 1, // Sempre 1, só um veículo
+    val vehicleType: String = "COMBUSTION", // COMBUSTION, HYBRID, ELECTRIC
+    val fuelType: String = "GASOLINE",      // GASOLINE, ETHANOL, DIESEL, FLEX, ELECTRIC
+    val brand: String = "",
+    val model: String = "",
+    val year: Int = 0,
+    val plate: String = "",
+    val averageConsumption: Double = 0.0,   // km/L ou km/kWh
+    val fuelPrice: Double = 0.0,            // R$/L ou R$/kWh
+    val costPerKm: Double = 0.0,            // Calculado
+    val monthlyFixedCosts: Double = 0.0,    // Parcela + seguro + IPVA mensal
+    val isOwned: Boolean = true,            // Próprio ou alugado
+    val rentalCost: Double = 0.0            // Custo mensal do aluguel
+)
+
+@Entity(tableName = "financial_goals")
+data class FinancialGoalEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String = "",
+    val targetAmount: Double = 0.0,
+    val currentAmount: Double = 0.0,
+    val period: String = "MES",            // DIA, SEMANA, MES
+    val isActive: Boolean = true,
+    val createdAt: Long = System.currentTimeMillis()
 )
 
 // === DAO ===
@@ -113,6 +146,9 @@ interface EarningDao {
 
     @Query("SELECT SUM(ridesCount) FROM earnings WHERE date >= :startDate AND date <= :endDate")
     fun getTotalRides(startDate: Long, endDate: Long): Flow<Int?>
+
+    @Query("SELECT * FROM earnings WHERE id = :id")
+    suspend fun getById(id: Long): EarningEntity?
 }
 
 @Dao
@@ -133,17 +169,55 @@ interface ReminderDao {
     fun getAllReminders(): Flow<List<ReminderEntity>>
 }
 
+@Dao
+interface VehicleConfigDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun save(config: VehicleConfigEntity)
+
+    @Query("SELECT * FROM vehicle_config WHERE id = 1")
+    fun getConfig(): Flow<VehicleConfigEntity?>
+
+    @Query("SELECT * FROM vehicle_config WHERE id = 1")
+    suspend fun getConfigSync(): VehicleConfigEntity?
+}
+
+@Dao
+interface FinancialGoalDao {
+    @Insert
+    suspend fun insert(goal: FinancialGoalEntity): Long
+
+    @Update
+    suspend fun update(goal: FinancialGoalEntity)
+
+    @Delete
+    suspend fun delete(goal: FinancialGoalEntity)
+
+    @Query("SELECT * FROM financial_goals WHERE isActive = 1 ORDER BY createdAt DESC")
+    fun getActiveGoals(): Flow<List<FinancialGoalEntity>>
+
+    @Query("SELECT * FROM financial_goals ORDER BY createdAt DESC")
+    fun getAllGoals(): Flow<List<FinancialGoalEntity>>
+}
+
 // === DATABASE ===
 
 @Database(
-    entities = [ExpenseEntity::class, EarningEntity::class, ReminderEntity::class],
-    version = 1,
+    entities = [
+        ExpenseEntity::class,
+        EarningEntity::class,
+        ReminderEntity::class,
+        VehicleConfigEntity::class,
+        FinancialGoalEntity::class
+    ],
+    version = 2,
     exportSchema = false
 )
 abstract class FinanceDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
     abstract fun earningDao(): EarningDao
     abstract fun reminderDao(): ReminderDao
+    abstract fun vehicleConfigDao(): VehicleConfigDao
+    abstract fun financialGoalDao(): FinancialGoalDao
 
     companion object {
         @Volatile
@@ -155,7 +229,9 @@ abstract class FinanceDatabase : RoomDatabase() {
                     context.applicationContext,
                     FinanceDatabase::class.java,
                     "ngb_finance_db"
-                ).fallbackToDestructiveMigration().build()
+                ).fallbackToDestructiveMigration()
+                 .allowMainThreadQueries()
+                 .build()
                 INSTANCE = instance
                 instance
             }

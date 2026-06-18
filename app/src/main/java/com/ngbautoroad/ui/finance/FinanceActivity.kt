@@ -1,4 +1,5 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.ngbautoroad.ui.finance
 
 import android.os.Bundle
@@ -25,7 +26,6 @@ import androidx.compose.ui.unit.sp
 import com.ngbautoroad.data.db.*
 import com.ngbautoroad.data.model.*
 import com.ngbautoroad.ui.theme.*
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -40,6 +40,8 @@ class FinanceActivity : ComponentActivity() {
                     expenseDao = db.expenseDao(),
                     earningDao = db.earningDao(),
                     reminderDao = db.reminderDao(),
+                    vehicleConfigDao = db.vehicleConfigDao(),
+                    financialGoalDao = db.financialGoalDao(),
                     onBack = { finish() }
                 )
             }
@@ -47,16 +49,16 @@ class FinanceActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinanceScreen(
     expenseDao: ExpenseDao,
     earningDao: EarningDao,
     reminderDao: ReminderDao,
+    vehicleConfigDao: VehicleConfigDao,
+    financialGoalDao: FinancialGoalDao,
     onBack: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Resumo", "Ganhos", "Gastos", "Veículo", "Metas")
 
     Scaffold(
@@ -72,7 +74,6 @@ fun FinanceScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            // Tabs
             ScrollableTabRow(
                 selectedTabIndex = selectedTab,
                 edgePadding = 8.dp
@@ -87,11 +88,11 @@ fun FinanceScreen(
             }
 
             when (selectedTab) {
-                0 -> FinanceSummaryTab(expenseDao, earningDao)
+                0 -> FinanceSummaryTab(expenseDao, earningDao, financialGoalDao)
                 1 -> EarningsTab(earningDao)
                 2 -> ExpensesTab(expenseDao)
-                3 -> VehicleTab()
-                4 -> GoalsTab(earningDao, expenseDao)
+                3 -> VehicleTab(vehicleConfigDao)
+                4 -> GoalsTab(earningDao, expenseDao, financialGoalDao)
             }
         }
     }
@@ -100,8 +101,7 @@ fun FinanceScreen(
 // === ABA RESUMO ===
 
 @Composable
-fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao) {
-    val scope = rememberCoroutineScope()
+fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialGoalDao: FinancialGoalDao) {
     var period by remember { mutableStateOf(FinancePeriod.TODAY) }
 
     val (startDate, endDate) = remember(period) { getPeriodRange(period) }
@@ -111,6 +111,7 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao) {
     val totalDistance by earningDao.getTotalDistance(startDate, endDate).collectAsState(initial = 0.0)
     val totalDuration by earningDao.getTotalDuration(startDate, endDate).collectAsState(initial = 0)
     val totalRides by earningDao.getTotalRides(startDate, endDate).collectAsState(initial = 0)
+    val activeGoals by financialGoalDao.getActiveGoals().collectAsState(initial = emptyList())
 
     val earnings = totalEarnings ?: 0.0
     val expenses = totalExpenses ?: 0.0
@@ -125,24 +126,27 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao) {
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // Period selector
+        // Period selector - single scrollable row
+        Text("Período", fontSize = 12.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(4.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            FinancePeriod.values().forEach { p ->
+            FinancePeriod.entries.forEach { p ->
                 FilterChip(
                     selected = period == p,
                     onClick = { period = p },
-                    label = { Text(p.displayName, fontSize = 11.sp) },
-                    modifier = Modifier.weight(1f)
+                    label = { Text(p.displayName, fontSize = 11.sp) }
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Lucro líquido grande
+        // Lucro líquido
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -170,18 +174,8 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            FinanceInfoCard(
-                title = "Ganhos",
-                value = "R$ %.2f".format(earnings),
-                color = ScoreGreen,
-                modifier = Modifier.weight(1f)
-            )
-            FinanceInfoCard(
-                title = "Gastos",
-                value = "R$ %.2f".format(expenses),
-                color = ScoreRed,
-                modifier = Modifier.weight(1f)
-            )
+            FinanceInfoCard("Ganhos", "R$ %.2f".format(earnings), ScoreGreen, Modifier.weight(1f))
+            FinanceInfoCard("Gastos", "R$ %.2f".format(expenses), ScoreRed, Modifier.weight(1f))
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -191,24 +185,9 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            FinanceInfoCard(
-                title = "Corridas",
-                value = "$rides",
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f)
-            )
-            FinanceInfoCard(
-                title = "Km Rodados",
-                value = "%.1f".format(distance),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f)
-            )
-            FinanceInfoCard(
-                title = "Horas",
-                value = "%.1f".format(duration / 60.0),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f)
-            )
+            FinanceInfoCard("Corridas", "$rides", MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+            FinanceInfoCard("Km", "%.1f".format(distance), MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+            FinanceInfoCard("Horas", "%.1f".format(duration / 60.0), MaterialTheme.colorScheme.primary, Modifier.weight(1f))
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -222,44 +201,77 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao) {
             val profitPerHour = if (duration > 0) (netProfit / duration) * 60.0 else 0.0
             val profitPerRide = if (rides > 0) netProfit / rides else 0.0
 
-            FinanceInfoCard(
-                title = "R$/km",
-                value = "%.2f".format(profitPerKm),
-                color = if (profitPerKm >= 0) ScoreGreen else ScoreRed,
-                modifier = Modifier.weight(1f)
-            )
-            FinanceInfoCard(
-                title = "R$/hora",
-                value = "%.2f".format(profitPerHour),
-                color = if (profitPerHour >= 0) ScoreGreen else ScoreRed,
-                modifier = Modifier.weight(1f)
-            )
-            FinanceInfoCard(
-                title = "R$/corrida",
-                value = "%.2f".format(profitPerRide),
-                color = if (profitPerRide >= 0) ScoreGreen else ScoreRed,
-                modifier = Modifier.weight(1f)
-            )
+            FinanceInfoCard("R$/km", "%.2f".format(profitPerKm), if (profitPerKm >= 0) ScoreGreen else ScoreRed, Modifier.weight(1f))
+            FinanceInfoCard("R$/h", "%.2f".format(profitPerHour), if (profitPerHour >= 0) ScoreGreen else ScoreRed, Modifier.weight(1f))
+            FinanceInfoCard("R$/corrida", "%.2f".format(profitPerRide), if (profitPerRide >= 0) ScoreGreen else ScoreRed, Modifier.weight(1f))
+        }
+
+        // Metas ativas resumo
+        if (activeGoals.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Metas Ativas", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Spacer(modifier = Modifier.height(8.dp))
+            activeGoals.take(3).forEach { goal ->
+                val progress = if (goal.targetAmount > 0) (goal.currentAmount / goal.targetAmount).coerceIn(0.0, 1.0) else 0.0
+                val progressColor = when {
+                    progress >= 1.0 -> ScoreGreen
+                    progress >= 0.7 -> ScoreYellow
+                    progress >= 0.4 -> ScoreOrange
+                    else -> ScoreRed
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(goal.title, fontSize = 12.sp)
+                        LinearProgressIndicator(
+                            progress = progress.toFloat(),
+                            modifier = Modifier.fillMaxWidth().height(6.dp),
+                            color = progressColor,
+                            trackColor = progressColor.copy(alpha = 0.2f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("${(progress * 100).toInt()}%", fontSize = 12.sp, color = progressColor, fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 }
 
 // === ABA GANHOS ===
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EarningsTab(earningDao: EarningDao) {
     val scope = rememberCoroutineScope()
     val allEarnings by earningDao.getAllEarnings().collectAsState(initial = emptyList())
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingEarning by remember { mutableStateOf<EarningEntity?>(null) }
+    var autoImportEnabled by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        // Auto-import toggle
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text("Lançamento automático", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                Text("Registra corridas concluídas automaticamente", fontSize = 11.sp, color = Color.Gray)
+            }
+            Switch(checked = autoImportEnabled, onCheckedChange = { autoImportEnabled = it })
+        }
+
         // Botão adicionar
         Button(
             onClick = { showAddDialog = true },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 4.dp)
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
@@ -268,19 +280,22 @@ fun EarningsTab(earningDao: EarningDao) {
 
         // Lista de ganhos
         LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(allEarnings) { earning ->
-                EarningCard(earning) {
-                    scope.launch { earningDao.delete(earning) }
-                }
+                EarningCard(
+                    earning = earning,
+                    onEdit = { editingEarning = earning },
+                    onDelete = { scope.launch { earningDao.delete(earning) } }
+                )
             }
         }
     }
 
     if (showAddDialog) {
         AddEarningDialog(
+            existingEarning = null,
             onDismiss = { showAddDialog = false },
             onConfirm = { earning ->
                 scope.launch {
@@ -290,10 +305,23 @@ fun EarningsTab(earningDao: EarningDao) {
             }
         )
     }
+
+    if (editingEarning != null) {
+        AddEarningDialog(
+            existingEarning = editingEarning,
+            onDismiss = { editingEarning = null },
+            onConfirm = { earning ->
+                scope.launch {
+                    earningDao.update(earning)
+                    editingEarning = null
+                }
+            }
+        )
+    }
 }
 
 @Composable
-fun EarningCard(earning: EarningEntity, onDelete: () -> Unit) {
+fun EarningCard(earning: EarningEntity, onEdit: () -> Unit, onDelete: () -> Unit) {
     val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
 
     Card(modifier = Modifier.fillMaxWidth()) {
@@ -305,15 +333,27 @@ fun EarningCard(earning: EarningEntity, onDelete: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(earning.platform, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(earning.platform, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    if (earning.period != "DIA") {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("(${earning.period})", fontSize = 10.sp, color = Color.Gray)
+                    }
+                    if (earning.isAutoImported) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("AUTO", fontSize = 9.sp, color = ScoreGreen)
+                    }
+                }
                 Text(dateFormat.format(Date(earning.date)), fontSize = 11.sp, color = Color.Gray)
                 if (earning.description.isNotBlank()) {
                     Text(earning.description, fontSize = 11.sp)
                 }
-                Text(
-                    "${earning.ridesCount} corrida(s) • %.1f km • ${earning.duration} min".format(earning.distance),
-                    fontSize = 11.sp, color = Color.Gray
-                )
+                if (earning.ridesCount > 0 || earning.distance > 0) {
+                    Text(
+                        "${earning.ridesCount} corrida(s) • %.1f km • ${earning.duration} min".format(earning.distance),
+                        fontSize = 11.sp, color = Color.Gray
+                    )
+                }
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -325,39 +365,64 @@ fun EarningCard(earning: EarningEntity, onDelete: () -> Unit) {
                     Text("Gorjeta: R$ %.2f".format(earning.tips), fontSize = 10.sp, color = Color.Gray)
                 }
             }
-            IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Default.Delete, contentDescription = "Excluir", modifier = Modifier.size(16.dp))
+            Column {
+                IconButton(onClick = onEdit, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(16.dp))
+                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Default.Delete, contentDescription = "Excluir", modifier = Modifier.size(16.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-fun AddEarningDialog(onDismiss: () -> Unit, onConfirm: (EarningEntity) -> Unit) {
-    var platform by remember { mutableStateOf("Uber") }
-    var amount by remember { mutableStateOf("") }
-    var tips by remember { mutableStateOf("") }
-    var bonus by remember { mutableStateOf("") }
-    var distance by remember { mutableStateOf("") }
-    var duration by remember { mutableStateOf("") }
-    var rides by remember { mutableStateOf("1") }
-    var description by remember { mutableStateOf("") }
+fun AddEarningDialog(existingEarning: EarningEntity?, onDismiss: () -> Unit, onConfirm: (EarningEntity) -> Unit) {
+    val isEditing = existingEarning != null
+    var platform by remember { mutableStateOf(existingEarning?.platform ?: "Uber") }
+    var amount by remember { mutableStateOf(if (isEditing) "%.2f".format(existingEarning!!.amount) else "") }
+    var tips by remember { mutableStateOf(if (isEditing && existingEarning!!.tips > 0) "%.2f".format(existingEarning.tips) else "") }
+    var bonus by remember { mutableStateOf(if (isEditing && existingEarning!!.bonus > 0) "%.2f".format(existingEarning.bonus) else "") }
+    var distance by remember { mutableStateOf(if (isEditing && existingEarning!!.distance > 0) "%.1f".format(existingEarning.distance) else "") }
+    var duration by remember { mutableStateOf(if (isEditing && existingEarning!!.duration > 0) "${existingEarning.duration}" else "") }
+    var rides by remember { mutableStateOf(if (isEditing && existingEarning!!.ridesCount > 0) "${existingEarning.ridesCount}" else "") }
+    var description by remember { mutableStateOf(existingEarning?.description ?: "") }
+    var period by remember { mutableStateOf(existingEarning?.period ?: "DIA") }
+
+    val platforms = listOf("Uber", "99", "inDrive", "Cabify", "Outros")
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Registrar Ganho") },
+        title = { Text(if (isEditing) "Editar Ganho" else "Registrar Ganho") },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Platform selector
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    listOf("Uber", "99", "inDrive", "Cabify").forEach { p ->
+                Text("Plataforma", fontSize = 12.sp, color = Color.Gray)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.horizontalScroll(rememberScrollState())
+                ) {
+                    platforms.forEach { p ->
                         FilterChip(
                             selected = platform == p,
                             onClick = { platform = p },
                             label = { Text(p, fontSize = 10.sp) }
+                        )
+                    }
+                }
+
+                // Período
+                Text("Período do ganho", fontSize = 12.sp, color = Color.Gray)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf("DIA", "SEMANA", "MES").forEach { p ->
+                        FilterChip(
+                            selected = period == p,
+                            onClick = { period = p },
+                            label = { Text(when(p) { "DIA" -> "Dia"; "SEMANA" -> "Semana"; else -> "Mês" }, fontSize = 10.sp) }
                         )
                     }
                 }
@@ -409,16 +474,20 @@ fun AddEarningDialog(onDismiss: () -> Unit, onConfirm: (EarningEntity) -> Unit) 
         },
         confirmButton = {
             TextButton(onClick = {
-                onConfirm(EarningEntity(
+                val entity = EarningEntity(
+                    id = existingEarning?.id ?: 0,
                     platform = platform,
                     amount = amount.toDoubleOrNull() ?: 0.0,
                     tips = tips.toDoubleOrNull() ?: 0.0,
                     bonus = bonus.toDoubleOrNull() ?: 0.0,
                     distance = distance.toDoubleOrNull() ?: 0.0,
                     duration = duration.toIntOrNull() ?: 0,
-                    ridesCount = rides.toIntOrNull() ?: 1,
-                    description = description
-                ))
+                    ridesCount = rides.toIntOrNull() ?: 0,
+                    description = description,
+                    period = period,
+                    date = existingEarning?.date ?: System.currentTimeMillis()
+                )
+                onConfirm(entity)
             }) { Text("Salvar") }
         },
         dismissButton = {
@@ -429,7 +498,6 @@ fun AddEarningDialog(onDismiss: () -> Unit, onConfirm: (EarningEntity) -> Unit) 
 
 // === ABA GASTOS ===
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpensesTab(expenseDao: ExpenseDao) {
     val scope = rememberCoroutineScope()
@@ -464,11 +532,12 @@ fun ExpensesTab(expenseDao: ExpenseDao) {
                     Text("Gastos por Categoria", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     totalByCategory.take(5).forEach { (cat, total) ->
+                        val catEnum = try { ExpenseCategory.valueOf(cat) } catch (e: Exception) { null }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(cat, fontSize = 12.sp)
+                            Text(catEnum?.let { "${it.icon} ${it.displayName}" } ?: cat, fontSize = 12.sp)
                             Text("R$ %.2f".format(total), fontSize = 12.sp, fontWeight = FontWeight.Medium)
                         }
                     }
@@ -526,7 +595,12 @@ fun ExpenseCard(expense: ExpenseEntity, onDelete: () -> Unit) {
                     Text("${expense.liters}L × R$${expense.pricePerLiter}/L", fontSize = 11.sp, color = Color.Gray)
                 }
                 if (expense.isRecurring) {
-                    Text("🔄 Recorrente (dia ${expense.recurringDay})", fontSize = 10.sp, color = ScoreYellow)
+                    val daysText = if (expense.recurringDays.isNotBlank()) {
+                        val dayNames = mapOf("1" to "Seg", "2" to "Ter", "3" to "Qua", "4" to "Qui", "5" to "Sex", "6" to "Sáb", "7" to "Dom")
+                        expense.recurringDays.split(",").mapNotNull { dayNames[it.trim()] }.joinToString(", ")
+                    } else "Dia ${expense.recurringDay}"
+                    val durationText = if (expense.recurringDuration > 0) " (${expense.recurringDuration} dias)" else ""
+                    Text("🔄 Recorrente: $daysText$durationText", fontSize = 10.sp, color = ScoreYellow)
                 }
             }
             Text(
@@ -541,7 +615,6 @@ fun ExpenseCard(expense: ExpenseEntity, onDelete: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) {
     var selectedCategory by remember { mutableStateOf(ExpenseCategory.FUEL) }
@@ -549,9 +622,13 @@ fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) 
     var description by remember { mutableStateOf("") }
     var isRecurring by remember { mutableStateOf(false) }
     var recurringDay by remember { mutableStateOf("1") }
+    var recurringDuration by remember { mutableStateOf("") }
+    var selectedDays by remember { mutableStateOf(setOf<Int>()) }
     var liters by remember { mutableStateOf("") }
     var pricePerLiter by remember { mutableStateOf("") }
     var showCategoryPicker by remember { mutableStateOf(false) }
+
+    val weekDays = listOf("Seg" to 1, "Ter" to 2, "Qua" to 3, "Qui" to 4, "Sex" to 5, "Sáb" to 6, "Dom" to 7)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -624,18 +701,39 @@ fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) 
                     modifier = Modifier.fillMaxWidth(), singleLine = true
                 )
 
+                // Recorrência
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = isRecurring, onCheckedChange = { isRecurring = it })
-                    Text("Gasto fixo mensal", fontSize = 13.sp)
-                    if (isRecurring) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        OutlinedTextField(
-                            value = recurringDay, onValueChange = { recurringDay = it },
-                            label = { Text("Dia") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.width(60.dp), singleLine = true
-                        )
+                    Text("Gasto recorrente", fontSize = 13.sp)
+                }
+
+                if (isRecurring) {
+                    // Dias da semana
+                    Text("Dias que se repete:", fontSize = 12.sp, color = Color.Gray)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        weekDays.forEach { (name, day) ->
+                            FilterChip(
+                                selected = selectedDays.contains(day),
+                                onClick = {
+                                    selectedDays = if (selectedDays.contains(day))
+                                        selectedDays - day else selectedDays + day
+                                },
+                                label = { Text(name, fontSize = 9.sp) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
+
+                    // Duração
+                    OutlinedTextField(
+                        value = recurringDuration, onValueChange = { recurringDuration = it },
+                        label = { Text("Por quantos dias? (vazio = indefinido)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(), singleLine = true
+                    )
                 }
             }
         },
@@ -652,6 +750,8 @@ fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) 
                     description = description,
                     isRecurring = isRecurring,
                     recurringDay = recurringDay.toIntOrNull() ?: 1,
+                    recurringDays = selectedDays.sorted().joinToString(","),
+                    recurringDuration = recurringDuration.toIntOrNull() ?: 0,
                     liters = liters.toDoubleOrNull(),
                     pricePerLiter = pricePerLiter.toDoubleOrNull()
                 ))
@@ -666,16 +766,44 @@ fun AddExpenseDialog(onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) 
 // === ABA VEÍCULO ===
 
 @Composable
-fun VehicleTab() {
-    var vehicleType by remember { mutableStateOf(VehicleType.COMBUSTION) }
-    var fuelType by remember { mutableStateOf(FuelType.FLEX) }
-    var consumption by remember { mutableStateOf("10.0") }
-    var fuelPrice by remember { mutableStateOf("5.50") }
-    var vehicleName by remember { mutableStateOf("") }
-    var monthlyFixed by remember { mutableStateOf("") }
+fun VehicleTab(vehicleConfigDao: VehicleConfigDao) {
+    val scope = rememberCoroutineScope()
+    val savedConfig by vehicleConfigDao.getConfig().collectAsState(initial = null)
 
-    val avgConsumption = consumption.toDoubleOrNull() ?: 10.0
-    val price = fuelPrice.toDoubleOrNull() ?: 5.50
+    var vehicleType by remember { mutableStateOf("COMBUSTION") }
+    var fuelType by remember { mutableStateOf("FLEX") }
+    var consumption by remember { mutableStateOf("") }
+    var fuelPrice by remember { mutableStateOf("") }
+    var brand by remember { mutableStateOf("") }
+    var model by remember { mutableStateOf("") }
+    var year by remember { mutableStateOf("") }
+    var plate by remember { mutableStateOf("") }
+    var monthlyFixed by remember { mutableStateOf("") }
+    var isOwned by remember { mutableStateOf(true) }
+    var rentalCost by remember { mutableStateOf("") }
+    var loaded by remember { mutableStateOf(false) }
+
+    // Carregar dados salvos - sincroniza apenas na primeira vez que o config aparece
+    LaunchedEffect(savedConfig) {
+        val cfg = savedConfig ?: return@LaunchedEffect
+        if (!loaded) {
+            vehicleType = cfg.vehicleType
+            fuelType = cfg.fuelType
+            brand = cfg.brand
+            model = cfg.model
+            year = if (cfg.year > 0) "${cfg.year}" else ""
+            plate = cfg.plate
+            consumption = if (cfg.averageConsumption > 0) "%.1f".format(cfg.averageConsumption) else ""
+            fuelPrice = if (cfg.fuelPrice > 0) "%.2f".format(cfg.fuelPrice) else ""
+            monthlyFixed = if (cfg.monthlyFixedCosts > 0) "%.2f".format(cfg.monthlyFixedCosts) else ""
+            isOwned = cfg.isOwned
+            rentalCost = if (cfg.rentalCost > 0) "%.2f".format(cfg.rentalCost) else ""
+            loaded = true
+        }
+    }
+
+    val avgConsumption = consumption.toDoubleOrNull() ?: 0.0
+    val price = fuelPrice.toDoubleOrNull() ?: 0.0
     val costPerKm = if (avgConsumption > 0) price / avgConsumption else 0.0
 
     Column(
@@ -688,69 +816,100 @@ fun VehicleTab() {
         Text("Configuração do Veículo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
         // Tipo de veículo
-        Text("Tipo de Veículo", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-        Column {
-            VehicleType.values().forEach { type ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { vehicleType = type }
-                        .padding(vertical = 4.dp)
-                ) {
-                    RadioButton(selected = vehicleType == type, onClick = { vehicleType = type })
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(type.displayName, fontSize = 14.sp)
-                        Text("Custo médio: R$ %.2f/km".format(type.costPerKmDefault), fontSize = 11.sp, color = Color.Gray)
-                    }
-                }
+        Text("Tipo de Veículo", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf("COMBUSTION" to "Combustão", "HYBRID" to "Híbrido", "ELECTRIC" to "Elétrico").forEach { (type, name) ->
+                FilterChip(
+                    selected = vehicleType == type,
+                    onClick = { vehicleType = type },
+                    label = { Text(name, fontSize = 11.sp) }
+                )
             }
         }
 
         // Tipo de combustível
-        if (vehicleType != VehicleType.ELECTRIC) {
-            Text("Tipo de Combustível", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        if (vehicleType != "ELECTRIC") {
+            Text("Combustível", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.horizontalScroll(rememberScrollState())
+            ) {
                 val fuels = when (vehicleType) {
-                    VehicleType.COMBUSTION -> listOf(FuelType.GASOLINE, FuelType.ETHANOL, FuelType.FLEX, FuelType.DIESEL, FuelType.GNV)
-                    VehicleType.HYBRID -> listOf(FuelType.HYBRID_GAS, FuelType.HYBRID_ETHANOL)
+                    "COMBUSTION" -> listOf("GASOLINE" to "Gasolina", "ETHANOL" to "Etanol", "FLEX" to "Flex", "DIESEL" to "Diesel", "GNV" to "GNV")
+                    "HYBRID" -> listOf("HYBRID_GAS" to "Híb. Gasolina", "HYBRID_ETHANOL" to "Híb. Etanol")
                     else -> emptyList()
                 }
-                fuels.forEach { ft ->
+                fuels.forEach { (ft, name) ->
                     FilterChip(
                         selected = fuelType == ft,
                         onClick = { fuelType = ft },
-                        label = { Text(ft.displayName, fontSize = 11.sp) }
+                        label = { Text(name, fontSize = 10.sp) }
                     )
                 }
             }
         }
 
-        OutlinedTextField(
-            value = vehicleName, onValueChange = { vehicleName = it },
-            label = { Text("Nome do veículo (ex: Onix 2023)") },
-            modifier = Modifier.fillMaxWidth(), singleLine = true
-        )
+        // Dados do veículo
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = brand, onValueChange = { brand = it },
+                label = { Text("Marca") },
+                modifier = Modifier.weight(1f), singleLine = true
+            )
+            OutlinedTextField(
+                value = model, onValueChange = { model = it },
+                label = { Text("Modelo") },
+                modifier = Modifier.weight(1f), singleLine = true
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value = year, onValueChange = { year = it },
+                label = { Text("Ano") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f), singleLine = true
+            )
+            OutlinedTextField(
+                value = plate, onValueChange = { plate = it },
+                label = { Text("Placa") },
+                modifier = Modifier.weight(1f), singleLine = true
+            )
+        }
 
+        // Consumo e preço
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
                 value = consumption, onValueChange = { consumption = it },
-                label = { Text(if (vehicleType == VehicleType.ELECTRIC) "km/kWh" else "km/L") },
+                label = { Text(if (vehicleType == "ELECTRIC") "km/kWh" else "km/L") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.weight(1f), singleLine = true
             )
             OutlinedTextField(
                 value = fuelPrice, onValueChange = { fuelPrice = it },
-                label = { Text(if (vehicleType == VehicleType.ELECTRIC) "R$/kWh" else "R$/L") },
+                label = { Text(if (vehicleType == "ELECTRIC") "R$/kWh" else "R$/L") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.weight(1f), singleLine = true
             )
         }
 
+        // Propriedade
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(checked = isOwned, onCheckedChange = { isOwned = it })
+            Text("Veículo próprio", fontSize = 13.sp)
+        }
+
+        if (!isOwned) {
+            OutlinedTextField(
+                value = rentalCost, onValueChange = { rentalCost = it },
+                label = { Text("Custo aluguel mensal (R$)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.fillMaxWidth(), singleLine = true
+            )
+        }
+
         OutlinedTextField(
             value = monthlyFixed, onValueChange = { monthlyFixed = it },
-            label = { Text("Custos fixos mensais (R$)") },
+            label = { Text("Custos fixos mensais (parcela+seguro+IPVA) R$") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth(), singleLine = true
         )
@@ -768,15 +927,42 @@ fun VehicleTab() {
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.height(4.dp))
                 val monthly = monthlyFixed.toDoubleOrNull() ?: 0.0
-                if (monthly > 0) {
+                val rental = rentalCost.toDoubleOrNull() ?: 0.0
+                if (monthly > 0 || rental > 0) {
                     Text(
-                        "Custo fixo diário: R$ %.2f".format(monthly / 30),
+                        "Custo fixo diário: R$ %.2f".format((monthly + rental) / 30),
                         fontSize = 12.sp
                     )
                 }
             }
+        }
+
+        // Botão Salvar
+        Button(
+            onClick = {
+                scope.launch {
+                    vehicleConfigDao.save(VehicleConfigEntity(
+                        vehicleType = vehicleType,
+                        fuelType = fuelType,
+                        brand = brand,
+                        model = model,
+                        year = year.toIntOrNull() ?: 0,
+                        plate = plate,
+                        averageConsumption = avgConsumption,
+                        fuelPrice = price,
+                        costPerKm = costPerKm,
+                        monthlyFixedCosts = monthlyFixed.toDoubleOrNull() ?: 0.0,
+                        isOwned = isOwned,
+                        rentalCost = rentalCost.toDoubleOrNull() ?: 0.0
+                    ))
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.Check, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Salvar Configuração")
         }
     }
 }
@@ -784,10 +970,10 @@ fun VehicleTab() {
 // === ABA METAS ===
 
 @Composable
-fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao) {
-    var dailyGoal by remember { mutableStateOf("200") }
-    var weeklyGoal by remember { mutableStateOf("1200") }
-    var monthlyGoal by remember { mutableStateOf("5000") }
+fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao, financialGoalDao: FinancialGoalDao) {
+    val scope = rememberCoroutineScope()
+    val activeGoals by financialGoalDao.getActiveGoals().collectAsState(initial = emptyList())
+    var showAddGoal by remember { mutableStateOf(false) }
 
     val (todayStart, todayEnd) = remember { getPeriodRange(FinancePeriod.TODAY) }
     val (weekStart, weekEnd) = remember { getPeriodRange(FinancePeriod.WEEK) }
@@ -802,86 +988,138 @@ fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("Metas de Ganho", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Metas de Ganho", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            IconButton(onClick = { showAddGoal = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Adicionar meta")
+            }
+        }
 
-        // Meta diária
-        GoalCard(
-            title = "Meta Diária",
-            current = todayEarnings ?: 0.0,
-            target = dailyGoal.toDoubleOrNull() ?: 200.0,
-            onTargetChange = { dailyGoal = it }
-        )
+        // Metas salvas no DB
+        if (activeGoals.isEmpty()) {
+            Text("Nenhuma meta cadastrada. Toque + para adicionar.", fontSize = 13.sp, color = Color.Gray)
+        }
 
-        // Meta semanal
-        GoalCard(
-            title = "Meta Semanal",
-            current = weekEarnings ?: 0.0,
-            target = weeklyGoal.toDoubleOrNull() ?: 1200.0,
-            onTargetChange = { weeklyGoal = it }
-        )
+        activeGoals.forEach { goal ->
+            val current = when (goal.period) {
+                "DIA" -> todayEarnings ?: 0.0
+                "SEMANA" -> weekEarnings ?: 0.0
+                "MES" -> monthEarnings ?: 0.0
+                else -> 0.0
+            }
+            val progress = if (goal.targetAmount > 0) (current / goal.targetAmount).coerceIn(0.0, 1.5) else 0.0
+            val progressColor = when {
+                progress >= 1.0 -> ScoreGreen
+                progress >= 0.7 -> ScoreYellow
+                progress >= 0.4 -> ScoreOrange
+                else -> ScoreRed
+            }
 
-        // Meta mensal
-        GoalCard(
-            title = "Meta Mensal",
-            current = monthEarnings ?: 0.0,
-            target = monthlyGoal.toDoubleOrNull() ?: 5000.0,
-            onTargetChange = { monthlyGoal = it }
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(goal.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("Meta: R$ %.2f (${goal.period})".format(goal.targetAmount), fontSize = 11.sp, color = Color.Gray)
+                        }
+                        Text(
+                            "${(progress * 100).toInt().coerceAtMost(100)}%",
+                            color = progressColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(
+                            onClick = { scope.launch { financialGoalDao.delete(goal) } },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Excluir", modifier = Modifier.size(16.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = progress.toFloat().coerceAtMost(1f),
+                        modifier = Modifier.fillMaxWidth().height(8.dp),
+                        color = progressColor,
+                        trackColor = progressColor.copy(alpha = 0.2f)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Atual: R$ %.2f".format(current), fontSize = 12.sp)
+                }
+            }
+        }
+    }
+
+    if (showAddGoal) {
+        AddGoalDialog(
+            onDismiss = { showAddGoal = false },
+            onConfirm = { goal ->
+                scope.launch {
+                    financialGoalDao.insert(goal)
+                    showAddGoal = false
+                }
+            }
         )
     }
 }
 
 @Composable
-fun GoalCard(title: String, current: Double, target: Double, onTargetChange: (String) -> Unit) {
-    val progress = if (target > 0) (current / target).coerceIn(0.0, 1.0) else 0.0
-    val progressColor = when {
-        progress >= 1.0 -> ScoreGreen
-        progress >= 0.7 -> ScoreYellow
-        progress >= 0.4 -> ScoreOrange
-        else -> ScoreRed
-    }
+fun AddGoalDialog(onDismiss: () -> Unit, onConfirm: (FinancialGoalEntity) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    var targetAmount by remember { mutableStateOf("") }
+    var period by remember { mutableStateOf("MES") }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(title, fontWeight = FontWeight.Bold)
-                Text(
-                    "${(progress * 100).toInt()}%",
-                    color = progressColor,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = progress.toFloat(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp),
-                color = progressColor,
-                trackColor = progressColor.copy(alpha = 0.2f)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("R$ %.2f".format(current), fontSize = 12.sp)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Nova Meta") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value = "%.0f".format(target),
-                    onValueChange = onTargetChange,
-                    label = { Text("Meta R$") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.width(100.dp),
-                    singleLine = true
+                    value = title, onValueChange = { title = it },
+                    label = { Text("Nome da meta") },
+                    modifier = Modifier.fillMaxWidth(), singleLine = true
                 )
+                OutlinedTextField(
+                    value = targetAmount, onValueChange = { targetAmount = it },
+                    label = { Text("Valor alvo (R$)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(), singleLine = true
+                )
+                Text("Período", fontSize = 12.sp, color = Color.Gray)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf("DIA" to "Diária", "SEMANA" to "Semanal", "MES" to "Mensal").forEach { (p, name) ->
+                        FilterChip(
+                            selected = period == p,
+                            onClick = { period = p },
+                            label = { Text(name, fontSize = 11.sp) }
+                        )
+                    }
+                }
             }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (title.isNotBlank() && targetAmount.isNotBlank()) {
+                    onConfirm(FinancialGoalEntity(
+                        title = title,
+                        targetAmount = targetAmount.toDoubleOrNull() ?: 0.0,
+                        period = period
+                    ))
+                }
+            }) { Text("Salvar") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancelar") }
         }
-    }
+    )
 }
 
 // === COMPONENTES AUXILIARES ===

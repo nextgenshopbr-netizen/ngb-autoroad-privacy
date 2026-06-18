@@ -19,11 +19,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ngbautoroad.data.db.AppDatabase
+import com.ngbautoroad.data.db.FinanceDatabase
 import com.ngbautoroad.data.model.DashboardData
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.ui.finance.FinanceActivity
 import com.ngbautoroad.ui.theme.*
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import java.util.*
 
 @Composable
@@ -208,6 +211,141 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
                             fontWeight = FontWeight.Bold
                         )
                     }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Resumo financeiro e metas
+        FinancialSummarySection(database)
+    }
+}
+
+@Composable
+fun FinancialSummarySection(database: AppDatabase) {
+    val context = LocalContext.current
+    val financeDb = remember {
+        com.ngbautoroad.data.db.FinanceDatabase.getInstance(context)
+    }
+    val earningDao = financeDb.earningDao()
+    val expenseDao = financeDb.expenseDao()
+    val goalDao = financeDb.financialGoalDao()
+
+    val calendar = Calendar.getInstance()
+    calendar.set(Calendar.HOUR_OF_DAY, 0)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    val todayStart = calendar.timeInMillis
+    val todayEnd = System.currentTimeMillis()
+
+    calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+    val weekStart = calendar.timeInMillis
+
+    calendar.set(Calendar.DAY_OF_MONTH, 1)
+    val monthStart = calendar.timeInMillis
+
+    val todayEarnings by earningDao.getTotalEarnings(todayStart, todayEnd).collectAsState(initial = 0.0)
+    val todayExpenses by expenseDao.getTotalExpenses(todayStart, todayEnd).collectAsState(initial = 0.0)
+    val weekEarnings by earningDao.getTotalEarnings(weekStart, todayEnd).collectAsState(initial = 0.0)
+    val monthEarnings by earningDao.getTotalEarnings(monthStart, todayEnd).collectAsState(initial = 0.0)
+    val monthExpenses by expenseDao.getTotalExpenses(monthStart, todayEnd).collectAsState(initial = 0.0)
+    val activeGoals by goalDao.getActiveGoals().collectAsState(initial = emptyList())
+
+    val netToday = (todayEarnings ?: 0.0) - (todayExpenses ?: 0.0)
+    val netMonth = (monthEarnings ?: 0.0) - (monthExpenses ?: 0.0)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                "Resumo Financeiro",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text("Lucro Hoje", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        String.format("R$ %.2f", netToday),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (netToday >= 0) ScoreGreen else ScoreRed
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("Lucro Mês", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        String.format("R$ %.2f", netMonth),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (netMonth >= 0) ScoreGreen else ScoreRed
+                    )
+                }
+            }
+
+            // Metas ativas
+            if (activeGoals.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    "Metas",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                activeGoals.take(3).forEach { goal ->
+                    val progress = when (goal.period) {
+                        "DIA" -> (todayEarnings ?: 0.0) / goal.targetAmount.coerceAtLeast(1.0)
+                        "SEMANA" -> (weekEarnings ?: 0.0) / goal.targetAmount.coerceAtLeast(1.0)
+                        "MES" -> (monthEarnings ?: 0.0) / goal.targetAmount.coerceAtLeast(1.0)
+                        else -> 0.0
+                    }.coerceIn(0.0, 1.0)
+                    val progressColor = when {
+                        progress >= 1.0 -> ScoreGreen
+                        progress >= 0.7 -> ScoreYellow
+                        progress >= 0.4 -> ScoreOrange
+                        else -> ScoreRed
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "${goal.title} (${goal.period})",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            "${(progress * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = progressColor
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = progress.toFloat(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = progressColor,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
             }
         }

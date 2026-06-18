@@ -14,11 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.RideHistoryEntity
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.ui.theme.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -39,6 +42,7 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
     var rides by remember { mutableStateOf<List<RideHistoryEntity>>(emptyList()) }
     var selectedFilter by remember { mutableStateOf(HistoryFilter.TODAY) }
     var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     fun getStartOfDay(): Long {
         val cal = Calendar.getInstance()
@@ -72,17 +76,27 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
     fun loadData() {
         scope.launch {
             isLoading = true
-            val dao = database.rideHistoryDao()
-            rides = when (selectedFilter) {
-                HistoryFilter.TODAY -> dao.getSince(getStartOfDay())
-                HistoryFilter.WEEK -> dao.getSince(getStartOfWeek())
-                HistoryFilter.MONTH -> dao.getSince(getStartOfMonth())
-                HistoryFilter.ALL -> dao.getAll()
-                HistoryFilter.ACCEPTED -> dao.getByStatus("ACCEPTED")
-                HistoryFilter.REFUSED -> dao.getByStatus("REFUSED")
-                HistoryFilter.CANCELLED -> dao.getByStatus("CANCELLED")
+            errorMessage = null
+            try {
+                val dao = database.rideHistoryDao()
+                val result = withContext(Dispatchers.IO) {
+                    when (selectedFilter) {
+                        HistoryFilter.TODAY -> dao.getSince(getStartOfDay())
+                        HistoryFilter.WEEK -> dao.getSince(getStartOfWeek())
+                        HistoryFilter.MONTH -> dao.getSince(getStartOfMonth())
+                        HistoryFilter.ALL -> dao.getAll()
+                        HistoryFilter.ACCEPTED -> dao.getByStatus("ACCEPTED")
+                        HistoryFilter.REFUSED -> dao.getByStatus("REFUSED")
+                        HistoryFilter.CANCELLED -> dao.getByStatus("CANCELLED")
+                    }
+                }
+                rides = result
+            } catch (e: Exception) {
+                errorMessage = "Erro ao carregar: ${e.message}"
+                rides = emptyList()
+            } finally {
+                isLoading = false
             }
-            isLoading = false
         }
     }
 
@@ -105,15 +119,17 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Period filters - FlowRow style (wrap content)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             listOf(HistoryFilter.TODAY, HistoryFilter.WEEK, HistoryFilter.MONTH, HistoryFilter.ALL).forEach { filter ->
                 FilterChip(
                     selected = selectedFilter == filter,
                     onClick = { selectedFilter = filter },
-                    label = { Text(filter.label, style = MaterialTheme.typography.labelSmall) },
+                    label = { Text(filter.label, fontSize = 11.sp) },
+                    modifier = Modifier.height(32.dp),
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -124,16 +140,17 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Filter chips - Status
+        // Status filters
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             listOf(HistoryFilter.ACCEPTED, HistoryFilter.REFUSED, HistoryFilter.CANCELLED).forEach { filter ->
                 FilterChip(
                     selected = selectedFilter == filter,
                     onClick = { selectedFilter = filter },
-                    label = { Text(filter.label, style = MaterialTheme.typography.labelSmall) },
+                    label = { Text(filter.label, fontSize = 11.sp) },
+                    modifier = Modifier.height(32.dp),
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = when (filter) {
                             HistoryFilter.ACCEPTED -> ScoreGreen.copy(alpha = 0.2f)
@@ -186,17 +203,37 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Error message
+        errorMessage?.let { msg ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = ScoreRed.copy(alpha = 0.1f))
+            ) {
+                Text(
+                    msg,
+                    modifier = Modifier.padding(12.dp),
+                    color = ScoreRed,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         // List
         if (isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
             }
-        } else if (rides.isEmpty()) {
+        } else if (rides.isEmpty() && errorMessage == null) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -221,6 +258,7 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
             }
         } else {
             LazyColumn(
+                modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(rides) { ride ->

@@ -1,0 +1,798 @@
+[
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_common_google_signin_btn_icon_dark_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-mdpi-v4/common_google_signin_btn_icon_dark_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_ic_call_decline_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-mdpi-v4/ic_call_decline_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_icon_light.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_light.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_ic_menu_mapmode.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/ic_menu_mapmode.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_ic_call_answer_video.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-mdpi-v4/ic_call_answer_video.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_person.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxhdpi-v4/person.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_googleg_disabled_color_18.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xhdpi-v4/googleg_disabled_color_18.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/layout-v21_notification_template_icon_group.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/layout-v21/notification_template_icon_group.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_notification_bg_low_pressed.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/notification_bg_low_pressed.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_notification_bg_low_normal.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-mdpi-v4/notification_bg_low_normal.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_moreinfo_arrow.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/moreinfo_arrow.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "com.ngbautoroad.app-main-61:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_round_navigation_white_48.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xhdpi-v4/round_navigation_white_48.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_person.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-hdpi-v4/person.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_btn_moreinfo.xml.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/btn_moreinfo.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_text_dark_normal.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_dark_normal.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_ic_call_answer_video_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxxhdpi-v4/ic_call_answer_video_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_sharp_remove_black_36.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-hdpi-v4/sharp_remove_black_36.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_icon_light_normal.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_light_normal.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_common_google_signin_btn_icon_dark_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xhdpi-v4/common_google_signin_btn_icon_dark_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_round_navigation_white_48.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxhdpi-v4/round_navigation_white_48.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_googleg_standard_color_18.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-hdpi-v4/googleg_standard_color_18.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_person.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-mdpi-v4/person.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_googleg_disabled_color_18.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xxhdpi-v4/googleg_disabled_color_18.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/xml_accessibility_service_config.xml.flat",
+        "source": "com.ngbautoroad.app-main-61:/xml/accessibility_service_config.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_ic_call_answer_video_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxhdpi-v4/ic_call_answer_video_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_ic_menu_mylocation.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/ic_menu_mylocation.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_ic_call_answer_video_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/ic_call_answer_video_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_ic_menu_compass.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/ic_menu_compass.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-ldpi-v4_ic_call_decline.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-ldpi-v4/ic_call_decline.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_marker_default.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxxhdpi-v4/marker_default.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_ic_call_decline_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxxhdpi-v4/ic_call_decline_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_common_google_signin_btn_text_dark_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-hdpi-v4/common_google_signin_btn_text_dark_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/layout-v21_notification_action.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/layout-v21/notification_action.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_icon_dark_normal.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_dark_normal.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_osm_ic_ic_map_ortho.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxhdpi-v4/osm_ic_ic_map_ortho.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_common_google_signin_btn_text_light_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xxhdpi-v4/common_google_signin_btn_text_light_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.ngbautoroad.app-main-61:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_ic_call_decline.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxxhdpi-v4/ic_call_decline.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_notification_bg_normal.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/notification_bg_normal.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_ic_call_answer.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/ic_call_answer.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_ic_call_decline.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-mdpi-v4/ic_call_decline.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_notification_oversize_large_icon_bg.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/notification_oversize_large_icon_bg.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_common_google_signin_btn_icon_light_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xxhdpi-v4/common_google_signin_btn_icon_light_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_icon_dark.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_dark.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_osm_ic_center_map.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xhdpi-v4/osm_ic_center_map.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_notification_bg_normal_pressed.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-mdpi-v4/notification_bg_normal_pressed.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_text_light_focused.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_light_focused.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "com.ngbautoroad.app-main-61:/mipmap-hdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_notification_bg_normal.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-mdpi-v4/notification_bg_normal.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_common_google_signin_btn_icon_dark_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xxhdpi-v4/common_google_signin_btn_icon_dark_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_osm_ic_follow_me.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-hdpi-v4/osm_ic_follow_me.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_common_google_signin_btn_icon_light_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xhdpi-v4/common_google_signin_btn_icon_light_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "com.ngbautoroad.app-main-61:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_ic_call_answer_video.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xhdpi-v4/ic_call_answer_video.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_common_google_signin_btn_text_light_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-hdpi-v4/common_google_signin_btn_text_light_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_sharp_remove_black_36.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xhdpi-v4/sharp_remove_black_36.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/layout-v21_notification_action_tombstone.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/layout-v21/notification_action_tombstone.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/layout_ime_secondary_split_test_activity.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/layout/ime_secondary_split_test_activity.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_osm_ic_follow_me_on.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-hdpi-v4/osm_ic_follow_me_on.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_osm_ic_follow_me.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-mdpi-v4/osm_ic_follow_me.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_ic_call_answer.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xhdpi-v4/ic_call_answer.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_osm_ic_ic_map_ortho.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xhdpi-v4/osm_ic_ic_map_ortho.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-anydpi-v21_ic_call_decline_low.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-anydpi-v21/ic_call_decline_low.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_ic_call_answer_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxhdpi-v4/ic_call_answer_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_ic_call_answer_video.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/ic_call_answer_video.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_person.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxxhdpi-v4/person.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_common_full_open_on_phone.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xhdpi-v4/common_full_open_on_phone.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_round_navigation_white_48.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-hdpi-v4/round_navigation_white_48.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_ic_call_answer.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-mdpi-v4/ic_call_answer.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_common_full_open_on_phone.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-hdpi-v4/common_full_open_on_phone.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_round_navigation_white_48.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-mdpi-v4/round_navigation_white_48.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_googleg_disabled_color_18.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-hdpi-v4/googleg_disabled_color_18.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-ldpi-v4_ic_call_answer_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-ldpi-v4/ic_call_answer_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_twotone_navigation_black_48.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxxhdpi-v4/twotone_navigation_black_48.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_ic_call_answer_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xhdpi-v4/ic_call_answer_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_center.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/center.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_common_google_signin_btn_text_light_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-mdpi-v4/common_google_signin_btn_text_light_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_notify_panel_notification_icon_bg.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/notify_panel_notification_icon_bg.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_sharp_add_black_36.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-hdpi-v4/sharp_add_black_36.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_ic_call_decline.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxhdpi-v4/ic_call_decline.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-anydpi-v21_ic_call_answer_video_low.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-anydpi-v21/ic_call_answer_video_low.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_notification_bg_low.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable/notification_bg_low.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_osm_ic_follow_me_on.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xhdpi-v4/osm_ic_follow_me_on.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_notification_bg.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable/notification_bg.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "com.ngbautoroad.app-main-61:/mipmap-mdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "com.ngbautoroad.app-main-61:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_twotone_navigation_black_48.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-mdpi-v4/twotone_navigation_black_48.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_sharp_remove_black_36.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxhdpi-v4/sharp_remove_black_36.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/color_vector_tint_theme_color.xml.flat",
+        "source": "com.ngbautoroad.app-ui-release-6:/color/vector_tint_theme_color.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_googleg_standard_color_18.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xxhdpi-v4/googleg_standard_color_18.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_zoom_out.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/zoom_out.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_ic_call_decline_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxhdpi-v4/ic_call_decline_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_icon_dark_focused.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_dark_focused.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_googleg_disabled_color_18.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-mdpi-v4/googleg_disabled_color_18.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_zoom_in.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/zoom_in.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_icon_light_focused.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_light_focused.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_osm_ic_ic_map_ortho.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-hdpi-v4/osm_ic_ic_map_ortho.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_text_disabled.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_disabled.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-ldpi-v4_ic_call_answer_video.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-ldpi-v4/ic_call_answer_video.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "com.ngbautoroad.app-main-61:/mipmap-xxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_twotone_navigation_black_48.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxhdpi-v4/twotone_navigation_black_48.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_marker_default.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xhdpi-v4/marker_default.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_sharp_remove_black_36.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxxhdpi-v4/sharp_remove_black_36.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "com.ngbautoroad.app-main-61:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/layout_custom_dialog.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/layout/custom_dialog.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_marker_default_focused_base.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-mdpi-v4/marker_default_focused_base.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_twotone_navigation_black_48.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-hdpi-v4/twotone_navigation_black_48.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_notify_panel_notification_icon_bg.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xhdpi-v4/notify_panel_notification_icon_bg.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_googleg_standard_color_18.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xhdpi-v4/googleg_standard_color_18.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_osm_ic_ic_map_ortho.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-mdpi-v4/osm_ic_ic_map_ortho.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_notification_bg_low_pressed.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xhdpi-v4/notification_bg_low_pressed.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_next.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/next.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_sharp_add_black_36.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxxhdpi-v4/sharp_add_black_36.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_marker_default_focused_base.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xhdpi-v4/marker_default_focused_base.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_ic_call_decline.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/ic_call_decline.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_notification_bg_normal_pressed.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xhdpi-v4/notification_bg_normal_pressed.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/color_common_google_signin_btn_tint.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/color/common_google_signin_btn_tint.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_osm_ic_follow_me_on.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxxhdpi-v4/osm_ic_follow_me_on.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_sharp_add_black_36.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xhdpi-v4/sharp_add_black_36.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-anydpi-v21_ic_call_answer_low.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-anydpi-v21/ic_call_answer_low.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_notification_bg_low_normal.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/notification_bg_low_normal.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_osm_ic_center_map.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-hdpi-v4/osm_ic_center_map.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_notification_icon_background.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable/notification_icon_background.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-ldpi-v4_ic_call_answer.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-ldpi-v4/ic_call_answer.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_common_google_signin_btn_icon_light_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-hdpi-v4/common_google_signin_btn_icon_light_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_ic_call_decline_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/ic_call_decline_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_notify_panel_notification_icon_bg.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-mdpi-v4/notify_panel_notification_icon_bg.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_ic_menu_offline.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/ic_menu_offline.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_marker_default.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-hdpi-v4/marker_default.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "com.ngbautoroad.app-main-61:/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-ldpi-v4_ic_call_answer_video_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-ldpi-v4/ic_call_answer_video_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_ic_call_answer_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxxhdpi-v4/ic_call_answer_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_ic_call_answer.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxhdpi-v4/ic_call_answer.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_common_google_signin_btn_text_dark_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xxhdpi-v4/common_google_signin_btn_text_dark_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_ic_call_answer_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/ic_call_answer_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "com.ngbautoroad.app-main-61:/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-v21_notification_action_background.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-v21/notification_action_background.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_ic_call_answer_video.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxxhdpi-v4/ic_call_answer_video.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_marker_default.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-mdpi-v4/marker_default.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_person.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xhdpi-v4/person.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_sharp_remove_black_36.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-mdpi-v4/sharp_remove_black_36.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_ic_call_decline_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xhdpi-v4/ic_call_decline_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_marker_default.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxhdpi-v4/marker_default.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/color_common_google_signin_btn_text_dark.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/color/common_google_signin_btn_text_dark.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_moreinfo_arrow_pressed.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/moreinfo_arrow_pressed.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/layout_notification_template_part_chronometer.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/layout/notification_template_part_chronometer.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_osm_ic_follow_me.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xhdpi-v4/osm_ic_follow_me.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_text_light_normal.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_light_normal.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_sharp_add_black_36.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxhdpi-v4/sharp_add_black_36.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_osm_ic_follow_me_on.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-mdpi-v4/osm_ic_follow_me_on.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/layout_ime_base_split_test_activity.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/layout/ime_base_split_test_activity.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_ic_call_answer_video_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xhdpi-v4/ic_call_answer_video_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_ic_call_answer.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxxhdpi-v4/ic_call_answer.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_common_google_signin_btn_icon_dark_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-hdpi-v4/common_google_signin_btn_icon_dark_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/color_vector_tint_color.xml.flat",
+        "source": "com.ngbautoroad.app-ui-release-6:/color/vector_tint_color.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_osm_ic_center_map.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxhdpi-v4/osm_ic_center_map.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_navto_small.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/navto_small.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_twotone_navigation_black_48.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xhdpi-v4/twotone_navigation_black_48.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_marker_default_focused_base.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxhdpi-v4/marker_default_focused_base.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_osm_ic_center_map.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-mdpi-v4/osm_ic_center_map.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-anydpi-v21_ic_call_answer_video.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-anydpi-v21/ic_call_answer_video.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-anydpi-v21_ic_call_decline.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-anydpi-v21/ic_call_decline.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_notification_bg_low_normal.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xhdpi-v4/notification_bg_low_normal.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/layout_notification_template_part_time.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/layout/notification_template_part_time.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_osm_ic_follow_me.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxxhdpi-v4/osm_ic_follow_me.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-anydpi-v21_ic_call_answer.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-anydpi-v21/ic_call_answer.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_common_google_signin_btn_text_dark_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xhdpi-v4/common_google_signin_btn_text_dark_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_notification_tile_bg.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable/notification_tile_bg.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/color_common_google_signin_btn_text_light.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/color/common_google_signin_btn_text_light.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_notification_bg_normal.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xhdpi-v4/notification_bg_normal.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_googleg_standard_color_18.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-mdpi-v4/googleg_standard_color_18.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/layout-v21_notification_template_custom_big.xml.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/layout-v21/notification_template_custom_big.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/layout_bonuspack_bubble.xml.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/layout/bonuspack_bubble.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_text_dark.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_dark.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_ic_call_answer_video_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-mdpi-v4/ic_call_answer_video_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_text_dark_focused.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_dark_focused.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_marker_default_focused_base.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxxhdpi-v4/marker_default_focused_base.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_round_navigation_white_48.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxxhdpi-v4/round_navigation_white_48.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_osm_ic_follow_me_on.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxhdpi-v4/osm_ic_follow_me_on.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_ic_call_answer_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-mdpi-v4/ic_call_answer_low.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "com.ngbautoroad.app-main-61:/mipmap-hdpi/ic_launcher.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_osm_ic_ic_map_ortho.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxxhdpi-v4/osm_ic_ic_map_ortho.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_ic_call_decline.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xhdpi-v4/ic_call_decline.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_sharp_add_black_36.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-mdpi-v4/sharp_add_black_36.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_common_google_signin_btn_text_dark_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-mdpi-v4/common_google_signin_btn_text_dark_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_ic_call_answer_video.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-xxhdpi-v4/ic_call_answer_video.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_bonuspack_bubble.9.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/bonuspack_bubble.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_notification_bg_normal_pressed.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-hdpi-v4/notification_bg_normal_pressed.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_text_light.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_text_light.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_common_google_signin_btn_icon_disabled.xml.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable/common_google_signin_btn_icon_disabled.xml"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_common_google_signin_btn_icon_light_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-mdpi-v4/common_google_signin_btn_icon_light_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-hdpi-v4_marker_default_focused_base.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-hdpi-v4/marker_default_focused_base.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxxhdpi-v4_osm_ic_center_map.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxxhdpi-v4/osm_ic_center_map.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable_previous.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable/previous.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xhdpi-v4_common_google_signin_btn_text_light_normal_background.9.png.flat",
+        "source": "com.ngbautoroad.app-play-services-base-18.1.0-38:/drawable-xhdpi-v4/common_google_signin_btn_text_light_normal_background.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-mdpi-v4_notification_bg_low_pressed.9.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-mdpi-v4/notification_bg_low_pressed.9.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-xxhdpi-v4_osm_ic_follow_me.png.flat",
+        "source": "com.ngbautoroad.app-osmdroid-android-6.1.18-17:/drawable-xxhdpi-v4/osm_ic_follow_me.png"
+    },
+    {
+        "merged": "com.ngbautoroad.app-merged_res-60:/drawable-ldpi-v4_ic_call_decline_low.png.flat",
+        "source": "com.ngbautoroad.app-core-1.12.0-20:/drawable-ldpi-v4/ic_call_decline_low.png"
+    }
+]

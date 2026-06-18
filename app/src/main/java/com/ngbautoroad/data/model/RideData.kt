@@ -10,6 +10,7 @@ data class RideData(
     val pickupDistance: Double = 0.0,     // Distância até embarque (km)
     val dropoffDistance: Double = 0.0,    // Distância até desembarque (km)
     val passengerRating: Double = 0.0,   // Avaliação do passageiro (0-5)
+    val userRating: Double = 0.0,         // Avaliação de usuários/corrida (0-5)
     val intermediateStops: Int = 0,       // Número de paradas intermediárias
     val pickupNeighborhood: String = "",  // Bairro de embarque
     val dropoffNeighborhood: String = "", // Bairro de destino

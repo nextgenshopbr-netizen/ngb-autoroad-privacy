@@ -66,32 +66,66 @@ fun AdminScreen(
     val scope = rememberCoroutineScope()
     var isAuthenticated by remember { mutableStateOf(false) }
     var pinInput by remember { mutableStateOf("") }
+    var pinConfirm by remember { mutableStateOf("") }
     var pinError by remember { mutableStateOf(false) }
-    var adminPin by remember { mutableStateOf("147258") }
+    var adminPin by remember { mutableStateOf("") }
+    var isFirstAccess by remember { mutableStateOf(true) }
+    var isSettingPin by remember { mutableStateOf(false) }
+    var pinMismatch by remember { mutableStateOf(false) }
 
     // Carregar PIN salvo
     LaunchedEffect(Unit) {
         val savedPin = prefsManager.adminPinFlow.first()
-        if (savedPin.isNotBlank()) adminPin = savedPin
+        if (savedPin.isNotBlank()) {
+            adminPin = savedPin
+            isFirstAccess = false
+        } else {
+            isFirstAccess = true
+            isSettingPin = true
+        }
     }
 
     if (!isAuthenticated) {
-        // Tela de PIN
-        PinScreen(
-            pinInput = pinInput,
-            pinError = pinError,
-            onPinChange = { pinInput = it; pinError = false },
-            onSubmit = {
-                if (pinInput == adminPin) {
-                    isAuthenticated = true
-                    pinError = false
-                } else {
-                    pinError = true
-                    pinInput = ""
-                }
-            },
-            onBack = onBack
-        )
+        if (isSettingPin) {
+            // Tela de CRIAR PIN (primeiro acesso)
+            CreatePinScreen(
+                pinInput = pinInput,
+                pinConfirm = pinConfirm,
+                pinMismatch = pinMismatch,
+                onPinChange = { pinInput = it; pinMismatch = false },
+                onConfirmChange = { pinConfirm = it; pinMismatch = false },
+                onSubmit = {
+                    if (pinInput == pinConfirm && pinInput.length == 6) {
+                        adminPin = pinInput
+                        scope.launch { prefsManager.saveAdminPin(pinInput) }
+                        isAuthenticated = true
+                        isSettingPin = false
+                        isFirstAccess = false
+                    } else {
+                        pinMismatch = true
+                        pinConfirm = ""
+                    }
+                },
+                onBack = onBack
+            )
+        } else {
+            // Tela de DIGITAR PIN (acessos seguintes)
+            PinScreen(
+                pinInput = pinInput,
+                pinError = pinError,
+                onPinChange = { pinInput = it; pinError = false },
+                onSubmit = {
+                    if (pinInput == adminPin) {
+                        isAuthenticated = true
+                        pinError = false
+                    } else {
+                        pinError = true
+                        pinInput = ""
+                    }
+                },
+                onBack = onBack
+            )
+        }
     } else {
         // Tela Admin
         AdminPanel(
@@ -162,6 +196,86 @@ fun PinScreen(
             modifier = Modifier.fillMaxWidth(0.7f)
         ) {
             Text("Entrar")
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TextButton(onClick = onBack) {
+            Text("Cancelar")
+        }
+    }
+}
+
+@Composable
+fun CreatePinScreen(
+    pinInput: String,
+    pinConfirm: String,
+    pinMismatch: Boolean,
+    onPinChange: (String) -> Unit,
+    onConfirmChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            Icons.Default.AdminPanelSettings,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            "Primeiro Acesso",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            "Crie um PIN de 6 dígitos para proteger a área administrativa",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedTextField(
+            value = pinInput,
+            onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) onPinChange(it) },
+            label = { Text("Novo PIN (6 dígitos)") },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(0.7f)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = pinConfirm,
+            onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) onConfirmChange(it) },
+            label = { Text("Confirme o PIN") },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            isError = pinMismatch,
+            supportingText = if (pinMismatch) {{ Text("PINs não coincidem", color = ScoreRed) }} else null,
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(0.7f)
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = onSubmit,
+            enabled = pinInput.length == 6 && pinConfirm.length == 6,
+            modifier = Modifier.fillMaxWidth(0.7f)
+        ) {
+            Text("Criar PIN e Entrar")
         }
 
         Spacer(modifier = Modifier.height(8.dp))

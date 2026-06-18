@@ -1,0 +1,167 @@
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+/home/ubuntu/NGBAutoRoad-v3/app/src/main/java/com/ngbautoroad/ui/map/ZoneMapActivity.kt:78: Error: Upgrade Fragment version to at least 1.3.0. [InvalidFragmentVersionForActivityResult from androidx.activity]
+        val locationPermissionLauncher = registerForActivityResult(
+                                         ^
+
+   Explanation for issues of type "InvalidFragmentVersionForActivityResult":
+   In order to use the ActivityResult APIs you must upgrade your              
+     Fragment version to 1.3.0. Previous versions of FragmentActivity         
+          failed to call super.onRequestPermissionsResult() and used invalid
+   request codes
+
+   https://developer.android.com/training/permissions/requesting#make-the-request
+
+   Vendor: Android Open Source Project
+   Identifier: androidx.activity
+   Feedback: https://issuetracker.google.com/issues/new?component=527362
+
+51 errors, 0 warnings

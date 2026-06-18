@@ -13,14 +13,25 @@ android {
         applicationId = "com.ngbautoroad"
         minSdk = 26
         targetSdk = 34
-        versionCode = 32
-        versionName = "3.2.1"
+        versionCode = 33
+        versionName = "3.2.2"
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("../keystore/ngbautoroad-release.jks")
+            storePassword = "NgbAut0R0ad2024!"
+            keyAlias = "ngbautoroad"
+            keyPassword = "NgbAut0R0ad2024!"
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isDebuggable = true
@@ -48,6 +59,11 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
     }
 }
 

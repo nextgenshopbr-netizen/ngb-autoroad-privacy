@@ -181,20 +181,20 @@ class RideScorer(
 
         // 8. Avaliação de Usuários (rating do usuário no app)
         if (weights.userRating > 0) {
-            val normalized = normalizeRating(ride.passengerRating) // Usa mesmo campo por ora
+            val normalized = normalizeRating(ride.userRating)
             criteriaScores["userRating"] = CriteriaScore(
                 name = "Aval. Usuário",
-                rawValue = ride.passengerRating,
+                rawValue = ride.userRating,
                 normalizedScore = normalized,
                 weight = weights.userRating,
                 weightedScore = normalized * weights.userRating / 100.0,
                 level = getLevel(normalized)
             )
-            if (driverThresholds.isUserRatingActive() && ride.passengerRating < driverThresholds.minUserRating) {
+            if (driverThresholds.isUserRatingActive() && ride.userRating < driverThresholds.minUserRating) {
                 val penalty = weights.userRating * 0.6
                 violations.add(ThresholdViolation(
                     criteriaName = "Aval. Usuário",
-                    currentValue = ride.passengerRating,
+                    currentValue = ride.userRating,
                     minimumRequired = driverThresholds.minUserRating,
                     penaltyApplied = penalty
                 ))

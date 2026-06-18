@@ -34,6 +34,14 @@ fun CriteriaTab(prefsManager: PrefsManager) {
     var showThresholds by remember { mutableStateOf(true) }
     val scrollState = rememberScrollState()
 
+    // Calcula o total e o máximo disponível para cada critério
+    val totalUsed = weights.totalUsed
+
+    fun maxForCriteria(currentValue: Int): Int {
+        val othersSum = totalUsed - currentValue
+        return (100 - othersSum).coerceAtLeast(0)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -53,17 +61,28 @@ fun CriteriaTab(prefsManager: PrefsManager) {
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            "Defina individualmente o peso de cada critério (0-100)",
+            "Distribua 100 pontos entre os critérios. Soma atual: $totalUsed/100",
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (totalUsed > 100) ScoreRed else MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        if (totalUsed > 100) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "⚠️ Total excede 100 pontos! Reduza algum critério.",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = ScoreRed
+            )
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Sliders INDIVIDUAIS para cada critério (sem redistribuição)
+        // Sliders INDIVIDUAIS com limite baseado no restante disponível
         CriteriaSlider(
             label = "Valor por KM",
             value = weights.valuePerKm,
+            maxValue = maxForCriteria(weights.valuePerKm),
             onValueChange = { newVal ->
                 scope.launch {
                     prefsManager.saveCriteriaWeights(weights.copy(valuePerKm = newVal))
@@ -74,6 +93,7 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         CriteriaSlider(
             label = "Valor por Hora",
             value = weights.valuePerHour,
+            maxValue = maxForCriteria(weights.valuePerHour),
             onValueChange = { newVal ->
                 scope.launch {
                     prefsManager.saveCriteriaWeights(weights.copy(valuePerHour = newVal))
@@ -84,6 +104,7 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         CriteriaSlider(
             label = "Paradas Intermediárias",
             value = weights.intermediateStops,
+            maxValue = maxForCriteria(weights.intermediateStops),
             onValueChange = { newVal ->
                 scope.launch {
                     prefsManager.saveCriteriaWeights(weights.copy(intermediateStops = newVal))
@@ -94,6 +115,7 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         CriteriaSlider(
             label = "Avaliação do Passageiro",
             value = weights.passengerRating,
+            maxValue = maxForCriteria(weights.passengerRating),
             onValueChange = { newVal ->
                 scope.launch {
                     prefsManager.saveCriteriaWeights(weights.copy(passengerRating = newVal))
@@ -104,6 +126,7 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         CriteriaSlider(
             label = "Avaliação de Usuários",
             value = weights.userRating,
+            maxValue = maxForCriteria(weights.userRating),
             onValueChange = { newVal ->
                 scope.launch {
                     prefsManager.saveCriteriaWeights(weights.copy(userRating = newVal))
@@ -114,6 +137,7 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         CriteriaSlider(
             label = "Valor da Corrida",
             value = weights.rideValue,
+            maxValue = maxForCriteria(weights.rideValue),
             onValueChange = { newVal ->
                 scope.launch {
                     prefsManager.saveCriteriaWeights(weights.copy(rideValue = newVal))
@@ -124,6 +148,7 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         CriteriaSlider(
             label = "Duração da Corrida",
             value = weights.rideDuration,
+            maxValue = maxForCriteria(weights.rideDuration),
             onValueChange = { newVal ->
                 scope.launch {
                     prefsManager.saveCriteriaWeights(weights.copy(rideDuration = newVal))
@@ -134,6 +159,7 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         CriteriaSlider(
             label = "Distância até Embarque",
             value = weights.pickupDistance,
+            maxValue = maxForCriteria(weights.pickupDistance),
             onValueChange = { newVal ->
                 scope.launch {
                     prefsManager.saveCriteriaWeights(weights.copy(pickupDistance = newVal))
@@ -144,6 +170,7 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         CriteriaSlider(
             label = "Distância até Desembarque",
             value = weights.dropoffDistance,
+            maxValue = maxForCriteria(weights.dropoffDistance),
             onValueChange = { newVal ->
                 scope.launch {
                     prefsManager.saveCriteriaWeights(weights.copy(dropoffDistance = newVal))
@@ -294,11 +321,21 @@ fun CriteriaTab(prefsManager: PrefsManager) {
                 }
             },
             modifier = Modifier.fillMaxWidth(),
+            enabled = totalUsed <= 100,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary
             )
         ) {
             Text("Salvar Critérios", color = MaterialTheme.colorScheme.onPrimary)
+        }
+
+        if (totalUsed > 100) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "Reduza os pesos para no máximo 100 pontos antes de salvar",
+                style = MaterialTheme.typography.labelSmall,
+                color = ScoreRed
+            )
         }
     }
 }
@@ -306,9 +343,16 @@ fun CriteriaTab(prefsManager: PrefsManager) {
 @Composable
 fun PointsCounter(weights: CriteriaWeights) {
     val total = weights.totalUsed
-    val statusText = if (total == 0) "Nenhum peso configurado" else "$total pontos distribuídos"
+    val remaining = 100 - total
+    val statusText = when {
+        total == 0 -> "Nenhum peso configurado"
+        total > 100 -> "Excedeu! Reduza ${total - 100} pontos"
+        total == 100 -> "Perfeito! 100 pontos distribuídos"
+        else -> "$remaining pontos restantes"
+    }
     val usedColor = when {
-        total >= 80 -> ScoreGreen
+        total > 100 -> ScoreRed
+        total == 100 -> ScoreGreen
         total >= 50 -> ScoreYellow
         total >= 20 -> ScoreOrange
         else -> ScoreRed
@@ -341,12 +385,25 @@ fun PointsCounter(weights: CriteriaWeights) {
             }
 
             Text(
-                text = "$total",
+                text = "$total/100",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = usedColor
             )
         }
+
+        // Progress bar
+        LinearProgressIndicator(
+            progress = (total.coerceAtMost(100) / 100f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 12.dp)
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp)),
+            color = usedColor,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     }
 }
 
@@ -354,12 +411,17 @@ fun PointsCounter(weights: CriteriaWeights) {
 fun CriteriaSlider(
     label: String,
     value: Int,
+    maxValue: Int,
     onValueChange: (Int) -> Unit
 ) {
+    // maxValue é o máximo real disponível (100 - soma dos outros)
+    // O slider vai de 0 até maxValue, impedindo visualmente de ultrapassar
+    val sliderRange = maxValue.toFloat().coerceAtLeast(0f)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 6.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -370,20 +432,32 @@ fun CriteriaSlider(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Text(
-                text = "$value pts",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = if (value > 0) MaterialTheme.colorScheme.primary
-                       else MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row {
+                Text(
+                    text = "$value pts",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (value > 0) MaterialTheme.colorScheme.primary
+                           else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (maxValue < 100) {
+                    Text(
+                        text = " (máx: $maxValue)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
 
         Slider(
-            value = value.toFloat(),
-            onValueChange = { onValueChange(it.toInt()) },
-            valueRange = 0f..100f,
-            steps = 99,
+            value = value.toFloat().coerceIn(0f, sliderRange),
+            onValueChange = { newVal ->
+                // Limita estritamente ao máximo disponível (100 - soma dos outros)
+                val clamped = newVal.toInt().coerceIn(0, maxValue)
+                onValueChange(clamped)
+            },
+            valueRange = 0f..sliderRange.coerceAtLeast(1f),
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary,

@@ -324,6 +324,28 @@ fun CardEditorScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Botão Ver Card Real (simulação com dados aleatórios)
+            var showRealPreview by remember { mutableStateOf(false) }
+            OutlinedButton(
+                onClick = { showRealPreview = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Visibility, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Ver Card Real (com dados)")
+            }
+
+            if (showRealPreview) {
+                Spacer(modifier = Modifier.height(8.dp))
+                RealCardPreview(layout = layout)
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(onClick = { showRealPreview = false }) {
+                    Text("Fechar Preview")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Botão Salvar
             Button(
                 onClick = {
@@ -665,5 +687,61 @@ fun parseColorToLong(hex: String): Long {
         0xFF000000 or cleanHex.toLong(16)
     } catch (_: Exception) {
         0xFF101830
+    }
+}
+
+@Composable
+fun RealCardPreview(layout: CustomCardLayout) {
+    // Gerar dados aleatórios simulados
+    val sampleData = remember {
+        mapOf(
+            "RIDE_VALUE" to "R$ 18,50",
+            "VALUE_PER_KM" to "R$ 2,35/km",
+            "VALUE_PER_HOUR" to "R$ 28,40/h",
+            "PICKUP_DISTANCE" to "1,2 km",
+            "DROPOFF_DISTANCE" to "7,8 km",
+            "DURATION" to "22 min",
+            "PASSENGER_RATING" to "4,8 ★",
+            "USER_RATING" to "4,6 ★",
+            "INTERMEDIATE_STOPS" to "0 paradas",
+            "PLATFORM" to "Uber",
+            "PICKUP_NEIGHBORHOOD" to "Pituba",
+            "DROPOFF_NEIGHBORHOOD" to "Barra",
+            "SCORE" to "82 pts"
+        )
+    }
+
+    val bgColor = try {
+        Color(parseColorToLong(layout.backgroundColor))
+    } catch (_: Exception) { Color(0xFF101830) }
+
+    val borderColor = try {
+        Color(parseColorToLong(layout.borderColor))
+    } catch (_: Exception) { Color(0xFF4F6BFF) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(layout.cardHeight.dp)
+            .clip(RoundedCornerShape(layout.borderRadius.dp))
+            .border(2.dp, borderColor, RoundedCornerShape(layout.borderRadius.dp))
+            .background(bgColor)
+            .padding(8.dp)
+    ) {
+        for (field in layout.fields) {
+            val value = sampleData[field.fieldType] ?: field.label
+            val textColor = try {
+                Color(parseColorToLong(field.colorHex))
+            } catch (_: Exception) { Color.White }
+
+            Text(
+                text = "${field.label}: $value",
+                color = textColor,
+                fontSize = field.fontSize.sp,
+                fontWeight = if (field.isBold) FontWeight.Bold else FontWeight.Normal,
+                fontStyle = if (field.isItalic) FontStyle.Italic else FontStyle.Normal,
+                modifier = Modifier.offset(x = field.x.dp, y = field.y.dp)
+            )
+        }
     }
 }
