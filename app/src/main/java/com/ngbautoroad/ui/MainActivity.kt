@@ -24,7 +24,8 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -60,21 +61,24 @@ class MainActivity : ComponentActivity() {
             startActivity(intent)
         }
 
-        // Keep screen on (aplicação inicial)
-        val keepScreenOn = runBlocking { prefsManager.keepScreenOnFlow.first() }
-        if (keepScreenOn) {
-            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
+        // v5.0.0: Mover leituras de DataStore para lifecycleScope (evita ANR)
+        lifecycleScope.launch {
+            // Keep screen on (aplicação inicial)
+            val keepScreenOn = prefsManager.keepScreenOnFlow.first()
+            if (keepScreenOn) {
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
 
-        // Auto-iniciar OverlayService se o serviço estava habilitado
-        val serviceEnabled = runBlocking { prefsManager.serviceEnabledFlow.first() }
-        if (serviceEnabled && Settings.canDrawOverlays(this)) {
-            com.ngbautoroad.service.OverlayService.start(this)
+            // Auto-iniciar OverlayService se o serviço estava habilitado
+            val serviceEnabled = prefsManager.serviceEnabledFlow.first()
+            if (serviceEnabled && Settings.canDrawOverlays(this@MainActivity)) {
+                com.ngbautoroad.service.OverlayService.start(this@MainActivity)
+            }
         }
 
         setContent {
             // Observar mudanças no keepScreenOn em tempo real
-            val keepScreenState = prefsManager.keepScreenOnFlow.collectAsState(initial = keepScreenOn)
+            val keepScreenState = prefsManager.keepScreenOnFlow.collectAsState(initial = false)
             LaunchedEffect(keepScreenState.value) {
                 if (keepScreenState.value) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

@@ -300,13 +300,15 @@ class RideScorer(
     // ========================================================================
 
     private fun normalizeValuePerKm(value: Double): Double {
-        return ((value - thresholds.minValuePerKm) / (thresholds.maxValuePerKm - thresholds.minValuePerKm) * 100)
-            .coerceIn(0.0, 100.0)
+        val range = thresholds.maxValuePerKm - thresholds.minValuePerKm
+        if (range <= 0.0) return 50.0 // v5.0.0: Guard divisão por zero
+        return ((value - thresholds.minValuePerKm) / range * 100).coerceIn(0.0, 100.0)
     }
 
     private fun normalizeValuePerHour(value: Double): Double {
-        return ((value - thresholds.minValuePerHour) / (thresholds.maxValuePerHour - thresholds.minValuePerHour) * 100)
-            .coerceIn(0.0, 100.0)
+        val range = thresholds.maxValuePerHour - thresholds.minValuePerHour
+        if (range <= 0.0) return 50.0 // v5.0.0: Guard divisão por zero
+        return ((value - thresholds.minValuePerHour) / range * 100).coerceIn(0.0, 100.0)
     }
 
     private fun normalizeStops(stops: Int): Double {
@@ -317,35 +319,44 @@ class RideScorer(
         }
     }
 
+    /**
+     * v5.0.0: Escala ajustada para 3.0-5.0 (mais realista).
+     * Passageiros sem rating (0.0) são tratados no caller (pula critério).
+     */
     private fun normalizeRating(rating: Double): Double {
         return when {
-            rating >= 5.0 -> 100.0                     // 5 estrelas = perfeito
-            rating >= 4.0 -> ((rating - 4.0) / 1.0 * 100.0)  // 4.0-4.99 = linear
-            else -> 0.0                                 // <4.0 = score zero
+            rating >= 5.0 -> 100.0
+            rating <= 3.0 -> 0.0
+            else -> ((rating - 3.0) / 2.0 * 100.0).coerceIn(0.0, 100.0)
         }
     }
 
     private fun normalizeRideValue(value: Double): Double {
-        return ((value - thresholds.minRideValue) / (thresholds.maxRideValue - thresholds.minRideValue) * 100)
+        val range = thresholds.maxRideValue - thresholds.minRideValue
+        if (range <= 0.0) return 50.0 // v5.0.0: Guard divisão por zero
+        return ((value - thresholds.minRideValue) / range * 100)
             .coerceIn(0.0, 100.0)
     }
 
     // INVERSO: menos tempo = melhor
     private fun normalizeDuration(minutes: Double): Double {
-        return ((thresholds.maxDuration - minutes) / (thresholds.maxDuration - thresholds.minDuration) * 100)
-            .coerceIn(0.0, 100.0)
+        val range = thresholds.maxDuration - thresholds.minDuration
+        if (range <= 0.0) return 50.0 // v5.0.0: Guard divisão por zero
+        return ((thresholds.maxDuration - minutes) / range * 100).coerceIn(0.0, 100.0)
     }
 
     // INVERSO: menos distância até embarque = melhor
     private fun normalizePickupDistance(km: Double): Double {
-        return ((thresholds.maxPickupDistance - km) / (thresholds.maxPickupDistance - thresholds.minPickupDistance) * 100)
-            .coerceIn(0.0, 100.0)
+        val range = thresholds.maxPickupDistance - thresholds.minPickupDistance
+        if (range <= 0.0) return 50.0 // v5.0.0: Guard divisão por zero
+        return ((thresholds.maxPickupDistance - km) / range * 100).coerceIn(0.0, 100.0)
     }
 
     // DIRETO: mais distância até destino = melhor (corrida mais longa)
     private fun normalizeDropoffDistance(km: Double): Double {
-        return ((km - thresholds.minDropoffDistance) / (thresholds.maxDropoffDistance - thresholds.minDropoffDistance) * 100)
-            .coerceIn(0.0, 100.0)
+        val range = thresholds.maxDropoffDistance - thresholds.minDropoffDistance
+        if (range <= 0.0) return 50.0 // v5.0.0: Guard divisão por zero
+        return ((km - thresholds.minDropoffDistance) / range * 100).coerceIn(0.0, 100.0)
     }
 
     // ========================================================================

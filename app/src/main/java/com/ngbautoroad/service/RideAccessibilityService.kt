@@ -108,7 +108,8 @@ class RideAccessibilityService : AccessibilityService() {
                 // Validação: precisa ter pelo menos o valor da corrida
                 if (ride.rideValue > 0) {
                     // Supressão de duplicatas com janela de 10s
-                    val hash = "${ride.platform}_${String.format("%.2f", ride.rideValue)}_${String.format("%.1f", ride.dropoffDistance)}".hashCode()
+                    // v5.0.0: Inclui pickupNeighborhood no hash para diferenciar corridas com mesmo valor
+                    val hash = "${ride.platform}_${String.format("%.2f", ride.rideValue)}_${String.format("%.1f", ride.dropoffDistance)}_${ride.pickupNeighborhood}".hashCode()
                     if (hash == lastRideHash && (now - lastRideHashTime) < DUPLICATE_WINDOW_MS) {
                         Log.d(TAG, "Duplicata suprimida: ${ride.platform} R$${ride.rideValue}")
                         return
@@ -509,16 +510,18 @@ class RideAccessibilityService : AccessibilityService() {
      */
     private fun collectAllText(node: AccessibilityNodeInfo): List<String> {
         val texts = mutableListOf<String>()
-        traverseNode(node, texts)
+        traverseNode(node, texts, 0)
         return texts
     }
 
-    private fun traverseNode(node: AccessibilityNodeInfo, texts: MutableList<String>) {
+    // v5.0.0: maxDepth=10 para evitar ANR em telas com árvores muito profundas
+    private fun traverseNode(node: AccessibilityNodeInfo, texts: MutableList<String>, depth: Int) {
+        if (depth > 10) return // Guard: limite de profundidade
         node.text?.toString()?.let { if (it.isNotBlank()) texts.add(it.trim()) }
         node.contentDescription?.toString()?.let { if (it.isNotBlank()) texts.add(it.trim()) }
         for (i in 0 until node.childCount) {
             val child = node.getChild(i) ?: continue
-            traverseNode(child, texts)
+            traverseNode(child, texts, depth + 1)
             child.recycle()
         }
     }

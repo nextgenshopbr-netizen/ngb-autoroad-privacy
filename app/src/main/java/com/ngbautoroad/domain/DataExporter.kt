@@ -16,14 +16,15 @@ class DataExporter(private val context: Context) {
         } catch (_: Exception) { null }
     }
 
+    // v5.0.0: FLAG_ACTIVITY_NEW_TASK para funcionar de qualquer contexto
     fun shareFile(file: File) {
         val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/csv"
             putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(Intent.createChooser(intent, "Exportar Dados"))
+        context.startActivity(Intent.createChooser(intent, "Exportar Dados").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
     private fun escapeCSV(value: String): String {

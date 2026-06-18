@@ -456,6 +456,17 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    // --- Auto-dismiss overlay (v5.0.0) ---
+    private val KEY_AUTO_DISMISS_SECONDS = intPreferencesKey("auto_dismiss_seconds")
+    val autoDismissSecondsFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUTO_DISMISS_SECONDS] ?: 30 // Padrão: 30 segundos (0 = nunca)
+    }
+    suspend fun saveAutoDismissSeconds(seconds: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_AUTO_DISMISS_SECONDS] = seconds.coerceIn(0, 120)
+        }
+    }
+
     suspend fun resetAll() {
         context.dataStore.edit { it.clear() }
     }

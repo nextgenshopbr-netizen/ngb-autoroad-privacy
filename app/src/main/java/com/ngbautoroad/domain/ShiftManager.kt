@@ -61,7 +61,10 @@ class ShiftManager(private val context: Context) {
             .apply()
     }
 
+    // v5.0.0: Guard contra turno duplicado
     fun startShift(goal: Double): ShiftState {
+        val current = loadState()
+        if (current.isActive) return current // Já tem turno ativo, não sobrescrever
         val s = ShiftState(isActive = true, startTimeMs = System.currentTimeMillis(), goalValue = goal)
         saveState(s); return s
     }

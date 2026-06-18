@@ -111,8 +111,11 @@ fun AdminScreen(
             prefsManager = prefsManager,
             currentPin = adminPin,
             onPinChanged = { newPin ->
-                adminPin = newPin
-                scope.launch { prefsManager.saveAdminPin(newPin) }
+                // v5.0.0: Validar PIN mínimo 4 dígitos
+                if (newPin.length >= 4) {
+                    adminPin = newPin
+                    scope.launch { prefsManager.saveAdminPin(newPin) }
+                }
             },
             onBack = onBack
         )

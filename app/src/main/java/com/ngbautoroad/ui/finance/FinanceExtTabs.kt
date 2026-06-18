@@ -493,8 +493,14 @@ fun AddIndividualExpenseDialog(
         confirmButton = {
             Button(onClick = {
                 val total = totalAmount.toDoubleLocaleOrNull() ?: 0.0
-                val inst = installments.toIntOrNull() ?: 1
-                val monthly = if (inst > 0) total / inst else 0.0
+                val inst = installments.toIntOrNull()?.coerceAtLeast(1) ?: 1 // v5.0.0: Guard >=1
+                // v5.0.0: Para despesas anuais, monthlyAmount = total / 12 (rateio anual)
+                val isAnnual = category == ExpenseCategories.IPVA || category == ExpenseCategories.SEGURO || category == ExpenseCategories.LICENCIAMENTO
+                val monthly = when {
+                    frequency == "ANUAL" || isAnnual -> total / 12.0
+                    inst > 0 -> total / inst
+                    else -> 0.0
+                }
                 val expense = IndividualExpenseEntity(
                     title = title,
                     category = category,
@@ -503,7 +509,7 @@ fun AddIndividualExpenseDialog(
                     monthlyAmount = monthly,
                     frequency = frequency,
                     isIncludedInCalc = includeInCalc,
-                    isRecurringAnnual = category == ExpenseCategories.IPVA || category == ExpenseCategories.SEGURO || category == ExpenseCategories.LICENCIAMENTO
+                    isRecurringAnnual = isAnnual
                 )
                 onSave(expense)
             }, enabled = title.isNotBlank() && (totalAmount.toDoubleLocaleOrNull() ?: 0.0) > 0) {

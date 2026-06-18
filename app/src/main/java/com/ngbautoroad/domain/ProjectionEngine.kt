@@ -49,10 +49,14 @@ class ProjectionEngine(
         val totalDuration30 = earningDao.getTotalDurationSync(startDate30, endDate) ?: 0
 
         // Calcular médias diárias
-        val daysWithData = 30.0.coerceAtLeast(1.0)
+        // v5.0.0: Usar dias reais com dados (não fixo 30) para projeção mais precisa
+        val daysWithData = if (totalRides30 > 0) {
+            val daysSinceFirst = ((endDate - startDate30) / 86_400_000.0).coerceAtLeast(1.0)
+            daysSinceFirst
+        } else 1.0
         val avgDailyEarnings = totalEarnings30 / daysWithData
         val avgDailyKm = totalDistance30 / daysWithData
-        val avgDailyRides = (totalRides30 / daysWithData).toInt().coerceAtLeast(1)
+        val avgDailyRides = (totalRides30.toDouble() / daysWithData).toInt().coerceAtLeast(1)
         val avgDailyHours = (totalDuration30 / 60.0) / daysWithData
 
         // Multiplicador por período
@@ -210,13 +214,14 @@ class ProjectionEngine(
         }
 
         // Cenário 4: Mescla (70% boas + 20% médias + 10% ruins)
-        val mixedAvgValue = (goodRides.map { it.rideValue }.average() * 0.7) +
+        // v5.0.0: Guard contra goodRides vazio (usa averageOrZero)
+        val mixedAvgValue = (goodRides.map { it.rideValue }.averageOrZero() * 0.7) +
             (avgRides.map { it.rideValue }.averageOrZero() * 0.2) +
             (badRides.map { it.rideValue }.averageOrZero() * 0.1)
-        val mixedAvgKm = (goodRides.map { it.dropoffDistance }.average() * 0.7) +
+        val mixedAvgKm = (goodRides.map { it.dropoffDistance }.averageOrZero() * 0.7) +
             (avgRides.map { it.dropoffDistance }.averageOrZero() * 0.2) +
             (badRides.map { it.dropoffDistance }.averageOrZero() * 0.1)
-        val mixedAvgDuration = (goodRides.map { it.rideDuration }.average() * 0.7) +
+        val mixedAvgDuration = (goodRides.map { it.rideDuration }.averageOrZero() * 0.7) +
             (avgRides.map { it.rideDuration }.averageOrZero() * 0.2) +
             (badRides.map { it.rideDuration }.averageOrZero() * 0.1)
 

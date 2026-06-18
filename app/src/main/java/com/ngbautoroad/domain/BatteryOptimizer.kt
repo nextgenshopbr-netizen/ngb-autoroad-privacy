@@ -11,11 +11,12 @@ class BatteryOptimizer(private val context: Context) {
         return bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
     }
 
+    // v5.0.0: Thresholds ajustados para proteger melhor a bateria
     fun getRecommendedMode(): BatteryMode {
         val level = getCurrentLevel()
         return when {
-            level <= 10 -> BatteryMode.ULTRA_ECO
-            level <= 20 -> BatteryMode.ECO
+            level <= 15 -> BatteryMode.ULTRA_ECO
+            level <= 30 -> BatteryMode.ECO
             else -> BatteryMode.NORMAL
         }
     }

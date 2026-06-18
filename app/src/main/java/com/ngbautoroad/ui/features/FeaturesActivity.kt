@@ -157,7 +157,8 @@ fun RankingTab() {
 
 @Composable
 fun LearningTab() {
-    val engine = remember { LocalLearningEngine() }
+    // v5.0.0: Modo preview (sem Context) para demo na tela de features
+    val engine = remember { LocalLearningEngine(null) }
     val suggestions = remember {
         // Add sample patterns for demo
         repeat(50) { i ->

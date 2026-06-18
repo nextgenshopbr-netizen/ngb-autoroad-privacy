@@ -98,6 +98,8 @@ class OverlayService : Service(),
 
     private lateinit var prefsManager: PrefsManager
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    // v5.0.0: Auto-dismiss timer
+    private var autoDismissJob: Job? = null
 
     companion object {
         const val NOTIFICATION_ID = 1001
@@ -269,15 +271,18 @@ class OverlayService : Service(),
         }
 
         withContext(Dispatchers.Main) {
+            // v5.0.0: Se overlay já visível, remover antes de recriar (evita duplicata)
             if (isOverlayVisible) {
-                updateOverlayContent()
-            } else {
-                createOverlay()
+                hideOverlay()
             }
+            createOverlay()
+            // v5.0.0: Auto-dismiss configurável (30s padrão)
+            startAutoDismissTimer()
         }
     }
 
     fun hideOverlay() {
+        autoDismissJob?.cancel() // v5.0.0: Cancelar timer ao fechar
         overlayView?.let {
             try {
                 windowManager?.removeView(it)
@@ -285,6 +290,18 @@ class OverlayService : Service(),
         }
         overlayView = null
         isOverlayVisible = false
+    }
+
+    // v5.0.0: Auto-dismiss configurável — fecha overlay após X segundos
+    private fun startAutoDismissTimer() {
+        autoDismissJob?.cancel()
+        autoDismissJob = serviceScope.launch {
+            val dismissMs = prefsManager.autoDismissSecondsFlow.first() * 1000L
+            if (dismissMs > 0) { // 0 = nunca auto-dismiss
+                delay(dismissMs)
+                hideOverlay()
+            }
+        }
     }
 
     private fun createOverlay() {
