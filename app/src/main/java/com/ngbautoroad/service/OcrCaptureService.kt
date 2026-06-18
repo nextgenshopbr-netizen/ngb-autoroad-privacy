@@ -1,5 +1,24 @@
 package com.ngbautoroad.service
 
+// ============================================================================
+// ARQUIVO: OcrCaptureService.kt
+// LOCALIZAÇÃO: service/OcrCaptureService.kt
+// RESPONSABILIDADE: Captura dados de corrida via OCR (ML Kit Text Recognition)
+// BLOCOS:
+//   - onStartCommand: Inicia captura de tela periódica
+//   - captureScreen: Tira screenshot via MediaProjection
+//   - processImage: Envia imagem para ML Kit OCR
+//   - parseOcrText: Extrai campos da corrida do texto OCR
+// DEPENDÊNCIAS:
+//   - data/model/RideData.kt → RideData, Platform
+//   - service/OverlayService.kt → envia RideData via Intent
+//   - data/prefs/PrefsManager.kt → ocrEnabled, intervalo
+// PROTEÇÕES:
+//   - Intervalo adaptativo (não processa se app não está em foreground)
+//   - Regex defensivo para cada campo
+//   - Deduplicação por hash de texto extraído
+// ============================================================================
+
 import android.app.Activity
 import android.app.Notification
 import android.app.Service

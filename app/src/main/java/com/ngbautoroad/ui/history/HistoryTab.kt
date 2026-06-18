@@ -1,5 +1,23 @@
 package com.ngbautoroad.ui.history
 
+// ============================================================================
+// ARQUIVO: HistoryTab.kt
+// LOCALIZAÇÃO: ui/history/HistoryTab.kt
+// RESPONSABILIDADE: Histórico de corridas com busca, filtros, detalhes e exportação CSV
+// COMPOSABLES:
+//   - HistoryTab (L47): Tela principal com Flow reativo, busca e filtros
+//   - RideHistoryItem (L256): Card individual de corrida no histórico
+//   - RideDetailDialog (L395): Dialog com detalhes completos + scoreBreakdown
+// DEPENDÊNCIAS:
+//   - data/db/RideHistoryEntity.kt → RideHistoryDao, RideHistoryEntity
+//   - data/prefs/PrefsManager.kt → preferências de filtro
+//   - data/db/AppDatabase.kt → instância do banco
+// PROTEÇÕES:
+//   - LazyColumn com key(ride.id) para performance
+//   - Flow reativo: atualiza automaticamente quando novas corridas são salvas
+//   - Exportação CSV com tratamento de caracteres especiais
+// ============================================================================
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

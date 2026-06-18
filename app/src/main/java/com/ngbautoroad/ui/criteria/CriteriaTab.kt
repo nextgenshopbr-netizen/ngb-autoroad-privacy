@@ -1,5 +1,28 @@
 package com.ngbautoroad.ui.criteria
 
+// ============================================================================
+// ARQUIVO: CriteriaTab.kt
+// LOCALIZAÇÃO: ui/criteria/CriteriaTab.kt
+// RESPONSABILIDADE: Configuração dos 8 critérios de avaliação e thresholds
+// COMPOSABLES:
+//   - CriteriaTab (L29-321): Tela principal com sliders e thresholds
+//   - PointsCounter (L323-387): Indicador visual de pontos usados/restantes
+//   - CriteriaSlider (L390-447): Slider individual com maxValue dinâmico
+//   - ThresholdField (L450-489): Campo de threshold Double com validação
+//   - ThresholdIntField (L492-525): Campo de threshold Int
+// DEPENDÊNCIAS:
+//   - data/model/RideData.kt → CriteriaWeights, DriverThresholds
+//   - data/prefs/PrefsManager.kt → persiste pesos e thresholds
+// DEPENDENTES:
+//   - domain/RideScorer.kt → usa CriteriaWeights e DriverThresholds
+//   - service/OverlayService.kt → carrega config via PrefsManager
+// LÓGICA DE VALIDAÇÃO:
+//   - Soma dos pesos DEVE ser exatamente 100
+//   - Cada slider tem maxValue = 100 - somaOutros (impede ultrapassar 100)
+//   - ThresholdField com maxValue=5.0 para avaliação (não aceita >5 estrelas)
+//   - Feedback visual: borda vermelha quando valor fora do range
+// ============================================================================
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

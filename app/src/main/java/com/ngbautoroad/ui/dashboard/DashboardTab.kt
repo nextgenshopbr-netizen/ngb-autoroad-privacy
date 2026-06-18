@@ -1,5 +1,24 @@
 package com.ngbautoroad.ui.dashboard
 
+// ============================================================================
+// ARQUIVO: DashboardTab.kt
+// LOCALIZAÇÃO: ui/dashboard/DashboardTab.kt
+// RESPONSABILIDADE: Painel principal com resumo de corridas, ganhos e metas
+// COMPOSABLES:
+//   - DashboardTab (L34): Tela principal com dados reativos via Flow
+//   - FinancialSummarySection (L233): Resumo financeiro + progresso de metas
+//   - StatusBar (L363): Barra de status dos serviços
+//   - EarningsCard (L442): Card de ganhos do dia/semana/mês
+//   - StatCard (L503): Card genérico de estatística
+// DEPENDÊNCIAS:
+//   - data/db/RideHistoryEntity.kt → countSinceFlow, queries de histórico
+//   - data/db/FinanceDatabase.kt → EarningDao, FinancialGoalDao
+//   - data/prefs/PrefsManager.kt → serviceActive, protectionActive
+// PROTEÇÕES:
+//   - Flow reativo: atualiza em tempo real quando corridas são salvas
+//   - Cálculo de progresso de metas usa ganhos reais por período
+// ============================================================================
+
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

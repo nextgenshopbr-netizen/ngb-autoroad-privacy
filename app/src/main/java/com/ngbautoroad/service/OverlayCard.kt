@@ -1,5 +1,20 @@
 package com.ngbautoroad.service
 
+// ============================================================================
+// ARQUIVO: OverlayCard.kt
+// LOCALIZAÇÃO: service/OverlayCard.kt
+// RESPONSABILIDADE: Composable do card visual que aparece no overlay flutuante
+// LÓGICA:
+//   - Recebe GalleryCard (template visual) + RideData + RideScore
+//   - Renderiza apenas os campos definidos em galleryCard.fields
+//   - Cores dinâmicas baseadas no ScoreLevel (verde/amarelo/laranja/vermelho)
+// DEPENDÊNCIAS:
+//   - data/model/CardGallery.kt → GalleryCard, CardField, EditorField
+//   - data/model/RideData.kt → RideData, RideScore, ScoreLevel
+// DEPENDENTES:
+//   - service/OverlayService.kt → usa este composable no ComposeView
+// ============================================================================
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable

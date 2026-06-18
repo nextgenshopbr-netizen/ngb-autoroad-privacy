@@ -1,5 +1,25 @@
 package com.ngbautoroad.service
 
+// ============================================================================
+// ARQUIVO: RideAccessibilityService.kt
+// LOCALIZAÇÃO: service/RideAccessibilityService.kt
+// RESPONSABILIDADE: Captura dados de corrida via AccessibilityService (sem OCR)
+// BLOCOS:
+//   - onAccessibilityEvent: Detecta pacotes de apps de corrida
+//   - parseUberRide: Parser específico para Uber Driver
+//   - parse99Ride: Parser específico para 99 Driver
+//   - parseInDriveRide: Parser específico para inDrive
+//   - parseCabifyRide: Parser específico para Cabify Driver
+//   - extractNeighborhood: Regex para extrair bairros de texto
+// DEPENDÊNCIAS:
+//   - data/model/RideData.kt → RideData, Platform
+//   - service/OverlayService.kt → envia RideData via Intent
+// PROTEÇÕES:
+//   - Deduplicação: hash de (platform+value+distance+timestamp/10s)
+//   - Throttle adaptativo por plataforma (400-600ms)
+//   - Regex defensivo: não crasha se texto não bate
+// ============================================================================
+
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.view.accessibility.AccessibilityEvent

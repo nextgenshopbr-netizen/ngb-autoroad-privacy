@@ -2,6 +2,35 @@
 
 package com.ngbautoroad.ui.finance
 
+// ============================================================================
+// ARQUIVO: FinanceActivity.kt
+// LOCALIZAÇÃO: ui/finance/FinanceActivity.kt
+// RESPONSABILIDADE: Controle financeiro completo do motorista
+// COMPOSABLES (blocos principais):
+//   - FinanceScreen (L58-107): Scaffold com 5 abas (Resumo, Ganhos, Gastos, Veículo, Metas)
+//   - FinanceSummaryTab (L110-263): DRE simplificado + progresso de metas
+//   - EarningsTab (L266-347): Lista de ganhos com auto-import toggle
+//   - EarningCard (L350-404): Card individual de ganho com editar/excluir
+//   - AddEarningDialog (L407-530): Dialog para adicionar/editar ganho
+//   - ExpensesTab (L533-604): Lista de gastos com recorrência
+//   - ExpenseCard (L607-647): Card individual de gasto
+//   - AddExpenseDialog (L650-801): Dialog para adicionar gasto (com recorrência)
+//   - VehicleTab (L804-1011): Config do veículo + cálculo de custo/km
+//   - GoalsTab (L1014-1113): Metas financeiras com progresso real
+//   - AddGoalDialog (L1116-1170): Dialog para criar meta
+//   - FinanceInfoCard (L1173-1188): Card reutilizável de info
+//   - getPeriodRange (L1190-fim): Utilitário de range de datas
+// DEPENDÊNCIAS:
+//   - data/db/FinanceDatabase.kt → DAOs (ExpenseDao, EarningDao, etc.)
+//   - data/prefs/PrefsManager.kt → autoImportEarningsFlow
+//   - util/Extensions.kt → toDoubleLocale(), toDoubleLocaleOrNull()
+// PROTEÇÕES:
+//   - Todos os campos numéricos usam toDoubleLocale() (aceita vírgula BR)
+//   - Botões de salvar desabilitados quando valor <= 0
+//   - VehicleTab usa rememberSaveable (sobrevive troca de aba)
+//   - Validação de ano (4 dígitos, 1990-2030)
+// ============================================================================
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -309,7 +338,7 @@ fun EarningsTab(earningDao: EarningDao, prefsManager: com.ngbautoroad.data.prefs
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(allEarnings) { earning ->
+            items(allEarnings, key = { it.id }) { earning ->
                 EarningCard(
                     earning = earning,
                     onEdit = { editingEarning = earning },
@@ -582,7 +611,7 @@ fun ExpensesTab(expenseDao: ExpenseDao) {
             contentPadding = PaddingValues(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(allExpenses) { expense ->
+            items(allExpenses, key = { it.id }) { expense ->
                 ExpenseCard(expense) {
                     scope.launch { expenseDao.delete(expense) }
                 }

@@ -1,5 +1,21 @@
 package com.ngbautoroad.ui.settings
 
+// ============================================================================
+// ARQUIVO: SettingsTab.kt
+// LOCALIZAÇÃO: ui/settings/SettingsTab.kt
+// RESPONSABILIDADE: Configurações do app (serviço, overlay, OCR, bairros)
+// COMPOSABLES:
+//   - SettingsTab (L27): Tela com toggles de serviço, tamanho do overlay, etc.
+//   - NeighborhoodInput (L611): Input de bairros bloqueados
+// DEPENDÊNCIAS:
+//   - service/OverlayService.kt → start/stop/resize
+//   - service/OcrCaptureService.kt → start/stop
+//   - data/prefs/PrefsManager.kt → todas as configurações
+// PROTEÇÕES:
+//   - Verifica permissões antes de ativar serviços
+//   - Slider de tamanho com range fixo (200-600dp)
+// ============================================================================
+
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings

@@ -1,5 +1,21 @@
 package com.ngbautoroad.ui
 
+// ============================================================================
+// ARQUIVO: MainActivity.kt
+// LOCALIZAÇÃO: ui/MainActivity.kt
+// RESPONSABILIDADE: Activity principal com navegação por abas (Bottom Navigation)
+// ABAS:
+//   - Dashboard: Resumo geral
+//   - Critérios: Configuração de pesos
+//   - Cards: Gerenciamento de cards visuais
+//   - Histórico: Lista de corridas avaliadas
+//   - Configurações: Toggles de serviço e overlay
+// DEPENDÊNCIAS:
+//   - Todas as *Tab.kt (DashboardTab, CriteriaTab, CardTab, HistoryTab, SettingsTab)
+//   - data/prefs/PrefsManager.kt
+//   - data/db/AppDatabase.kt
+// ============================================================================
+
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -76,7 +92,7 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text("NGB AutoRoad v4.0.2")
+                    Text("NGB AutoRoad v4.0.3")
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,

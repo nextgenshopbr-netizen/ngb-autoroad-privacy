@@ -1,5 +1,22 @@
 package com.ngbautoroad.data.db
 
+// ============================================================================
+// ARQUIVO: RideHistoryEntity.kt
+// LOCALIZAÇÃO: data/db/RideHistoryEntity.kt
+// RESPONSABILIDADE: Entity e DAO para histórico de corridas avaliadas
+// ENTITY:
+//   - RideHistoryEntity: Corrida com score, breakdown, status, plataforma
+// DAO:
+//   - RideHistoryDao: CRUD + queries por período, plataforma, status
+//   - getAllFlow: Flow reativo para HistoryTab
+//   - countSinceFlow: Flow reativo para DashboardTab
+// MIGRAÇÕES:
+//   - MIGRATION_1_2: Adiciona scoreBreakdown (JSON)
+// PROTEÇÕES:
+//   - Sem allowMainThreadQueries
+//   - Queries com Flow para reatividade
+// ============================================================================
+
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 

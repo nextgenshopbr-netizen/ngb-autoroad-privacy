@@ -1,5 +1,31 @@
 package com.ngbautoroad.ui.card
 
+// ============================================================================
+// ARQUIVO: CardTab.kt
+// LOCALIZAÇÃO: ui/card/CardTab.kt
+// RESPONSABILIDADE: Gerenciamento de cards visuais (2 slots) + simulação
+// COMPOSABLES:
+//   - CardTab (L33-230): Tela principal com 2 slots de card e botões
+//   - CardSlotItem (L233-303): Card individual com preview e ações
+//   - GalleryDialog (L305-406): Dialog de galeria para escolher card
+//   - GalleryCardItem (L408-474): Item da galeria com preview
+//   - RenameDialog (L476-507): Dialog para renomear card
+//   - PreviewDialog (L509-658): Simulação com dados aleatórios + critérios reais
+//   - PreviewField (L660-671): Campo individual no preview
+//   - generateRandomRide (L676-696): Gera RideData aleatório realista
+// DEPENDÊNCIAS:
+//   - data/model/CardGallery.kt → GalleryCard, CardField
+//   - data/model/RideData.kt → CriteriaWeights, DriverThresholds, RideData
+//   - domain/RideScorer.kt → calcula score na simulação
+//   - data/prefs/PrefsManager.kt → card1ModelId, card2ModelId, activeSlot
+// DEPENDENTES:
+//   - Nenhum (tela final de UI)
+// LÓGICA DO PREVIEW:
+//   - Renderiza APENAS os campos do card ativo (galleryCard.fields)
+//   - Cores: vermelho se viola threshold, accent se OK
+//   - Botão "Nova Simulação" gera novos dados aleatórios
+// ============================================================================
+
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells

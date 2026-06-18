@@ -1,5 +1,21 @@
 package com.ngbautoroad.util
 
+// ============================================================================
+// ARQUIVO: Extensions.kt
+// LOCALIZAÇÃO: util/Extensions.kt
+// RESPONSABILIDADE: Extensões globais reutilizáveis em todo o app
+// FUNÇÕES:
+//   - String.toDoubleLocale(): Converte string com vírgula BR para Double
+//   - String.toDoubleLocaleOrNull(): Versão nullable (retorna null se inválido)
+// DEPENDENTES:
+//   - ui/finance/FinanceActivity.kt → todos os campos numéricos
+//   - ui/criteria/CriteriaTab.kt → ThresholdField
+// LÓGICA:
+//   - Substitui vírgula por ponto antes de parsear
+//   - Remove espaços e caracteres não-numéricos
+//   - Retorna 0.0 como fallback seguro
+// ============================================================================
+
 /**
  * Extensão para converter String digitada pelo usuário brasileiro em Double.
  * Trata: vírgula como separador decimal, espaços, e valores inválidos.

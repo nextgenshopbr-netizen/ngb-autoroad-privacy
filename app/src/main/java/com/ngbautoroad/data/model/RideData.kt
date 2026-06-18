@@ -1,27 +1,61 @@
 package com.ngbautoroad.data.model
 
+// ============================================================================
+// ARQUIVO: RideData.kt
+// LOCALIZAÇÃO: data/model/RideData.kt
+// RESPONSABILIDADE: Modelos de dados centrais do sistema — corridas, critérios,
+//                   thresholds, scores, zonas bloqueadas, cards e dashboard
+// DEPENDENTES (quem usa):
+//   - domain/RideScorer.kt → usa RideData, CriteriaWeights, DriverThresholds,
+//     BlockedNeighborhood, RideScore, CriteriaScore, ThresholdViolation, ScoreLevel
+//   - service/OverlayService.kt → cria RideData a partir de OCR/Accessibility
+//   - service/RideAccessibilityService.kt → popula RideData
+//   - service/OcrCaptureService.kt → popula RideData
+//   - ui/criteria/CriteriaTab.kt → edita CriteriaWeights e DriverThresholds
+//   - ui/card/CardTab.kt → usa CardModel, RideData
+//   - ui/dashboard/DashboardTab.kt → usa DashboardData
+//   - ui/history/HistoryTab.kt → exibe RideData e RideScore
+//   - data/prefs/PrefsManager.kt → persiste CriteriaWeights e DriverThresholds
+//   - data/db/RideHistoryEntity.kt → serializa RideData para persistência
+// ============================================================================
+
+// ============================================================================
+// BLOCO 1: RideData — Dados extraídos de uma corrida
+// LINHAS: 28-42
+// LÓGICA: Contém todos os campos que o OCR/Accessibility pode capturar.
+//         Campos calculados (valuePerKm, valuePerHour) são propriedades derivadas.
+// PROTEÇÃO: Campos com default=0.0 permitem dados parciais sem crash.
+// ============================================================================
 /**
  * Dados extraídos de uma corrida via OCR/Accessibility
  */
 data class RideData(
     val platform: Platform = Platform.UNKNOWN,
-    val rideValue: Double = 0.0,          // Valor da corrida (R$)
-    val rideDuration: Double = 0.0,       // Duração da corrida (minutos)
+    val rideValue: Double = 0.0,          // Valor da corrida (R$) — campo obrigatório
+    val rideDuration: Double = 0.0,       // Duração da corrida (minutos) — pode ser 0 se OCR não capturou
     val pickupDistance: Double = 0.0,     // Distância até embarque (km)
-    val dropoffDistance: Double = 0.0,    // Distância até desembarque (km)
-    val passengerRating: Double = 0.0,   // Avaliação do passageiro (0-5)
+    val dropoffDistance: Double = 0.0,    // Distância até desembarque (km) — pode ser 0 se OCR não capturou
+    val passengerRating: Double = 0.0,   // Avaliação do passageiro (0-5) — 0 = plataforma não forneceu
     val intermediateStops: Int = 0,       // Número de paradas intermediárias
-    val pickupNeighborhood: String = "",  // Bairro de embarque
-    val dropoffNeighborhood: String = "", // Bairro de destino
+    val pickupNeighborhood: String = "",  // Bairro de embarque (extraído por regex)
+    val dropoffNeighborhood: String = "", // Bairro de destino (extraído por regex)
     val timestamp: Long = System.currentTimeMillis()
 ) {
+    // Propriedade calculada: R$/km (protegida contra divisão por zero)
     val valuePerKm: Double
         get() = if (dropoffDistance > 0) rideValue / dropoffDistance else 0.0
 
+    // Propriedade calculada: R$/hora (protegida contra divisão por zero)
     val valuePerHour: Double
         get() = if (rideDuration > 0) (rideValue / rideDuration) * 60.0 else 0.0
 }
 
+// ============================================================================
+// BLOCO 2: Platform — Enum de plataformas suportadas
+// LINHAS: 48-54
+// LÓGICA: Cada plataforma tem displayName (UI) e packageName (detecção automática)
+// DEPENDENTE: RideAccessibilityService detecta plataforma pelo packageName
+// ============================================================================
 enum class Platform(val displayName: String, val packageName: String) {
     UBER("Uber", "com.ubercab.driver"),
     NINETY_NINE("99", "com.ninety9.driver"),
@@ -30,9 +64,12 @@ enum class Platform(val displayName: String, val packageName: String) {
     UNKNOWN("Desconhecido", "")
 }
 
-/**
- * Status da corrida no histórico
- */
+// ============================================================================
+// BLOCO 3: RideStatus — Status da corrida no histórico
+// LINHAS: 58-63
+// LÓGICA: Indica a ação tomada pelo motorista sobre a corrida
+// DEPENDENTE: RideHistoryEntity.status, HistoryTab filtros
+// ============================================================================
 enum class RideStatus(val displayName: String) {
     ACCEPTED("Aceita"),
     REFUSED("Recusada"),
@@ -40,41 +77,49 @@ enum class RideStatus(val displayName: String) {
     EXPIRED("Expirada")
 }
 
-/**
- * Critérios de avaliação com pesos configuráveis
- */
+// ============================================================================
+// BLOCO 4: CriteriaWeights — Pesos dos critérios (soma DEVE ser 100)
+// LINHAS: 68-82
+// LÓGICA: Cada campo é 0-100. totalUsed calcula a soma para validação na UI.
+//         Se um campo é 0, o critério é ignorado no cálculo do score.
+// VALIDAÇÃO: CriteriaTab.kt impede que totalUsed > 100 via slider com maxValue dinâmico
+// PERSISTÊNCIA: PrefsManager.criteriaWeightsFlow
+// ============================================================================
 data class CriteriaWeights(
-    val valuePerKm: Int = 30,
-    val valuePerHour: Int = 30,
-    val intermediateStops: Int = 25,
-    val passengerRating: Int = 15,
-    val rideValue: Int = 0,
-    val rideDuration: Int = 0,
-    val pickupDistance: Int = 0,
-    val dropoffDistance: Int = 0
+    val valuePerKm: Int = 30,         // Peso: Valor por quilômetro
+    val valuePerHour: Int = 30,       // Peso: Valor por hora
+    val intermediateStops: Int = 25,  // Peso: Paradas intermediárias
+    val passengerRating: Int = 15,    // Peso: Avaliação do passageiro
+    val rideValue: Int = 0,           // Peso: Valor absoluto da corrida
+    val rideDuration: Int = 0,        // Peso: Duração da corrida
+    val pickupDistance: Int = 0,      // Peso: Distância até embarque
+    val dropoffDistance: Int = 0      // Peso: Distância até destino
 ) {
+    // Soma de todos os pesos — DEVE ser exatamente 100
     val totalUsed: Int
         get() = valuePerKm + valuePerHour + intermediateStops + passengerRating +
                 rideValue + rideDuration + pickupDistance + dropoffDistance
 }
 
-/**
- * Valores mínimos desejados pelo motorista para cada critério.
- * Corridas abaixo desses valores recebem penalidade no score.
- */
+// ============================================================================
+// BLOCO 5: DriverThresholds — Valores mínimos/máximos desejados pelo motorista
+// LINHAS: 87-109
+// LÓGICA: Corridas que violam estes limites recebem PENALIDADE no score.
+//         Cada campo tem um método isXxxActive() que retorna true se configurado.
+//         Valor 0 = não configurado = sem penalidade.
+// PERSISTÊNCIA: PrefsManager.driverThresholdsFlow
+// DEPENDENTE: RideScorer aplica penalidade de 50-70% do peso do critério violado
+// ============================================================================
 data class DriverThresholds(
-    val minValuePerKm: Double = 0.0,        // R$/km mínimo desejado
-    val minValuePerHour: Double = 0.0,      // R$/hora mínimo desejado
-    val minRideValue: Double = 0.0,         // Valor mínimo da corrida (R$)
-    val maxPickupDistance: Double = 0.0,    // Distância máxima até embarque (km)
-    val minPassengerRating: Double = 0.0,   // Avaliação mínima do passageiro
-    val maxDuration: Double = 0.0,          // Duração máxima aceitável (min)
-    val maxStops: Int = 99,                 // Máximo de paradas aceitáveis
-    val minDropoffDistance: Double = 0.0    // Distância mínima do destino (km)
+    val minValuePerKm: Double = 0.0,        // R$/km mínimo desejado (0=desativado)
+    val minValuePerHour: Double = 0.0,      // R$/hora mínimo desejado (0=desativado)
+    val minRideValue: Double = 0.0,         // Valor mínimo da corrida R$ (0=desativado)
+    val maxPickupDistance: Double = 0.0,    // Distância máxima até embarque km (0=desativado)
+    val minPassengerRating: Double = 0.0,   // Avaliação mínima do passageiro (0=desativado, max=5.0)
+    val maxDuration: Double = 0.0,          // Duração máxima aceitável min (0=desativado)
+    val maxStops: Int = 99,                 // Máximo de paradas aceitáveis (99=desativado)
+    val minDropoffDistance: Double = 0.0    // Distância mínima do destino km (0=desativado)
 ) {
-    /**
-     * Verifica se um critério está configurado (> 0 = ativo)
-     */
     fun isValuePerKmActive() = minValuePerKm > 0
     fun isValuePerHourActive() = minValuePerHour > 0
     fun isRideValueActive() = minRideValue > 0
@@ -85,9 +130,13 @@ data class DriverThresholds(
     fun isDropoffDistanceActive() = minDropoffDistance > 0
 }
 
-/**
- * Resultado do score de uma corrida
- */
+// ============================================================================
+// BLOCO 6: RideScore — Resultado do cálculo de score
+// LINHAS: 114-128
+// LÓGICA: Contém score total (0-100), breakdown por critério e violações
+// DEPENDENTE: OverlayCard exibe totalScore e scoreColor
+//             HistoryTab exibe criteriaScores no detalhe
+// ============================================================================
 data class RideScore(
     val totalScore: Double = 0.0,
     val criteriaScores: Map<String, CriteriaScore> = emptyMap(),
@@ -104,9 +153,10 @@ data class RideScore(
     val hasViolations: Boolean get() = thresholdViolations.isNotEmpty()
 }
 
-/**
- * Violação de threshold mínimo do motorista
- */
+// ============================================================================
+// BLOCO 7: Modelos auxiliares de Score
+// LINHAS: 132-151
+// ============================================================================
 data class ThresholdViolation(
     val criteriaName: String,
     val currentValue: Double,
@@ -119,7 +169,7 @@ data class CriteriaScore(
     val rawValue: Double,
     val normalizedScore: Double, // 0-100
     val weight: Int,
-    val weightedScore: Double,
+    val weightedScore: Double,   // normalizedScore * weight / 100
     val level: ScoreLevel
 )
 
@@ -127,23 +177,26 @@ enum class ScoreLevel {
     GREEN, YELLOW, ORANGE, RED
 }
 
-/**
- * Configuração de bairro bloqueado
- */
+// ============================================================================
+// BLOCO 8: BlockedNeighborhood e BlockedZone — Zonas/bairros bloqueados
+// LINHAS: 155-180
+// LÓGICA: Motorista configura bairros ou zonas no mapa que não quer ir.
+//         Corridas com pickup/dropoff nesses locais recebem penalidade.
+// CONFIGURAÇÃO: ZoneMapActivity (mapa interativo)
+// PERSISTÊNCIA: PrefsManager (JSON serializado)
+// DEPENDENTE: RideScorer aplica penaltyWeight como subtração direta do score
+// ============================================================================
 data class BlockedNeighborhood(
     val name: String,
     val type: NeighborhoodType,
-    val penaltyWeight: Int = 20 // Peso da penalidade (0-100)
+    val penaltyWeight: Int = 20 // Peso da penalidade (0-100 pontos subtraídos)
 )
 
 enum class NeighborhoodType {
-    PICKUP,   // Embarque
-    DROPOFF   // Destino
+    PICKUP,   // Não quero pegar passageiro neste bairro
+    DROPOFF   // Não quero ir para este bairro
 }
 
-/**
- * Zona bloqueada no mapa (polígono desenhado pelo motorista)
- */
 data class BlockedZone(
     val id: String = "",
     val name: String = "",
@@ -158,9 +211,14 @@ data class GeoPoint(
     val longitude: Double = 0.0
 )
 
-/**
- * Modelo de card visual
- */
+// ============================================================================
+// BLOCO 9: CardModel — Modelo visual de card (customizado pelo motorista)
+// LINHAS: 188-202
+// LÓGICA: Define aparência do card overlay (cores, bordas, fontes)
+// CONFIGURAÇÃO: CardEditorActivity
+// PERSISTÊNCIA: PrefsManager (card1ModelId, card2ModelId)
+// DEPENDENTE: OverlayCard.kt renderiza com estes valores
+// ============================================================================
 data class CardModel(
     val id: Int,
     val name: String,
@@ -176,9 +234,12 @@ data class CardModel(
     val isFavorite: Boolean = false
 )
 
-/**
- * Dados do Dashboard
- */
+// ============================================================================
+// BLOCO 10: DashboardData — Dados agregados para o painel principal
+// LINHAS: 208-224
+// LÓGICA: Resumo de corridas, ganhos e métricas do dia/semana/mês
+// POPULADO POR: DashboardTab.kt via queries ao RideHistoryDao
+// ============================================================================
 data class DashboardData(
     val totalRidesToday: Int = 0,
     val totalRidesWeek: Int = 0,

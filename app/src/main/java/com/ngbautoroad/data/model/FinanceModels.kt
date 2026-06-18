@@ -1,5 +1,19 @@
 package com.ngbautoroad.data.model
 
+// ============================================================================
+// ARQUIVO: FinanceModels.kt
+// LOCALIZAÇÃO: data/model/FinanceModels.kt
+// RESPONSABILIDADE: Enums e modelos auxiliares do módulo financeiro
+// CLASSES:
+//   - FinancePeriod (enum): DIA, SEMANA, MES
+//   - FuelType (enum): GASOLINA, ETANOL, FLEX, DIESEL, GNV, ELETRICO
+//   - ExpenseCategory (enum): Categorias de gastos
+//   - RecurrenceType (enum): DIARIA, SEMANAL, MENSAL
+// DEPENDENTES:
+//   - ui/finance/FinanceActivity.kt → usa todos os enums
+//   - data/db/FinanceDatabase.kt → entities usam estes tipos
+// ============================================================================
+
 /**
  * Módulo de Controle Financeiro para Motoristas de Aplicativo
  *

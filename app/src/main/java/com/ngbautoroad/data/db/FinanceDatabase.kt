@@ -1,5 +1,25 @@
 package com.ngbautoroad.data.db
 
+// ============================================================================
+// ARQUIVO: FinanceDatabase.kt
+// LOCALIZAÇÃO: data/db/FinanceDatabase.kt
+// RESPONSABILIDADE: Banco Room para dados financeiros (gastos, ganhos, metas, veículo)
+// ENTITIES:
+//   - ExpenseEntity: Gastos com recorrência
+//   - EarningEntity: Ganhos (manuais ou auto-import)
+//   - ReminderEntity: Lembretes financeiros
+//   - VehicleConfigEntity: Configuração do veículo
+//   - FinancialGoalEntity: Metas financeiras
+// DAOS:
+//   - ExpenseDao, EarningDao, ReminderDao, VehicleConfigDao, FinancialGoalDao
+// MIGRAÇÕES:
+//   - MIGRATION_1_2: Adiciona campos de recorrência
+//   - MIGRATION_2_3: Adiciona rideHistoryId no EarningEntity
+// PROTEÇÕES:
+//   - Sem allowMainThreadQueries (todas queries são suspend/Flow)
+//   - fallbackToDestructiveMigration removido (usa migrações reais)
+// ============================================================================
+
 import android.content.Context
 import androidx.room.*
 import androidx.room.migration.Migration

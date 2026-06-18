@@ -1,5 +1,21 @@
 package com.ngbautoroad.data.model
 
+// ============================================================================
+// ARQUIVO: CardGallery.kt
+// LOCALIZAÇÃO: data/model/CardGallery.kt
+// RESPONSABILIDADE: Galeria de templates de cards + enum de campos
+// CLASSES:
+//   - CardField (enum): Todos os campos possíveis em um card
+//   - EditorField: Campo editável com posição, cor, tamanho
+//   - GalleryCard: Template completo com fields, cores, bordas
+//   - CardGallery (object): Lista estática de todos os templates disponíveis
+// DEPENDENTES:
+//   - service/OverlayCard.kt → renderiza GalleryCard
+//   - ui/card/CardTab.kt → exibe galeria e preview
+//   - ui/editor/CardEditorActivity.kt → edita campos
+//   - service/OverlayService.kt → carrega card ativo
+// ============================================================================
+
 /**
  * Galeria de cards prontos com 24 modelos.
  * Cada card tem um layout diferente — desde completos com todos os campos

@@ -1,5 +1,23 @@
 package com.ngbautoroad.data.prefs
 
+// ============================================================================
+// ARQUIVO: PrefsManager.kt
+// LOCALIZAÇÃO: data/prefs/PrefsManager.kt
+// RESPONSABILIDADE: Persistência de configurações via DataStore Preferences
+// DADOS PERSISTIDOS:
+//   - CriteriaWeights (8 pesos de critérios)
+//   - DriverThresholds (8 valores mínimos/máximos)
+//   - Card config (card1ModelId, card2ModelId, activeSlot)
+//   - Overlay config (positionX, positionY, size)
+//   - Service toggles (serviceActive, ocrEnabled, autoImportEarnings)
+//   - Blocked neighborhoods (JSON serializado)
+// DEPENDENTES:
+//   - Praticamente todos os arquivos do app leem configurações daqui
+// PROTEÇÕES:
+//   - Todos os flows emitem valor default se chave não existe
+//   - Operações de escrita são suspend (não bloqueiam main thread)
+// ============================================================================
+
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*

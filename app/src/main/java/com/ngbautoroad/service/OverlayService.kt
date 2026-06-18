@@ -1,5 +1,36 @@
 package com.ngbautoroad.service
 
+// ============================================================================
+// ARQUIVO: OverlayService.kt
+// LOCALIZAÇÃO: service/OverlayService.kt
+// RESPONSABILIDADE: Serviço foreground que exibe card flutuante sobre outros apps
+// BLOCOS PRINCIPAIS:
+//   - companion object (L71-95): start/stop/resize estáticos
+//   - onCreate (L96-131): Inicializa PrefsManager, carrega config, registra lifecycle
+//   - onStartCommand (L132-137): Recebe RideData via Intent e chama showOverlay
+//   - showOverlay (L148-240): Calcula score, salva histórico, auto-import, exibe card
+//   - hideOverlay (L241-250): Remove overlay com animação
+//   - createOverlay (L251-332): Cria WindowManager.LayoutParams + ComposeView
+//   - updateOverlayContent (L333-350): Atualiza conteúdo do Compose
+//   - resizeOverlay (L351-364): Redimensiona card ao vivo
+//   - createNotification (L365-fim): Notificação do foreground service
+// DEPENDÊNCIAS:
+//   - domain/RideScorer.kt → calcula score
+//   - service/OverlayCard.kt → composable do card visual
+//   - data/prefs/PrefsManager.kt → config de pesos, thresholds, posição
+//   - data/db/AppDatabase.kt → salva histórico
+//   - data/db/FinanceDatabase.kt → auto-import de ganhos
+//   - data/model/CardGallery.kt → GalleryCard ativo
+// DEPENDENTES:
+//   - ui/settings/SettingsTab.kt → chama start/stop/resize
+//   - service/RideAccessibilityService.kt → envia RideData via Intent
+//   - service/OcrCaptureService.kt → envia RideData via Intent
+// PROTEÇÕES:
+//   - CoroutineScope cancelado no onDestroy (sem memory leak)
+//   - Posição do overlay persistida no DataStore
+//   - Deduplicação: não salva mesma corrida 2x (verifica timestamp)
+// ============================================================================
+
 import android.content.Context
 import android.app.Notification
 import android.app.NotificationChannel
