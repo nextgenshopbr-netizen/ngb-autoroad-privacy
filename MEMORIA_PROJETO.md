@@ -280,3 +280,47 @@
 - Português (BR) — default (values/strings.xml)
 - Espanhol — values-es/strings.xml
 - Inglês — strings hardcoded no código (fallback)
+
+---
+
+## 19/06/2026 — v6.0.0: REESCRITA TOTAL DO ENGINE
+
+### Problema
+1. AccessibilityService não detectava corridas da Uber (árvore vazia, throttle alto, Compose não expõe nós)
+2. Bancos fechavam ao detectar AccessibilityService ativo
+
+### Pesquisa Realizada
+- Engenharia reversa do StopClub (não tem AccessibilityService próprio, usa Macrodroid externo)
+- Análise do GigU (concorrente direto, usa AccessibilityService puro, reescreveu engine na v1.2.54)
+- Pesquisa sobre accessibilityDataSensitive (Android 15), WRITE_SECURE_SETTINGS, Shizuku
+- Análise de como bancos detectam: Settings.Secure, overlay detection, canRetrieveWindowContent
+
+### Solução Implementada: Triple Engine + Ghost Mode
+
+#### Triple Engine (RideAccessibilityService.kt — reescrita total)
+- **Camada 1**: getWindows() como fonte PRIMÁRIA + zero throttle + profundidade 50 + hintText
+- **Camada 2**: takeScreenshot() + ML Kit OCR (Android 11+, silencioso, sem permissão extra)
+- **Camada 3**: RideNotificationListener (novo serviço, backup durante Ghost Mode)
+
+#### Ghost Mode (Stealth Bancário Automático)
+- Nível 1: Remove overlay/bubble em <100ms
+- Nível 2: Hiberna serviceInfo (packageNames=[placeholder], eventTypes=WINDOW_STATE only)
+- Nível 3: UsageStatsManager polling (2s) + timeout 5min
+- 30+ bancos brasileiros na lista
+- Zero interação do motorista (100% automático)
+
+#### Bug Fix
+- Editor de cards: ao fechar overlay de teste, app volta ao foco (antes minimizava)
+
+### Arquivos Modificados
+- `RideAccessibilityService.kt` — reescrita total (750+ linhas)
+- `RideNotificationListener.kt` — NOVO (Camada 3)
+- `OverlayService.kt` — hideOverlay traz app de volta em simulação
+- `NGBAutoRoadApp.kt` — canal CHANNEL_GHOST
+- `AndroidManifest.xml` — NotificationListener + PACKAGE_USAGE_STATS + VIBRATE
+- `accessibility_service_config.xml` — canTakeScreenshot + typeViewScrolled + timeout=0
+- `build.gradle.kts` — v6.0.0 (versionCode 44)
+
+### Release
+- GitHub: https://github.com/nextgenshopbr-netizen/ngb-autoroad-privacy/releases/tag/v6.0.0
+- APK: app-release.apk (42.8 MB)
