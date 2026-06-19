@@ -359,19 +359,15 @@ fun OverlayCard(
 
             // Cores nos campos já comunicam violações visualmente
             }
-        }
 
-        // === RESIZE HANDLE — Canto inferior direito ===
-        if (onResize != null) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.BottomEnd
-            ) {
+            // === RESIZE HANDLE — Dentro do card, canto inferior direito ===
+            if (onResize != null) {
                 Box(
                     modifier = Modifier
-                        .size(24.dp)
+                        .align(Alignment.BottomEnd)
+                        .size(22.dp)
                         .clip(RoundedCornerShape(topStart = 6.dp, bottomEnd = borderRadius))
-                        .background(accentColor.copy(alpha = 0.35f))
+                        .background(accentColor.copy(alpha = 0.30f))
                         .pointerInput(Unit) {
                             detectDragGestures { change, dragAmount ->
                                 change.consume()
@@ -380,11 +376,10 @@ fun OverlayCard(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    // Ícone diagonal clássico de resize (3 linhas diagonais)
                     Text(
                         text = "⟋",
-                        color = accentColor.copy(alpha = 0.7f),
-                        fontSize = (10 * fontScale).sp,
+                        color = textColor.copy(alpha = 0.5f),
+                        fontSize = (9 * fontScale).sp,
                         fontWeight = FontWeight.Bold
                     )
                 }

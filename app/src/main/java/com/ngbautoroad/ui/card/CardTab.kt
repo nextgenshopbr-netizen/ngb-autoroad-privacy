@@ -207,7 +207,43 @@ fun CardTab(prefsManager: PrefsManager) {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
-                onClick = { showPreview = true },
+                onClick = {
+                    scope.launch {
+                        try {
+                            val canDrawOverlay = android.provider.Settings.canDrawOverlays(context)
+                            if (!canDrawOverlay) {
+                                android.widget.Toast.makeText(context, "Permissão de overlay necessária.", android.widget.Toast.LENGTH_LONG).show()
+                                return@launch
+                            }
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                val notifGranted = context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (!notifGranted) {
+                                    android.widget.Toast.makeText(context, "Ative a permissão de Notificações.", android.widget.Toast.LENGTH_LONG).show()
+                                    return@launch
+                                }
+                            }
+                            val ride = generateRandomRide()
+                            val serviceRunning = OverlayService.isRunning()
+                            if (!serviceRunning) {
+                                OverlayService.start(context)
+                            }
+                            var retries = 0
+                            var callback = OverlayService.onRideDetected
+                            while (callback == null && retries < 3) {
+                                delay(800)
+                                callback = OverlayService.onRideDetected
+                                retries++
+                            }
+                            if (callback != null) {
+                                callback.invoke(ride)
+                            } else {
+                                android.widget.Toast.makeText(context, "Serviço não iniciou. Verifique permissões.", android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(context, "Erro ao simular: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    }
+                },
                 modifier = Modifier.weight(1f),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondary
@@ -268,9 +304,10 @@ fun CardTab(prefsManager: PrefsManager) {
                                 retries++
                                 android.util.Log.d("NGB_TESTAR_CARD", "[8.$retries] onRideDetected callback=${callback != null} (tentativa $retries)")
                             }
-                            if (callback != null) {
+                            val finalCallback = callback
+                            if (finalCallback != null) {
                                 android.util.Log.d("NGB_TESTAR_CARD", "[9] Invocando callback com corrida simulada")
-                                callback.invoke(ride)
+                                finalCallback.invoke(ride)
                                 android.util.Log.d("NGB_TESTAR_CARD", "[10] Callback invocado com sucesso")
                             } else {
                                 android.util.Log.w("NGB_TESTAR_CARD", "[ERR] callback nulo após $retries tentativas. OverlayService.isRunning()=${OverlayService.isRunning()}")
