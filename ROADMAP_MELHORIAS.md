@@ -67,3 +67,114 @@ Expansão das capacidades do aplicativo para interagir com o ambiente externo e 
 
 ### 3. Dashboard Web para Motoristas
 - **Sincronização Nuvem (Opcional):** Para motoristas que desejam ver seus relatórios no computador, implementar uma sincronização segura ponta-a-ponta com um backend leve (ex: Firebase ou Supabase), permitindo visualizar o Dashboard em uma interface web. (Sempre respeitando a filosofia "Privacy First" do app, com opt-in explícito).
+
+---
+
+## Plano Comercial: Modelo de Negócio e Precificação
+
+### Contexto de Mercado
+
+O Brasil conta com aproximadamente **1,72 milhão de motoristas de aplicativo** ativos (IBGE, 2024), com crescimento de 35% nos últimos dois anos. A renda líquida média desses trabalhadores gira em torno de **R$ 1.800 a R$ 3.700 mensais**, dependendo da jornada e da cidade. Esse perfil revela um público com renda moderada, altamente sensível a custos fixos recorrentes e que já convive com despesas obrigatórias de combustível, manutenção, seguro e taxa das plataformas (15% a 30% por corrida).
+
+O principal concorrente direto, o **GigU**, cobra:
+
+| Plano GigU | Valor | Equivalente Mensal |
+|---|---|---|
+| Mensal | R$ 12,90/mês | R$ 12,90 |
+| Semestral | R$ 59,90 (10% off) | R$ 9,98 |
+| Anual | R$ 99,90 (39% off) | R$ 8,32 |
+
+O GigU possui mais de **1 milhão de downloads** e é o líder atual da categoria. Sua estratégia é baseada em assinatura recorrente, o que gera receita previsível para o negócio, mas cria uma "dor de custo" permanente para o motorista — especialmente nos meses em que ele trabalha menos.
+
+---
+
+### Proposta de Valor Diferenciada: "Pague Uma Vez, Use Para Sempre"
+
+O NGB AutoRoad Privacy se posiciona de forma oposta ao mercado: **sem assinatura, sem mensalidade, sem surpresas na fatura**. A filosofia é simples — o motorista já paga taxa para a Uber, para a 99, para o combustível e para o seguro. O app que deveria ajudá-lo a ganhar mais não pode ser mais uma sangria mensal.
+
+> "O motorista que usa o NGB AutoRoad paga uma única vez e recebe todas as atualizações futuras. Enquanto o concorrente cobra R$ 12,90 todo mês, o NGB custa menos que **dois meses do GigU** e dura para sempre."
+
+---
+
+### Estrutura de Planos Recomendada
+
+#### Plano Gratuito (Isca de Entrada)
+O app é distribuído gratuitamente com funcionalidades básicas desbloqueadas, permitindo que o motorista experimente o valor antes de comprar.
+
+| Recurso | Gratuito | Vitalício |
+|---|---|---|
+| Card de corrida com score | ✅ (limitado a 3 cards) | ✅ (35 cards) |
+| Critérios básicos (distância, valor) | ✅ | ✅ |
+| Histórico de corridas (últimas 30) | ✅ | ✅ (ilimitado) |
+| Ghost Mode bancário | ✅ | ✅ |
+| AutoPilot (aceitar/recusar automático) | ❌ | ✅ |
+| Perfis de critérios salvos | ❌ | ✅ (até 5) |
+| Controle financeiro completo | ❌ | ✅ |
+| Projeção de ganhos e "E se?" | ❌ | ✅ |
+| Mapa de zonas de risco | ❌ | ✅ |
+| Exportação CSV/PDF | ❌ | ✅ |
+| Atualizações futuras | ✅ (correções) | ✅ (tudo) |
+
+#### Plano Vitalício — Preço Único
+**R$ 24,90** (pagamento único, sem recorrência)
+
+Esse valor foi calculado com base nos seguintes critérios:
+
+- **Ponto de equilíbrio psicológico:** Abaixo de R$ 29,90, o motorista percebe como "menos que 3 meses do GigU" e o custo-benefício é imediato e óbvio.
+- **Retorno sobre investimento imediato:** Com o AutoPilot recusando apenas 2 corridas ruins por dia (economia de ~R$ 5,00/dia), o app se paga em **menos de 5 dias** de uso.
+- **Barreira de entrada baixa:** R$ 24,90 equivale a menos de 1% da renda mensal média do motorista, eliminando a objeção de preço.
+- **Sustentabilidade do negócio:** Com 1% do mercado brasileiro (17.200 motoristas), a receita seria de **R$ 428.580** — suficiente para manter o desenvolvimento por anos sem depender de assinatura.
+
+#### Promoção de Lançamento (Primeiros 90 dias)
+**R$ 14,90** — Oferta de fundador para os primeiros 500 compradores. Cria urgência, gera os primeiros reviews e financia o desenvolvimento da Fase 1 do roadmap.
+
+---
+
+### Canais de Distribuição e Monetização
+
+**Canal Principal — Google Play (In-App Purchase)**
+A compra do Plano Vitalício é feita dentro do próprio app via `Google Play Billing`. O Google retém 15% (taxa reduzida para apps com receita abaixo de US$ 1 milhão/ano). O desenvolvedor recebe 85% de cada venda.
+
+| Cenário | Vendas/mês | Receita Bruta | Receita Líquida (85%) |
+|---|---|---|---|
+| Conservador | 100 | R$ 2.490 | R$ 2.117 |
+| Realista | 500 | R$ 12.450 | R$ 10.583 |
+| Otimista | 2.000 | R$ 49.800 | R$ 42.330 |
+
+**Canal Secundário — Comunidades de Motoristas**
+Grupos de WhatsApp e Telegram de motoristas são o principal vetor orgânico de divulgação. Uma estratégia de "indique e ganhe" (ex: código de desconto de R$ 5,00 para quem indicar) pode acelerar o crescimento viral sem custo de mídia paga.
+
+**Canal Terciário — YouTube e TikTok**
+Parcerias com criadores de conteúdo do nicho de motoristas (canais com 10k-100k seguidores) para demonstrações do app em funcionamento real. O formato "veja quanto eu ganhei a mais usando o NGB" tem alto potencial de conversão nesse público.
+
+---
+
+### Estratégia de Sustentabilidade a Longo Prazo
+
+O modelo vitalício levanta uma questão legítima: como sustentar o desenvolvimento sem receita recorrente? A resposta está em três pilares:
+
+**1. Volume e Crescimento Orgânico:** Com 1,72 milhão de motoristas no Brasil e crescimento de 35% ao ano, novos motoristas entram no mercado constantemente. Cada novo motorista é um potencial comprador do plano vitalício.
+
+**2. Versões Futuras com Upgrade Opcional:** Quando funcionalidades de grande porte forem lançadas (ex: Dashboard Web, Integração WhatsApp, IA preditiva), poderá ser oferecido um "Upgrade v2" opcional por um valor simbólico (ex: R$ 9,90) para quem já possui o plano vitalício v1. Motoristas que compraram na fundação sempre terão prioridade e desconto.
+
+**3. Custo Operacional Baixo:** Por ser um app 100% local (sem servidor, sem banco de dados na nuvem, sem custos de infraestrutura), o custo de manutenção é essencialmente zero além do tempo de desenvolvimento. Isso torna o modelo vitalício viável onde seria inviável para um SaaS tradicional.
+
+---
+
+### Comparativo Final: NGB AutoRoad vs. Concorrentes
+
+| Critério | NGB AutoRoad Privacy | GigU | Apps Gratuitos |
+|---|---|---|---|
+| Modelo de cobrança | Pagamento único | Assinatura mensal | Gratuito (com anúncios) |
+| Custo em 12 meses | R$ 24,90 | R$ 154,80 | R$ 0 (mas sem AutoPilot) |
+| Custo em 24 meses | R$ 24,90 | R$ 309,60 | R$ 0 |
+| AutoPilot (aceitar/recusar) | ✅ | ❌ | ❌ |
+| Ghost Mode bancário | ✅ | ❌ | ❌ |
+| Privacidade (100% local) | ✅ | ❌ (dados na nuvem) | ❌ |
+| Atualizações futuras | ✅ (incluídas) | ✅ (enquanto pagar) | ✅ |
+| Perfis de critérios | ✅ (5 perfis) | ❌ | ❌ |
+| Controle financeiro | ✅ (completo) | Parcial | Parcial |
+
+---
+
+*Plano comercial elaborado com base em dados de mercado de junho de 2026. Valores e estratégias sujeitos a revisão conforme evolução do produto e do mercado.*
