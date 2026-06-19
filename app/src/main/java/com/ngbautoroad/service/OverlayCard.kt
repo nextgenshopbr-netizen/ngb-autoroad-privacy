@@ -58,6 +58,7 @@ fun OverlayCard(
     goalProgress: Float = 0f,
     goalEarned: Double = 0.0,
     goalTarget: Double = 200.0,
+    customLayout: com.ngbautoroad.ui.editor.CustomCardLayout? = null,
     onDismiss: () -> Unit,
     onFontScaleChange: (Float) -> Unit = {},
     onResize: ((deltaX: Float, deltaY: Float) -> Unit)? = null
@@ -186,6 +187,97 @@ fun OverlayCard(
         }
 
         // === CARD COM CONTEÚDO ===
+        val customL = customLayout
+        val scoreBarHeightDp = (customL?.scoreBarHeight ?: 5).dp
+
+        if (customL != null && customL.fields.isNotEmpty()) {
+            // === MODO CUSTOM: posicionamento absoluto com estilos por campo ===
+            val customBgColor = try { android.graphics.Color.parseColor(customL.backgroundColor).let { Color(it) } } catch (_: Exception) { bgColor }
+            val customBorderColor = try { android.graphics.Color.parseColor(customL.borderColor).let { Color(it) } } catch (_: Exception) { borderColor }
+            val customRadius = customL.borderRadius.dp
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(bottomStart = customRadius, bottomEnd = customRadius))
+                    .then(
+                        if (customL.showBorder) Modifier.border(
+                            2.dp, totalScoreColor,
+                            RoundedCornerShape(bottomStart = customRadius, bottomEnd = customRadius)
+                        ) else Modifier
+                    )
+                    .background(customBgColor)
+                    .fillMaxWidth()
+                    .heightIn(min = 80.dp)
+            ) {
+                customL.fields.forEach { editorField ->
+                    val fieldColor = try { android.graphics.Color.parseColor(editorField.colorHex).let { Color(it) } } catch (_: Exception) { textColor }
+                    val fieldFontSize = (editorField.fontSize * fontScale).sp
+                    val fieldFontWeight = if (editorField.isBold) FontWeight.Bold else FontWeight.Normal
+                    val fieldFontStyle = if (editorField.isItalic) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal
+
+                    val fieldValue: String = when (editorField.fieldType) {
+                        "PLATFORM" -> ride.platform.displayName
+                        "SCORE" -> score.totalScore.toString()
+                        "VALUE" -> "R\$ ${ "%.2f".format(ride.rideValue) }"
+                        "DISTANCE_KM", "DROPOFF_DISTANCE" -> "${ "%.1f".format(ride.dropoffDistance) } km"
+                        "PICKUP_DISTANCE" -> "${ "%.1f".format(ride.pickupDistance) } km"
+                        "VALUE_PER_KM" -> "R\$ ${ "%.2f".format(ride.valuePerKm) }/km"
+                        "DURATION_MIN", "DURATION" -> "${ride.rideDuration.toInt()} min"
+                        "PASSENGER_RATING" -> "★ ${ "%.1f".format(ride.passengerRating) }"
+                        "STOPS", "INTERMEDIATE_STOPS" -> "${ride.intermediateStops}"
+                        "PICKUP_NEIGHBORHOOD" -> ride.pickupNeighborhood
+                        "DROPOFF_NEIGHBORHOOD" -> ride.dropoffNeighborhood
+                        "SCORE_BAR" -> "" // barra visual
+                        else -> editorField.label
+                    }
+
+                    if (editorField.fieldType == "SCORE_BAR") {
+                        Box(
+                            modifier = Modifier
+                                .offset { IntOffset(editorField.x.roundToInt(), editorField.y.roundToInt()) }
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp)
+                        ) {
+                            LinearProgressIndicator(
+                                progress = (score.totalScore / 100.0).toFloat().coerceIn(0f, 1f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(scoreBarHeightDp)
+                                    .clip(RoundedCornerShape(scoreBarHeightDp / 2)),
+                                color = totalScoreColor,
+                                trackColor = fieldColor.copy(alpha = 0.15f),
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = fieldValue,
+                            color = fieldColor,
+                            fontSize = fieldFontSize,
+                            fontWeight = fieldFontWeight,
+                            fontStyle = fieldFontStyle,
+                            modifier = Modifier
+                                .offset { IntOffset(editorField.x.roundToInt(), editorField.y.roundToInt()) }
+                                .padding(2.dp)
+                        )
+                    }
+                }
+
+                if (onResize != null) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(customRadius + 4.dp)
+                            .background(color = accentColor.copy(alpha = 0.35f), shape = RoundedCornerShape(topStart = customRadius, bottomEnd = customRadius))
+                            .pointerInput(Unit) { detectDragGestures { change, dragAmount -> change.consume(); onResize(dragAmount.x, dragAmount.y) } },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "╯", color = textColor.copy(alpha = 0.6f), fontSize = (8 * fontScale).sp)
+                    }
+                }
+            }
+        } else {
+
+        // === MODO GALERIA: layout sequencial fixo ===
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(bottomStart = borderRadius, bottomEnd = borderRadius))
@@ -347,8 +439,8 @@ fun OverlayCard(
                             progress = (score.totalScore / 100.0).toFloat().coerceIn(0f, 1f),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(5.dp)
-                                .clip(RoundedCornerShape(3.dp)),
+                                .height(scoreBarHeightDp)
+                                .clip(RoundedCornerShape(scoreBarHeightDp / 2)),
                             color = totalScoreColor,
                             trackColor = textColor.copy(alpha = 0.15f),
                         )
@@ -377,13 +469,14 @@ fun OverlayCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "╱",
+                        text = "╯",
                         color = textColor.copy(alpha = 0.6f),
                         fontSize = (8 * fontScale).sp
                     )
                 }
             }
         }
+        } // fecha else (modo galeria)
     }
 }
 

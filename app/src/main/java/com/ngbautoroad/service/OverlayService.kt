@@ -103,6 +103,7 @@ class OverlayService : Service(),
     private var currentRide: RideData? = null
     private var currentScore: RideScore? = null
     private var currentGalleryCard: CardGallery.GalleryCard? = null
+    private var currentCustomLayout: com.ngbautoroad.ui.editor.CustomCardLayout? = null
     private var overlayWidth = 320
     private var currentFontScale = 1.0f
     private var naturalOverlayHeight = 0
@@ -219,29 +220,28 @@ class OverlayService : Service(),
         overlayWidth = prefsManager.overlayWidthFlow.first()
 
         // Obter card da galeria baseado no slot ativo (tipo correto: GalleryCard)
+        currentCustomLayout = null // limpar por padrão
         currentGalleryCard = when (activeSlot) {
             1 -> CardGallery.getById(prefsManager.card1ModelIdFlow.first())
             2 -> CardGallery.getById(prefsManager.card2ModelIdFlow.first())
             3 -> {
-                // Slot 3 = Custom: construir GalleryCard a partir do layout salvo no editor
+                // Slot 3 = Custom: carregar CustomCardLayout COMPLETO (posições, fontes, estilos)
                 val card3 = prefsManager.card3CustomFlow.first()
                 val layoutJson = prefsManager.card3LayoutJsonFlow.first()
-                // Extrair campos do JSON do editor (CustomCardLayout)
-                val fields = try {
-                    if (layoutJson.isNotBlank()) {
-                        val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
-                        val layoutObj = json.decodeFromString<CustomCardLayout>(layoutJson)
-                        layoutObj.fields
-                            .mapNotNull { f ->
-                                try { CardGallery.CardField.valueOf(f.fieldType) } catch (_: Exception) { null }
-                            }
-                            .ifEmpty { CardGallery.CardField.entries }
-                    } else {
-                        CardGallery.CardField.entries
-                    }
-                } catch (_: Exception) {
-                    CardGallery.CardField.entries
-                }
+                val jsonParser = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+
+                // Salvar layout completo para o OverlayCard usar no modo custom
+                currentCustomLayout = try {
+                    if (layoutJson.isNotBlank()) jsonParser.decodeFromString<CustomCardLayout>(layoutJson)
+                    else null
+                } catch (_: Exception) { null }
+
+                // GalleryCard como fallback (caso customLayout seja nulo)
+                val fields = currentCustomLayout?.fields
+                    ?.mapNotNull { f -> try { CardGallery.CardField.valueOf(f.fieldType) } catch (_: Exception) { null } }
+                    ?.ifEmpty { CardGallery.CardField.entries }
+                    ?: CardGallery.CardField.entries
+
                 CardGallery.GalleryCard(
                     id = -1,
                     name = "Custom",
@@ -414,6 +414,7 @@ class OverlayService : Service(),
                             goalProgress = shiftState.goalProgress,
                             goalEarned = shiftState.totalEarned,
                             goalTarget = shiftState.goalValue,
+                            customLayout = currentCustomLayout,
                             onDismiss = { hideOverlay() },
                             onFontScaleChange = { newScale ->
                                 currentFontScale = newScale
@@ -555,6 +556,7 @@ class OverlayService : Service(),
                         goalProgress = shiftState.goalProgress,
                         goalEarned = shiftState.totalEarned,
                         goalTarget = shiftState.goalValue,
+                        customLayout = currentCustomLayout,
                         onDismiss = { hideOverlay() },
                         onFontScaleChange = { newScale ->
                             currentFontScale = newScale

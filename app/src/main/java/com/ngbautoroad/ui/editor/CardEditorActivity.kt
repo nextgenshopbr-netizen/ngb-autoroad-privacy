@@ -102,7 +102,8 @@ data class CustomCardLayout(
     val borderRadius: Int = 12,
     val cardWidth: Int = 320,
     val cardHeight: Int = 200,
-    val showBorder: Boolean = true
+    val showBorder: Boolean = true,
+    val scoreBarHeight: Int = 5  // espessura da barra de score em dp
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -312,6 +313,18 @@ fun CardEditorScreen(
                     onCheckedChange = { layout = layout.copy(showBorder = it) }
                 )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Controle de espessura da barra de score
+            Text("Barra de score: ${layout.scoreBarHeight}dp", style = MaterialTheme.typography.bodySmall)
+            Slider(
+                value = layout.scoreBarHeight.toFloat(),
+                onValueChange = { layout = layout.copy(scoreBarHeight = it.roundToInt()) },
+                valueRange = 2f..20f,
+                steps = 17,
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
