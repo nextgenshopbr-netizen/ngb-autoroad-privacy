@@ -324,3 +324,74 @@
 ### Release
 - GitHub: https://github.com/nextgenshopbr-netizen/ngb-autoroad-privacy/releases/tag/v6.0.0
 - APK: app-release.apk (42.8 MB)
+
+---
+
+## 19/06/2026 — v6.1.0: AutoPilot + RideLifecycleManager + Bug Fix Ganhos + Perfis
+
+### Problema Resolvido
+1. **Bug crítico de ganhos inflados**: OverlayService registrava ganho no momento da detecção, mesmo sem motorista aceitar a corrida
+2. Motorista não tinha opção de aceitar/recusar automaticamente baseado no score
+3. Não havia como salvar/carregar configurações diferentes (dia vs noite)
+4. Não havia rastreamento do ciclo completo da corrida (aceitação → conclusão)
+
+### Solução: Opção C — Híbrido Automático com Confirmação
+
+#### RideLifecycleManager (NOVO)
+- Ciclo de vida completo: PENDING → ACCEPTED → COMPLETED/CANCELLED/UNCERTAIN
+- Detecta aceitação via textos ("A caminho", "Dirigir até")
+- Detecta conclusão via textos ("Viagem concluída", "Avalie o passageiro")
+- Detecta cancelamento via textos ("Cancelada", "Cancelled")
+- Timeout de 20s para aceitação → EXPIRED se card sumiu
+- Timeout de 5min para conclusão → UNCERTAIN → notificação para motorista confirmar
+- Registra ganho APENAS quando fase = COMPLETED
+- Reversão automática de ganho se corrida cancelada após aceitação
+
+#### AutoPilotEngine (NOVO)
+- 4 modos: OFF, ACCEPT_ONLY, REFUSE_ONLY, FULL
+- Delay humanizado por faixa de score:
+  - Score 90-100: Aceita em 1-2s (corrida excelente)
+  - Score 75-89: Aceita em 3-5s (corrida boa)
+  - Score 60-74: ZONA NEUTRA — não age
+  - Score 40-59: Recusa em 4-6s (corrida ruim)
+  - Score 0-39: Recusa em 1-2s (corrida péssima)
+- Click automático via AccessibilityService (findAndClickButton)
+- Respeita filtros geográficos (bairros/zonas bloqueadas)
+
+#### UncertainReceiver (NOVO)
+- BroadcastReceiver para ações da notificação UNCERTAIN
+- Botões [Sim, concluída] [Não, cancelada] na notificação
+
+#### Bug Fix: Ganhos
+- OverlayService agora salva corrida como PENDING (não registra ganho)
+- Ganho só é registrado pelo RideLifecycleManager.onRideCompleted()
+- Verificação de duplicatas antes de inserir ganho
+
+#### Sistema de Perfis
+- Até 5 perfis salvos (ex: Dia, Noite, Fim de semana)
+- Cada perfil guarda: CriteriaWeights, DriverThresholds, modo AutoPilot, scores
+- Carregar/excluir perfil com 1 toque
+- Serialização JSON via kotlinx.serialization
+
+#### UI (CriteriaTab)
+- Seção AutoPilot: seletor de modo (FilterChips), sliders de score, checkbox geo
+- Seção Perfis: lista de perfis salvos, botão salvar, dialog com nome
+- Card de aviso de zona neutra e aviso de segurança
+
+### Arquivos Modificados (13 arquivos, +1631 linhas)
+- `service/RideLifecycleManager.kt` — NOVO (570+ linhas)
+- `service/AutoPilotEngine.kt` — NOVO (310+ linhas)
+- `service/UncertainReceiver.kt` — NOVO (55 linhas)
+- `service/OverlayService.kt` — Bug fix: PENDING + integração lifecycle/autopilot
+- `service/RideAccessibilityService.kt` — Instancia lifecycle/autopilot + monitoramento pós-detecção
+- `data/model/RideData.kt` — Novos status: PENDING, COMPLETED, UNCERTAIN
+- `data/db/RideHistoryEntity.kt` — Queries atualizadas (COMPLETED OR ACCEPTED)
+- `data/db/FinanceDatabase.kt` — deleteByRideHistoryId
+- `data/prefs/PrefsManager.kt` — Chaves AutoPilot + Perfis
+- `ui/criteria/CriteriaTab.kt` — AutoPilotSection + ProfilesSection + SavedProfile
+- `NGBAutoRoadApp.kt` — Canal CHANNEL_LIFECYCLE
+- `AndroidManifest.xml` — UncertainReceiver
+- `build.gradle.kts` — versionCode=45, versionName=6.1.0
+
+### Release
+- GitHub: https://github.com/nextgenshopbr-netizen/ngb-autoroad-privacy/releases/tag/v6.1.0
