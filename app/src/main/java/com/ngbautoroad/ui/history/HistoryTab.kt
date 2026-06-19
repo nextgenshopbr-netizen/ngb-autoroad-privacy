@@ -183,10 +183,10 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
 
         // Summary card
         if (rides.isNotEmpty()) {
-            val accepted = rides.filter { it.status == "ACCEPTED" }
+            val accepted = rides.filter { it.status == "ACCEPTED" || it.status == "COMPLETED" }
             val totalValue = accepted.sumOf { it.rideValue }
             val avgScore = rides.map { it.score }.average()
-            val avgVkm = accepted.filter { it.dropoffDistance > 0 }.map { it.valuePerKm }.let {
+            val avgVkm = accepted.filter { it.dropoffDistance > 0.0 }.map { it.valuePerKm }.let {
                 if (it.isEmpty()) 0.0 else it.average()
             }
 

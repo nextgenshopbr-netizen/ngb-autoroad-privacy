@@ -619,13 +619,13 @@ fun SettingsTab(prefsManager: PrefsManager) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // === BACKUP & RESTORE ===
-        BackupRestoreSection(context, scope, prefsManager)
+        // === STATUS DO SISTEMA ===
+        SystemStatusCard(context, scope, prefsManager)
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // === STATUS DO SISTEMA ===
-        SystemStatusCard(context, scope, prefsManager)
+        // === BACKUP & RESTORE (v6.1.1: movido para o final) ===
+        BackupRestoreSection(context, scope, prefsManager)
 
         Spacer(modifier = Modifier.height(24.dp))
 

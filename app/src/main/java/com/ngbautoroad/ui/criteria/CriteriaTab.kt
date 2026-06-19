@@ -87,6 +87,15 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         // Header com contador de pontos
         PointsCounter(weights = weights)
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ================================================================
+        // v6.1.1: SEÇÃO PERFIS NO TOPO (acesso rápido)
+        // ================================================================
+        ProfilesSection(prefsManager = prefsManager, scope = scope)
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Divider()
         Spacer(modifier = Modifier.height(16.dp))
 
         // Seção: Pesos dos Critérios
@@ -586,15 +595,6 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         // ================================================================
         AutoPilotSection(prefsManager = prefsManager, scope = scope)
 
-        Spacer(modifier = Modifier.height(24.dp))
-        Divider()
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // ================================================================
-        // v6.1.0: SEÇÃO PERFIS
-        // ================================================================
-        ProfilesSection(prefsManager = prefsManager, scope = scope)
-
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
@@ -816,6 +816,21 @@ fun AutoPilotSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corou
     val maxRefuseScore by prefsManager.autoPilotMaxRefuseScoreFlow.collectAsState(initial = 40)
     val geoFilters by prefsManager.autoPilotGeoFiltersEnabledFlow.collectAsState(initial = true)
 
+    // v6.1.1: Derivar flags independentes do mode string para compatibilidade
+    val acceptEnabled = autoPilotMode == "ACCEPT_ONLY" || autoPilotMode == "FULL" || autoPilotMode == "ACCEPT"
+    val refuseEnabled = autoPilotMode == "REFUSE_ONLY" || autoPilotMode == "FULL" || autoPilotMode == "REFUSE"
+    // Detectar modo combinado (ambos ativos mas não FULL legado)
+    val bothEnabled = autoPilotMode == "BOTH" || autoPilotMode == "FULL"
+
+    fun computeMode(accept: Boolean, refuse: Boolean): String {
+        return when {
+            accept && refuse -> "BOTH"
+            accept -> "ACCEPT"
+            refuse -> "REFUSE"
+            else -> "OFF"
+        }
+    }
+
     Text(
         text = "🤖 AutoPilot",
         style = MaterialTheme.typography.titleMedium,
@@ -828,28 +843,35 @@ fun AutoPilotSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corou
     )
     Spacer(modifier = Modifier.height(12.dp))
 
-    // Modo
-    Text("Modo de operação:", style = MaterialTheme.typography.labelLarge)
+    // v6.1.1: Checkboxes independentes em vez de modos exclusivos
+    Text("Funções ativas:", style = MaterialTheme.typography.labelLarge)
     Spacer(modifier = Modifier.height(4.dp))
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        val modes = listOf("OFF" to "Desligado", "ACCEPT_ONLY" to "Só Aceitar", "REFUSE_ONLY" to "Só Recusar", "FULL" to "Completo")
-        modes.forEach { (mode, label) ->
-            FilterChip(
-                selected = autoPilotMode == mode,
-                onClick = { scope.launch { prefsManager.saveAutoPilotMode(mode) } },
-                label = { Text(label, fontSize = 11.sp) }
-            )
-        }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Checkbox(
+            checked = acceptEnabled,
+            onCheckedChange = { checked ->
+                val newMode = computeMode(checked, refuseEnabled)
+                scope.launch { prefsManager.saveAutoPilotMode(newMode) }
+            }
+        )
+        Text("Aceitar", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Spacer(modifier = Modifier.width(24.dp))
+        Checkbox(
+            checked = refuseEnabled,
+            onCheckedChange = { checked ->
+                val newMode = computeMode(acceptEnabled, checked)
+                scope.launch { prefsManager.saveAutoPilotMode(newMode) }
+            }
+        )
+        Text("Recusar", fontSize = 13.sp, fontWeight = FontWeight.Medium)
     }
 
-    if (autoPilotMode != "OFF") {
+    if (acceptEnabled || refuseEnabled) {
         Spacer(modifier = Modifier.height(12.dp))
 
         // Score mínimo para aceitar
-        if (autoPilotMode == "ACCEPT_ONLY" || autoPilotMode == "FULL") {
+        if (acceptEnabled) {
             Text("Score mínimo para aceitar: $minScore", fontSize = 13.sp)
             Slider(
                 value = minScore.toFloat(),
@@ -860,7 +882,7 @@ fun AutoPilotSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corou
         }
 
         // Score máximo para recusar
-        if (autoPilotMode == "REFUSE_ONLY" || autoPilotMode == "FULL") {
+        if (refuseEnabled) {
             Text("Score máximo para recusar: $maxRefuseScore", fontSize = 13.sp)
             Slider(
                 value = maxRefuseScore.toFloat(),
@@ -870,8 +892,8 @@ fun AutoPilotSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corou
             )
         }
 
-        // Zona neutra
-        if (autoPilotMode == "FULL") {
+        // Zona neutra (quando ambos ativos)
+        if (acceptEnabled && refuseEnabled) {
             Spacer(modifier = Modifier.height(4.dp))
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),

@@ -33,7 +33,10 @@ import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.FinanceDatabase
 import com.ngbautoroad.data.db.EarningEntity
 import com.ngbautoroad.data.model.RideData
+import com.ngbautoroad.data.prefs.PrefsManager
+import com.ngbautoroad.domain.ShiftManager
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 
 /**
  * ╔══════════════════════════════════════════════════════════════════════╗
@@ -313,7 +316,23 @@ class RideLifecycleManager(private val context: Context) {
                 }
 
                 // ═══ REGISTRAR GANHO — SÓ AQUI! ═══
-                registerEarning(ride, actualValue)
+                // v6.1.1: Respeitar toggle de auto-import
+                val prefs = PrefsManager(context)
+                val autoImportEnabled = prefs.autoImportEarningsFlow.first()
+                if (autoImportEnabled) {
+                    registerEarning(ride, actualValue)
+                } else {
+                    Log.d(TAG, "│  ⊜ Auto-import desativado — ganho NÃO registrado")
+                }
+
+                // v6.1.1: Atualizar turno ativo
+                val shiftManager = ShiftManager(context)
+                val shiftState = shiftManager.loadState()
+                if (shiftState.isActive) {
+                    val updated = shiftManager.addRide(shiftState, actualValue, true)
+                    shiftManager.saveState(updated)
+                    Log.d(TAG, "│  📦 Turno atualizado: +R$$actualValue (total: R$${updated.totalEarned})")
+                }
 
             } catch (e: Exception) {
                 Log.e(TAG, "│  ✖ Erro ao completar corrida: ${e.message}")

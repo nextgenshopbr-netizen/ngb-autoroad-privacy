@@ -73,6 +73,11 @@ class RideNotificationListener : NotificationListenerService() {
         var isListenerConnected = false
             private set
 
+        // v6.1.1: Instância para acessar pendingGhostRide
+        @Volatile
+        var instance: RideNotificationListener? = null
+            private set
+
         // Última corrida detectada via notificação (para evitar duplicatas)
         private var lastNotifRideHash = 0
         private var lastNotifRideTime = 0L
@@ -85,6 +90,7 @@ class RideNotificationListener : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         isListenerConnected = true
+        instance = this
         Log.i(TAG, "═══════════════════════════════════════════════════")
         Log.i(TAG, "║ RideNotificationListener CONECTADO (v6.0.0)    ║")
         Log.i(TAG, "║ Monitorando: ${MONITORED_PACKAGES.size} packages              ║")
@@ -95,6 +101,7 @@ class RideNotificationListener : NotificationListenerService() {
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
         isListenerConnected = false
+        instance = null
         Log.i(TAG, "NotificationListener DESCONECTADO")
     }
 

@@ -698,6 +698,14 @@ class RideAccessibilityService : AccessibilityService() {
 
         // ── Restaurar overlay/bubble ──
         OverlayService.onStealthModeChanged?.invoke(false)
+
+        // v6.1.1: Consumir corrida pendente detectada durante Ghost Mode
+        val pending = RideNotificationListener.instance?.pendingGhostRide
+        if (pending != null) {
+            Log.i(TAG_GHOST, "│  📨 Corrida pendente do Ghost Mode — enviando ao OverlayService")
+            RideNotificationListener.instance?.pendingGhostRide = null
+            OverlayService.onRideDetected?.invoke(pending)
+        }
     }
 
     /**

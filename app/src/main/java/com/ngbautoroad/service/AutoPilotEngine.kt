@@ -64,9 +64,13 @@ class AutoPilotEngine(
 
         // ── Modos de operação ──
         const val MODE_OFF = "OFF"
-        const val MODE_ACCEPT_ONLY = "ACCEPT_ONLY"
-        const val MODE_REFUSE_ONLY = "REFUSE_ONLY"
-        const val MODE_FULL = "FULL"
+        const val MODE_ACCEPT_ONLY = "ACCEPT_ONLY"  // legado
+        const val MODE_REFUSE_ONLY = "REFUSE_ONLY"  // legado
+        const val MODE_FULL = "FULL"                // legado
+        // v6.1.1: Novos modos independentes
+        const val MODE_ACCEPT = "ACCEPT"
+        const val MODE_REFUSE = "REFUSE"
+        const val MODE_BOTH = "BOTH"
 
         // ── Textos de botões por plataforma ──
         // Uber Driver
@@ -138,14 +142,17 @@ class AutoPilotEngine(
                 Log.i(TAG, "║  GeoFilters: ${if (geoFiltersEnabled) "ON" else "OFF"}")
                 Log.i(TAG, "╚══════════════════════════════════════════════════╝")
 
-                // ── Decisão ──
+                // ── Decisão (v6.1.1: suporta modos combinados) ──
+                val canAccept = mode in listOf(MODE_ACCEPT_ONLY, MODE_FULL, MODE_ACCEPT, MODE_BOTH)
+                val canRefuse = mode in listOf(MODE_REFUSE_ONLY, MODE_FULL, MODE_REFUSE, MODE_BOTH)
+
                 val decision = when {
                     // Score alto → ACEITAR (se modo permite)
-                    score >= minAcceptScore && (mode == MODE_ACCEPT_ONLY || mode == MODE_FULL) -> {
+                    score >= minAcceptScore && canAccept -> {
                         AutoPilotDecision.ACCEPT
                     }
                     // Score baixo → RECUSAR (se modo permite)
-                    score <= maxRefuseScore && (mode == MODE_REFUSE_ONLY || mode == MODE_FULL) -> {
+                    score <= maxRefuseScore && canRefuse -> {
                         AutoPilotDecision.REFUSE
                     }
                     // Zona neutra → NÃO AGIR

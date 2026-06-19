@@ -366,9 +366,14 @@ class OverlayService : Service(),
         isOverlayVisible = false
         naturalOverlayHeight = 0
 
+        // v6.1.1: Notificar lifecycle que overlay foi fechado sem ação do motorista
+        val ride = currentRide
+        if (ride != null && !ride.isSimulation) {
+            com.ngbautoroad.service.RideAccessibilityService.instance?.lifecycleManager?.onOverlayDismissed()
+        }
+
         // v6.0.0: Se era simulação (editor de cards), trazer o app de volta ao foco
         // Isso resolve o bug onde o app ficava minimizado após fechar o card de teste
-        val ride = currentRide
         if (ride != null && ride.isSimulation) {
             try {
                 val intent = packageManager.getLaunchIntentForPackage(packageName)

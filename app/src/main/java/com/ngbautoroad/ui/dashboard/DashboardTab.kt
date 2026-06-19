@@ -88,14 +88,14 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
                 totalRidesToday = todayCount,
                 totalRidesWeek = weekCount,
                 totalRidesMonth = monthCount,
-                acceptedToday = todayRides.count { it.status == "ACCEPTED" },
+                acceptedToday = todayRides.count { it.status == "ACCEPTED" || it.status == "COMPLETED" },
                 refusedToday = todayRides.count { it.status == "REFUSED" },
                 cancelledToday = todayRides.count { it.status == "CANCELLED" },
                 averageScoreToday = todayRides.map { it.score }.let { if (it.isEmpty()) 0.0 else it.average() },
                 averageScoreWeek = weekRides.map { it.score }.let { if (it.isEmpty()) 0.0 else it.average() },
-                totalEarningsToday = todayRides.filter { it.status == "ACCEPTED" }.sumOf { it.rideValue },
-                totalEarningsWeek = weekRides.filter { it.status == "ACCEPTED" }.sumOf { it.rideValue },
-                totalEarningsMonth = monthRides.filter { it.status == "ACCEPTED" }.sumOf { it.rideValue },
+                totalEarningsToday = todayRides.filter { it.status == "ACCEPTED" || it.status == "COMPLETED" }.sumOf { it.rideValue },
+                totalEarningsWeek = weekRides.filter { it.status == "ACCEPTED" || it.status == "COMPLETED" }.sumOf { it.rideValue },
+                totalEarningsMonth = monthRides.filter { it.status == "ACCEPTED" || it.status == "COMPLETED" }.sumOf { it.rideValue },
                 bestRideToday = todayRides.maxOfOrNull { it.rideValue } ?: 0.0,
                 averageValuePerKm = todayRides.filter { it.dropoffDistance > 0 }.map { it.valuePerKm }.let { if (it.isEmpty()) 0.0 else it.average() },
                 topPlatform = todayRides.groupBy { it.platform }.maxByOrNull { it.value.size }?.key ?: "-",
@@ -113,8 +113,13 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // v5.2.0: Card de Turno integrado na Dashboard
+        // v6.1.1: Seletor rápido de perfil antes de iniciar turno
         val context = LocalContext.current
+        ProfileQuickSelector(prefsManager, scope)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // v5.2.0: Card de Turno integrado na Dashboard
         ShiftDashboardCard(context, scope, prefsManager)
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -1066,5 +1071,75 @@ fun ShiftDashboardCard(
                 TextButton(onClick = { showGoalRequiredDialog = false }) { Text("Cancelar") }
             }
         )
+    }
+}
+
+// ============================================================================
+// v6.1.1: Seletor rápido de perfil na Dashboard
+// ============================================================================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileQuickSelector(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineScope) {
+    val profilesJson by prefsManager.profilesJsonFlow.collectAsState(initial = "[]")
+    val activeProfileId by prefsManager.activeProfileIdFlow.collectAsState(initial = 0)
+
+    data class QuickProfile(val id: Int, val name: String)
+
+    val profiles = remember(profilesJson) {
+        try {
+            val parsed = kotlinx.serialization.json.Json.decodeFromString<List<kotlinx.serialization.json.JsonObject>>(profilesJson)
+            parsed.mapIndexed { idx, obj ->
+                QuickProfile(
+                    id = idx + 1,
+                    name = obj["name"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content } ?: "Perfil ${idx + 1}"
+                )
+            }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    if (profiles.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Text(
+                    "Perfil Ativo",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    profiles.forEach { profile ->
+                        FilterChip(
+                            selected = activeProfileId == profile.id,
+                            onClick = {
+                                scope.launch {
+                                    prefsManager.saveActiveProfileId(profile.id)
+                                    // Aplicar perfil: ler JSON e setar pesos/thresholds
+                                    try {
+                                        val parsed = kotlinx.serialization.json.Json.decodeFromString<List<kotlinx.serialization.json.JsonObject>>(profilesJson)
+                                        val profileObj = parsed.getOrNull(profile.id - 1)
+                                        if (profileObj != null) {
+                                            val mode = profileObj["autoPilotMode"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content } ?: "OFF"
+                                            val minScore = profileObj["minAcceptScore"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() } ?: 75
+                                            val maxRefuse = profileObj["maxRefuseScore"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() } ?: 40
+                                            prefsManager.saveAutoPilotMode(mode)
+                                            prefsManager.saveAutoPilotMinScore(minScore)
+                                            prefsManager.saveAutoPilotMaxRefuseScore(maxRefuse)
+                                        }
+                                    } catch (_: Exception) {}
+                                }
+                            },
+                            label = { Text(profile.name, fontSize = 12.sp) }
+                        )
+                    }
+                }
+            }
+        }
     }
 }

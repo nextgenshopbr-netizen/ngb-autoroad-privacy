@@ -527,7 +527,7 @@ class PrefsManager(private val context: Context) {
         prefs[KEY_AUTOPILOT_MIN_SCORE] ?: 75 // Padrão: aceitar score >= 75
     }
     suspend fun saveAutoPilotMinScore(score: Int) {
-        context.dataStore.edit { prefs -> prefs[KEY_AUTOPILOT_MIN_SCORE] = score.coerceIn(50, 100) }
+        context.dataStore.edit { prefs -> prefs[KEY_AUTOPILOT_MIN_SCORE] = score.coerceIn(40, 100) }
     }
 
     val autoPilotMaxRefuseScoreFlow: Flow<Int> = context.dataStore.data.map { prefs ->
