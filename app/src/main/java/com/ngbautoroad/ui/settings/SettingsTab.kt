@@ -46,7 +46,10 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.ngbautoroad.ui.theme.*
+import com.ngbautoroad.data.backup.BackupManager
 import kotlinx.coroutines.launch
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -616,6 +619,11 @@ fun SettingsTab(prefsManager: PrefsManager) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // === BACKUP & RESTORE ===
+        BackupRestoreSection(context, scope, prefsManager)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         // === STATUS DO SISTEMA ===
         SystemStatusCard(context, scope, prefsManager)
 
@@ -649,6 +657,155 @@ fun SettingsTab(prefsManager: PrefsManager) {
         )
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+fun BackupRestoreSection(
+    context: android.content.Context,
+    scope: kotlinx.coroutines.CoroutineScope,
+    prefsManager: PrefsManager
+) {
+    val backupManager = remember { BackupManager(context) }
+    var backupStatus by remember { mutableStateOf("") }
+    var isProcessing by remember { mutableStateOf(false) }
+
+    // Launcher para exportar (criar arquivo)
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri != null) {
+            isProcessing = true
+            backupStatus = "Exportando..."
+            scope.launch {
+                try {
+                    val metadata = backupManager.exportBackup(uri)
+                    backupStatus = "✅ Backup exportado!\n" +
+                        "${metadata.ridesCount} corridas, " +
+                        "${metadata.financeRecords} registros financeiros\n" +
+                        "Data: ${metadata.backupDate}"
+                } catch (e: Exception) {
+                    backupStatus = "❌ Erro ao exportar: ${e.message}"
+                } finally {
+                    isProcessing = false
+                }
+            }
+        }
+    }
+
+    // Launcher para importar (abrir arquivo)
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            isProcessing = true
+            backupStatus = "Importando..."
+            scope.launch {
+                try {
+                    val metadata = backupManager.importBackup(uri)
+                    backupStatus = "✅ Backup importado!\n" +
+                        "Versão: v${metadata.appVersion}\n" +
+                        "${metadata.ridesCount} corridas, " +
+                        "${metadata.financeRecords} registros financeiros\n" +
+                        "Reinicie o app para aplicar todas as configurações."
+                } catch (e: Exception) {
+                    backupStatus = "❌ Erro ao importar: ${e.message}"
+                } finally {
+                    isProcessing = false
+                }
+            }
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.CloudUpload,
+                    contentDescription = "Backup",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Backup & Restauração",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "Exporte ou importe todas as configurações, corridas, dados financeiros e cards customizados.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = {
+                        val fileName = backupManager.suggestedFileName()
+                        exportLauncher.launch(fileName)
+                    },
+                    enabled = !isProcessing,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(Icons.Default.Upload, contentDescription = "Exportar", modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Exportar", fontSize = 13.sp)
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        importLauncher.launch(arrayOf("application/zip", "application/octet-stream"))
+                    },
+                    enabled = !isProcessing,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = "Importar", modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Importar", fontSize = 13.sp)
+                }
+            }
+
+            if (isProcessing) {
+                Spacer(modifier = Modifier.height(8.dp))
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+
+            if (backupStatus.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = backupStatus,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (backupStatus.startsWith("✅"))
+                        MaterialTheme.colorScheme.primary
+                    else if (backupStatus.startsWith("❌"))
+                        MaterialTheme.colorScheme.error
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 

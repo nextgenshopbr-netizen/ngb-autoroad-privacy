@@ -387,5 +387,10 @@ abstract class FinanceDatabase : RoomDatabase() {
                 instance
             }
         }
+
+        fun closeInstance() {
+            INSTANCE?.close()
+            INSTANCE = null
+        }
     }
 }

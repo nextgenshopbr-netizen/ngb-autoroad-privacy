@@ -27,6 +27,7 @@ import com.ngbautoroad.data.model.CriteriaWeights
 import com.ngbautoroad.data.model.DriverThresholds
 import com.ngbautoroad.domain.ScoringThresholds
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "ngb_autoroad_prefs")
@@ -507,6 +508,46 @@ class PrefsManager(private val context: Context) {
 
     private fun serializeNeighborhoods(list: List<Pair<String, Int>>): String {
         return list.joinToString(";") { "${it.first}:${it.second}" }
+    }
+
+    // --- Backup/Restore: Exportar e importar TODAS as preferências ---
+
+    suspend fun getAllPreferencesAsMap(): Map<String, String> {
+        val prefs = context.dataStore.data.first()
+        val map = mutableMapOf<String, String>()
+        for (key in prefs.asMap().keys) {
+            val value = prefs.asMap()[key]
+            when (value) {
+                is Int -> map[key.name] = "I:$value"
+                is Long -> map[key.name] = "L:$value"
+                is Float -> map[key.name] = "F:$value"
+                is Double -> map[key.name] = "D:$value"
+                is Boolean -> map[key.name] = "B:$value"
+                is String -> map[key.name] = "S:$value"
+                else -> map[key.name] = "S:$value"
+            }
+        }
+        return map
+    }
+
+    suspend fun restoreAllPreferencesFromMap(map: Map<String, String>) {
+        context.dataStore.edit { prefs ->
+            prefs.clear()
+            for ((keyName, typedValue) in map) {
+                val colonIndex = typedValue.indexOf(':')
+                if (colonIndex < 1) continue
+                val type = typedValue.substring(0, colonIndex)
+                val value = typedValue.substring(colonIndex + 1)
+                when (type) {
+                    "I" -> prefs[intPreferencesKey(keyName)] = value.toIntOrNull() ?: 0
+                    "L" -> prefs[longPreferencesKey(keyName)] = value.toLongOrNull() ?: 0L
+                    "F" -> prefs[floatPreferencesKey(keyName)] = value.toFloatOrNull() ?: 0f
+                    "D" -> prefs[doublePreferencesKey(keyName)] = value.toDoubleOrNull() ?: 0.0
+                    "B" -> prefs[booleanPreferencesKey(keyName)] = value.toBooleanStrictOrNull() ?: false
+                    "S" -> prefs[stringPreferencesKey(keyName)] = value
+                }
+            }
+        }
     }
 }
 
