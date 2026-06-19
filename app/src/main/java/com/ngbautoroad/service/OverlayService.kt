@@ -65,6 +65,7 @@ import com.ngbautoroad.R
 import com.ngbautoroad.data.model.*
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.domain.RideScorer
+import com.ngbautoroad.domain.ShiftManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import com.ngbautoroad.data.db.AppDatabase
@@ -402,11 +403,15 @@ class OverlayService : Service(),
                     val ride = currentRide
                     val score = currentScore
                     if (ride != null && score != null) {
+                        val shiftState = ShiftManager(applicationContext).loadState()
                         OverlayCard(
                             ride = ride,
                             score = score,
                             galleryCard = currentGalleryCard,
                             fontScale = currentFontScale,
+                            goalProgress = shiftState.goalProgress,
+                            goalEarned = shiftState.totalEarned,
+                            goalTarget = shiftState.goalValue,
                             onDismiss = { hideOverlay() },
                             onFontScaleChange = { newScale ->
                                 currentFontScale = newScale
@@ -502,11 +507,15 @@ class OverlayService : Service(),
                 val ride = currentRide
                 val score = currentScore
                 if (ride != null && score != null) {
+                    val shiftState = ShiftManager(applicationContext).loadState()
                     OverlayCard(
                         ride = ride,
                         score = score,
                         galleryCard = currentGalleryCard,
                         fontScale = currentFontScale,
+                        goalProgress = shiftState.goalProgress,
+                        goalEarned = shiftState.totalEarned,
+                        goalTarget = shiftState.goalValue,
                         onDismiss = { hideOverlay() },
                         onFontScaleChange = { newScale ->
                             currentFontScale = newScale

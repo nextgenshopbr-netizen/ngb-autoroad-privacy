@@ -55,6 +55,9 @@ fun OverlayCard(
     score: RideScore?,
     galleryCard: CardGallery.GalleryCard?,
     fontScale: Float = 1.0f,
+    goalProgress: Float = 0f,
+    goalEarned: Double = 0.0,
+    goalTarget: Double = 200.0,
     onDismiss: () -> Unit,
     onFontScaleChange: (Float) -> Unit = {}
 ) {
@@ -82,51 +85,103 @@ fun OverlayCard(
     val scaledSmall = (11 * fontScale).sp
     val scaledLabel = (12 * fontScale).sp
 
+    // Cores da barra de meta
+    val goalBarColor = when {
+        goalProgress >= 1.0f -> Color(0xFF4CAF50) // Verde — meta atingida
+        goalProgress >= 0.7f -> Color(0xFFFFC107) // Amarelo — quase lá
+        else -> accentColor
+    }
+    val goalPercentText = "R$${"%.0f".format(goalEarned)}/R$${"%.0f".format(goalTarget)}"
+
     // Estrutura: Barra de título (fora do card) + Card com conteúdo
     Column {
-        // === BARRA DE TÍTULO (estilo Windows) - FORA do card ===
-        Row(
+        // === BARRA DE TÍTULO COMPACTA - FORA do card ===
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(topStart = borderRadius, topEnd = borderRadius))
-                .background(bgColor.copy(alpha = 0.85f))
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
+                .background(bgColor.copy(alpha = 0.9f))
+                .padding(horizontal = 6.dp, vertical = 2.dp)
         ) {
-            Text(
-                text = "A\u2212",
-                color = textColor.copy(alpha = 0.85f),
-                fontSize = (14 * fontScale).sp,
-                fontWeight = FontWeight.Bold,
+            // Linha 1: Botões A-/A+/✕ alinhados à direita
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "A\u2212",
+                    color = textColor.copy(alpha = 0.85f),
+                    fontSize = (12 * fontScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable {
+                            val newScale = (fontScale - 0.1f).coerceIn(1.0f, 2.5f)
+                            onFontScaleChange(newScale)
+                        }
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+                Text(
+                    text = "A+",
+                    color = textColor.copy(alpha = 0.85f),
+                    fontSize = (12 * fontScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable {
+                            val newScale = (fontScale + 0.1f).coerceIn(1.0f, 2.5f)
+                            onFontScaleChange(newScale)
+                        }
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+                Text(
+                    text = "\u2715",
+                    color = textColor.copy(alpha = 0.9f),
+                    fontSize = (13 * fontScale).sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable { onDismiss() }
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+            }
+
+            // Linha 2: Mini barra de progresso da meta do dia
+            Row(
                 modifier = Modifier
-                    .clickable {
-                        val newScale = (fontScale - 0.1f).coerceIn(1.0f, 2.5f)
-                        onFontScaleChange(newScale)
-                    }
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            )
-            Text(
-                text = "A+",
-                color = textColor.copy(alpha = 0.85f),
-                fontSize = (14 * fontScale).sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .clickable {
-                        val newScale = (fontScale + 0.1f).coerceIn(1.0f, 2.5f)
-                        onFontScaleChange(newScale)
-                    }
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            )
-            Text(
-                text = "✕",
-                color = textColor.copy(alpha = 0.9f),
-                fontSize = (15 * fontScale).sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .clickable { onDismiss() }
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            )
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Meta",
+                    color = textColor.copy(alpha = 0.6f),
+                    fontSize = (9 * fontScale).sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                // Barra de progresso fina
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(textColor.copy(alpha = 0.15f))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(fraction = goalProgress.coerceIn(0f, 1f))
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(goalBarColor)
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = goalPercentText,
+                    color = textColor.copy(alpha = 0.6f),
+                    fontSize = (8 * fontScale).sp
+                )
+            }
+            Spacer(modifier = Modifier.height(2.dp))
         }
 
         // === CARD COM CONTEÚDO ===
