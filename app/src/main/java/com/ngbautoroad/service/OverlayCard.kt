@@ -59,7 +59,8 @@ fun OverlayCard(
     goalEarned: Double = 0.0,
     goalTarget: Double = 200.0,
     onDismiss: () -> Unit,
-    onFontScaleChange: (Float) -> Unit = {}
+    onFontScaleChange: (Float) -> Unit = {},
+    onResize: ((deltaX: Float, deltaY: Float) -> Unit)? = null
 ) {
     if (ride == null || score == null) return
 
@@ -357,6 +358,36 @@ fun OverlayCard(
             }
 
             // Cores nos campos já comunicam violações visualmente
+            }
+        }
+
+        // === RESIZE HANDLE — Canto inferior direito ===
+        if (onResize != null) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(RoundedCornerShape(topStart = 6.dp, bottomEnd = borderRadius))
+                        .background(accentColor.copy(alpha = 0.35f))
+                        .pointerInput(Unit) {
+                            detectDragGestures { change, dragAmount ->
+                                change.consume()
+                                onResize(dragAmount.x, dragAmount.y)
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Ícone diagonal clássico de resize (3 linhas diagonais)
+                    Text(
+                        text = "⟋",
+                        color = accentColor.copy(alpha = 0.7f),
+                        fontSize = (10 * fontScale).sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

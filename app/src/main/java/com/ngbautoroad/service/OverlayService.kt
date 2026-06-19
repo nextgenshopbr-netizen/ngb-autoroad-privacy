@@ -417,6 +417,21 @@ class OverlayService : Service(),
                                 currentFontScale = newScale
                                 serviceScope.launch { prefsManager.saveOverlayFontScale(newScale) }
                                 updateOverlayContent()
+                            },
+                            onResize = { deltaX, _ ->
+                                // Resize handle: ajusta largura arrastando no canto inferior direito
+                                val screenWidth = resources.displayMetrics.widthPixels
+                                val minW = (120 * density).toInt()
+                                val maxW = screenWidth
+                                val newWidth = (params.width + deltaX.toInt()).coerceIn(minW, maxW)
+                                params.width = newWidth
+                                try {
+                                    windowManager?.updateViewLayout(overlayView, params)
+                                } catch (_: Exception) {}
+                                overlayWidth = (newWidth / density).toInt()
+                                serviceScope.launch {
+                                    prefsManager.saveOverlaySize(overlayWidth, 0)
+                                }
                             }
                         )
                     }
@@ -502,6 +517,7 @@ class OverlayService : Service(),
     }
 
     private fun updateOverlayContent() {
+        val density = resources.displayMetrics.density
         overlayView?.setContent {
             com.ngbautoroad.ui.theme.NGBAutoRoadTheme {
                 val ride = currentRide
@@ -521,6 +537,22 @@ class OverlayService : Service(),
                             currentFontScale = newScale
                             serviceScope.launch { prefsManager.saveOverlayFontScale(newScale) }
                             updateOverlayContent()
+                        },
+                        onResize = { deltaX, _ ->
+                            val screenWidth = resources.displayMetrics.widthPixels
+                            val minW = (120 * density).toInt()
+                            val maxW = screenWidth
+                            val view = overlayView ?: return@OverlayCard
+                            val params = view.layoutParams as? WindowManager.LayoutParams ?: return@OverlayCard
+                            val newWidth = (params.width + deltaX.toInt()).coerceIn(minW, maxW)
+                            params.width = newWidth
+                            try {
+                                windowManager?.updateViewLayout(view, params)
+                            } catch (_: Exception) {}
+                            overlayWidth = (newWidth / density).toInt()
+                            serviceScope.launch {
+                                prefsManager.saveOverlaySize(overlayWidth, 0)
+                            }
                         }
                     )
                 }
