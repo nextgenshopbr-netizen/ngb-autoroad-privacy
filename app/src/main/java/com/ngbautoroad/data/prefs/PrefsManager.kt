@@ -508,6 +508,62 @@ class PrefsManager(private val context: Context) {
         context.dataStore.edit { prefs -> prefs[KEY_STEALTH_BANK_PACKAGES] = packages }
     }
 
+    // =========================================================================
+    // v6.1.0: AutoPilot Engine
+    // =========================================================================
+    private val KEY_AUTOPILOT_MODE = stringPreferencesKey("autopilot_mode") // OFF, ACCEPT_ONLY, REFUSE_ONLY, FULL
+    private val KEY_AUTOPILOT_MIN_SCORE = intPreferencesKey("autopilot_min_score") // Score mínimo para auto-aceitar
+    private val KEY_AUTOPILOT_MAX_REFUSE_SCORE = intPreferencesKey("autopilot_max_refuse_score") // Score máximo para auto-recusar
+    private val KEY_AUTOPILOT_GEO_FILTERS = booleanPreferencesKey("autopilot_geo_filters") // Respeitar filtros geográficos
+
+    val autoPilotModeFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUTOPILOT_MODE] ?: "OFF"
+    }
+    suspend fun saveAutoPilotMode(mode: String) {
+        context.dataStore.edit { prefs -> prefs[KEY_AUTOPILOT_MODE] = mode }
+    }
+
+    val autoPilotMinScoreFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUTOPILOT_MIN_SCORE] ?: 75 // Padrão: aceitar score >= 75
+    }
+    suspend fun saveAutoPilotMinScore(score: Int) {
+        context.dataStore.edit { prefs -> prefs[KEY_AUTOPILOT_MIN_SCORE] = score.coerceIn(50, 100) }
+    }
+
+    val autoPilotMaxRefuseScoreFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUTOPILOT_MAX_REFUSE_SCORE] ?: 40 // Padrão: recusar score <= 40
+    }
+    suspend fun saveAutoPilotMaxRefuseScore(score: Int) {
+        context.dataStore.edit { prefs -> prefs[KEY_AUTOPILOT_MAX_REFUSE_SCORE] = score.coerceIn(0, 60) }
+    }
+
+    val autoPilotGeoFiltersEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AUTOPILOT_GEO_FILTERS] ?: true
+    }
+    suspend fun saveAutoPilotGeoFilters(enabled: Boolean) {
+        context.dataStore.edit { prefs -> prefs[KEY_AUTOPILOT_GEO_FILTERS] = enabled }
+    }
+
+    // =========================================================================
+    // v6.1.0: Sistema de Perfis (até 5 perfis salvos)
+    // =========================================================================
+    private val KEY_ACTIVE_PROFILE_ID = intPreferencesKey("active_profile_id")
+    private val KEY_PROFILES_JSON = stringPreferencesKey("profiles_json") // JSON com lista de perfis
+
+    val activeProfileIdFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_ACTIVE_PROFILE_ID] ?: 0 // 0 = perfil padrão (sem perfil salvo)
+    }
+    suspend fun saveActiveProfileId(id: Int) {
+        context.dataStore.edit { prefs -> prefs[KEY_ACTIVE_PROFILE_ID] = id }
+    }
+
+    val profilesJsonFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_PROFILES_JSON] ?: "[]"
+    }
+    suspend fun saveProfilesJson(json: String) {
+        context.dataStore.edit { prefs -> prefs[KEY_PROFILES_JSON] = json }
+    }
+
     suspend fun resetAll() {
         context.dataStore.edit { it.clear() }
     }

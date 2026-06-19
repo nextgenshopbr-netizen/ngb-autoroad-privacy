@@ -576,6 +576,26 @@ fun CriteriaTab(prefsManager: PrefsManager) {
                 }
             )
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Divider()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ================================================================
+        // v6.1.0: SEÇÃO AUTOPILOT
+        // ================================================================
+        AutoPilotSection(prefsManager = prefsManager, scope = scope)
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Divider()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ================================================================
+        // v6.1.0: SEÇÃO PERFIS
+        // ================================================================
+        ProfilesSection(prefsManager = prefsManager, scope = scope)
+
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
@@ -783,3 +803,322 @@ fun ThresholdIntField(
         )
     )
 }
+
+// ============================================================================
+// v6.1.0: COMPOSABLE AutoPilotSection
+// Seção de configuração do AutoPilot com modo, scores e filtros
+// ============================================================================
+@Composable
+fun AutoPilotSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineScope) {
+    val autoPilotMode by prefsManager.autoPilotModeFlow.collectAsState(initial = "OFF")
+    val minScore by prefsManager.autoPilotMinScoreFlow.collectAsState(initial = 75)
+    val maxRefuseScore by prefsManager.autoPilotMaxRefuseScoreFlow.collectAsState(initial = 40)
+    val geoFilters by prefsManager.autoPilotGeoFiltersEnabledFlow.collectAsState(initial = true)
+
+    Text(
+        text = "🤖 AutoPilot",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold
+    )
+    Text(
+        text = "Aceita/recusa corridas automaticamente baseado no Score",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(12.dp))
+
+    // Modo
+    Text("Modo de operação:", style = MaterialTheme.typography.labelLarge)
+    Spacer(modifier = Modifier.height(4.dp))
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        val modes = listOf("OFF" to "Desligado", "ACCEPT_ONLY" to "Só Aceitar", "REFUSE_ONLY" to "Só Recusar", "FULL" to "Completo")
+        modes.forEach { (mode, label) ->
+            FilterChip(
+                selected = autoPilotMode == mode,
+                onClick = { scope.launch { prefsManager.saveAutoPilotMode(mode) } },
+                label = { Text(label, fontSize = 11.sp) }
+            )
+        }
+    }
+
+    if (autoPilotMode != "OFF") {
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Score mínimo para aceitar
+        if (autoPilotMode == "ACCEPT_ONLY" || autoPilotMode == "FULL") {
+            Text("Score mínimo para aceitar: $minScore", fontSize = 13.sp)
+            Slider(
+                value = minScore.toFloat(),
+                onValueChange = { scope.launch { prefsManager.saveAutoPilotMinScore(it.toInt()) } },
+                valueRange = 50f..100f,
+                steps = 9
+            )
+        }
+
+        // Score máximo para recusar
+        if (autoPilotMode == "REFUSE_ONLY" || autoPilotMode == "FULL") {
+            Text("Score máximo para recusar: $maxRefuseScore", fontSize = 13.sp)
+            Slider(
+                value = maxRefuseScore.toFloat(),
+                onValueChange = { scope.launch { prefsManager.saveAutoPilotMaxRefuseScore(it.toInt()) } },
+                valueRange = 0f..60f,
+                steps = 11
+            )
+        }
+
+        // Zona neutra
+        if (autoPilotMode == "FULL") {
+            Spacer(modifier = Modifier.height(4.dp))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Info, contentDescription = null, tint = ScoreYellow)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Zona neutra: Score $maxRefuseScore–$minScore → você decide",
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Filtros geográficos
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = geoFilters,
+                onCheckedChange = { scope.launch { prefsManager.saveAutoPilotGeoFilters(it) } }
+            )
+            Text("Respeitar bairros/zonas bloqueadas", fontSize = 13.sp)
+        }
+
+        // Aviso de segurança
+        Spacer(modifier = Modifier.height(8.dp))
+        Card(
+            colors = CardDefaults.cardColors(containerColor = ScoreRed.copy(alpha = 0.1f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Warning, contentDescription = null, tint = ScoreRed)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "AutoPilot usa delay humanizado para simular comportamento natural. " +
+                    "Use com responsabilidade.",
+                    fontSize = 11.sp,
+                    color = ScoreRed
+                )
+            }
+        }
+    }
+}
+
+// ============================================================================
+// v6.1.0: COMPOSABLE ProfilesSection
+// Seção de gerenciamento de perfis de critérios
+// ============================================================================
+@Composable
+fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineScope) {
+    val profilesJson by prefsManager.profilesJsonFlow.collectAsState(initial = "[]")
+    val activeProfileId by prefsManager.activeProfileIdFlow.collectAsState(initial = 0)
+    val weights by prefsManager.criteriaWeightsFlow.collectAsState(initial = CriteriaWeights())
+    val thresholds by prefsManager.driverThresholdsFlow.collectAsState(initial = DriverThresholds())
+
+    var showSaveDialog by remember { mutableStateOf(false) }
+    var newProfileName by remember { mutableStateOf("") }
+
+    // Parse profiles JSON
+    val profiles = remember(profilesJson) {
+        try {
+            val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+            json.decodeFromString<List<SavedProfile>>(profilesJson)
+        } catch (_: Exception) { emptyList() }
+    }
+
+    Text(
+        text = "📋 Perfis de Critérios",
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold
+    )
+    Text(
+        text = "Salve até 5 configurações diferentes (ex: Dia, Noite, Fim de semana)",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(12.dp))
+
+    // Lista de perfis salvos
+    if (profiles.isEmpty()) {
+        Text(
+            "Nenhum perfil salvo. Salve sua configuração atual como perfil.",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    } else {
+        profiles.forEach { profile ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (profile.id == activeProfileId)
+                        MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(profile.name, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        Text(
+                            "AutoPilot: ${profile.autoPilotMode} | Min: ${profile.minAcceptScore}",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Row {
+                        // Botão carregar
+                        IconButton(onClick = {
+                            scope.launch {
+                                prefsManager.saveCriteriaWeights(profile.weights)
+                                prefsManager.saveDriverThresholds(profile.thresholds)
+                                prefsManager.saveAutoPilotMode(profile.autoPilotMode)
+                                prefsManager.saveAutoPilotMinScore(profile.minAcceptScore)
+                                prefsManager.saveAutoPilotMaxRefuseScore(profile.maxRefuseScore)
+                                prefsManager.saveActiveProfileId(profile.id)
+                            }
+                        }) {
+                            Icon(
+                                if (profile.id == activeProfileId) Icons.Default.CheckCircle
+                                else Icons.Default.PlayArrow,
+                                contentDescription = "Carregar perfil",
+                                tint = if (profile.id == activeProfileId) ScoreGreen
+                                else MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        // Botão excluir
+                        IconButton(onClick = {
+                            scope.launch {
+                                val updated = profiles.filter { it.id != profile.id }
+                                val json = kotlinx.serialization.json.Json.encodeToString(
+                                    kotlinx.serialization.builtins.ListSerializer(SavedProfile.serializer()),
+                                    updated
+                                )
+                                prefsManager.saveProfilesJson(json)
+                                if (activeProfileId == profile.id) {
+                                    prefsManager.saveActiveProfileId(0)
+                                }
+                            }
+                        }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = ScoreRed)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    // Botão salvar perfil atual
+    Button(
+        onClick = { showSaveDialog = true },
+        modifier = Modifier.fillMaxWidth(),
+        enabled = profiles.size < 5,
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+    ) {
+        Icon(Icons.Default.Add, contentDescription = null)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Salvar Configuração Atual como Perfil")
+    }
+
+    if (profiles.size >= 5) {
+        Text("Máximo de 5 perfis atingido", fontSize = 11.sp, color = ScoreOrange)
+    }
+
+    // Dialog para salvar perfil
+    if (showSaveDialog) {
+        val autoPilotMode by prefsManager.autoPilotModeFlow.collectAsState(initial = "OFF")
+        val minScore by prefsManager.autoPilotMinScoreFlow.collectAsState(initial = 75)
+        val maxRefuse by prefsManager.autoPilotMaxRefuseScoreFlow.collectAsState(initial = 40)
+
+        AlertDialog(
+            onDismissRequest = { showSaveDialog = false },
+            title = { Text("Salvar Perfil") },
+            text = {
+                Column {
+                    Text("Dê um nome para este perfil:", fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = newProfileName,
+                        onValueChange = { newProfileName = it },
+                        label = { Text("Nome do perfil") },
+                        placeholder = { Text("Ex: Noturno, Fim de semana") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (newProfileName.isNotBlank()) {
+                        scope.launch {
+                            val newId = (profiles.maxOfOrNull { it.id } ?: 0) + 1
+                            val newProfile = SavedProfile(
+                                id = newId,
+                                name = newProfileName.trim(),
+                                weights = weights,
+                                thresholds = thresholds,
+                                autoPilotMode = autoPilotMode,
+                                minAcceptScore = minScore,
+                                maxRefuseScore = maxRefuse
+                            )
+                            val updated = profiles + newProfile
+                            val json = kotlinx.serialization.json.Json.encodeToString(
+                                kotlinx.serialization.builtins.ListSerializer(SavedProfile.serializer()),
+                                updated
+                            )
+                            prefsManager.saveProfilesJson(json)
+                            prefsManager.saveActiveProfileId(newId)
+                        }
+                        newProfileName = ""
+                        showSaveDialog = false
+                    }
+                }) { Text("Salvar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+}
+
+// ============================================================================
+// v6.1.0: Data class para perfis salvos (serializable)
+// ============================================================================
+@kotlinx.serialization.Serializable
+data class SavedProfile(
+    val id: Int,
+    val name: String,
+    val weights: CriteriaWeights,
+    val thresholds: DriverThresholds,
+    val autoPilotMode: String = "OFF",
+    val minAcceptScore: Int = 75,
+    val maxRefuseScore: Int = 40
+)

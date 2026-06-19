@@ -125,14 +125,18 @@ enum class RideType(val displayName: String, val platform: Platform) {
 // ============================================================================
 // BLOCO 3: RideStatus — Status da corrida no histórico
 // LINHAS: 58-63
-// LÓGICA: Indica a ação tomada pelo motorista sobre a corrida
-// DEPENDENTE: RideHistoryEntity.status, HistoryTab filtros
+// LÓGICA: Indica a fase/resultado da corrida no ciclo de vida
+// v6.1.0: Adicionados PENDING, COMPLETED, UNCERTAIN para lifecycle completo
+// DEPENDENTE: RideHistoryEntity.status, HistoryTab filtros, RideLifecycleManager
 // ============================================================================
 enum class RideStatus(val displayName: String) {
-    ACCEPTED("Aceita"),
-    REFUSED("Recusada"),
-    CANCELLED("Cancelada"),
-    EXPIRED("Expirada")
+    PENDING("Pendente"),       // v6.1.0: Corrida detectada, aguardando decisão
+    ACCEPTED("Aceita"),        // Motorista aceitou, em andamento
+    COMPLETED("Concluída"),    // v6.1.0: Viagem concluída com sucesso (ganho registrado)
+    REFUSED("Recusada"),       // Motorista recusou explicitamente
+    CANCELLED("Cancelada"),    // Cancelada por motorista ou passageiro
+    EXPIRED("Expirada"),       // Card expirou sem ação
+    UNCERTAIN("Incerta")       // v6.1.0: Não detectou resultado, motorista deve confirmar
 }
 
 // ============================================================================

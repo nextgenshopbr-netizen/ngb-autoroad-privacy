@@ -43,7 +43,7 @@ data class RideHistoryEntity(
     val pickupNeighborhood: String = "",
     val dropoffNeighborhood: String = "",
     val score: Double = 0.0,
-    val status: String = "REFUSED", // ACCEPTED, REFUSED, CANCELLED, EXPIRED
+    val status: String = "PENDING", // v6.1.0: PENDING, ACCEPTED, COMPLETED, REFUSED, CANCELLED, EXPIRED, UNCERTAIN
     val timestamp: Long = System.currentTimeMillis(),
     // v4.0 novos campos
     val scoreBreakdown: String = "",   // JSON com detalhes de cada critério (item 5.2)
@@ -122,13 +122,13 @@ interface RideHistoryDao {
     @Query("SELECT AVG(score) FROM ride_history WHERE timestamp >= :since")
     suspend fun averageScoreSince(since: Long): Double?
 
-    @Query("SELECT SUM(rideValue) FROM ride_history WHERE timestamp >= :since AND status = 'ACCEPTED'")
+    @Query("SELECT SUM(rideValue) FROM ride_history WHERE timestamp >= :since AND (status = 'COMPLETED' OR status = 'ACCEPTED')")
     suspend fun totalEarningsSince(since: Long): Double?
 
-    @Query("SELECT MAX(rideValue) FROM ride_history WHERE timestamp >= :since AND status = 'ACCEPTED'")
+    @Query("SELECT MAX(rideValue) FROM ride_history WHERE timestamp >= :since AND (status = 'COMPLETED' OR status = 'ACCEPTED')")
     suspend fun bestRideSince(since: Long): Double?
 
-    @Query("SELECT AVG(rideValue / CASE WHEN dropoffDistance > 0 THEN dropoffDistance ELSE 1 END) FROM ride_history WHERE timestamp >= :since AND status = 'ACCEPTED'")
+    @Query("SELECT AVG(rideValue / CASE WHEN dropoffDistance > 0 THEN dropoffDistance ELSE 1 END) FROM ride_history WHERE timestamp >= :since AND (status = 'COMPLETED' OR status = 'ACCEPTED')")
     suspend fun averageValuePerKmSince(since: Long): Double?
 
     @Query("SELECT platform FROM ride_history WHERE timestamp >= :since GROUP BY platform ORDER BY COUNT(*) DESC LIMIT 1")
@@ -138,13 +138,13 @@ interface RideHistoryDao {
     suspend fun count(): Int
 
     // Estatísticas avançadas (item 5.5)
-    @Query("SELECT AVG(score) FROM ride_history WHERE strftime('%H', datetime(timestamp/1000, 'unixepoch', 'localtime')) = :hour AND status = 'ACCEPTED'")
+    @Query("SELECT AVG(score) FROM ride_history WHERE strftime('%H', datetime(timestamp/1000, 'unixepoch', 'localtime')) = :hour AND (status = 'COMPLETED' OR status = 'ACCEPTED')")
     suspend fun avgScoreByHour(hour: String): Double?
 
-    @Query("SELECT SUM(rideValue) FROM ride_history WHERE strftime('%w', datetime(timestamp/1000, 'unixepoch', 'localtime')) = :dayOfWeek AND status = 'ACCEPTED'")
+    @Query("SELECT SUM(rideValue) FROM ride_history WHERE strftime('%w', datetime(timestamp/1000, 'unixepoch', 'localtime')) = :dayOfWeek AND (status = 'COMPLETED' OR status = 'ACCEPTED')")
     suspend fun totalEarningsByDayOfWeek(dayOfWeek: String): Double?
 
-    @Query("SELECT dropoffNeighborhood, COUNT(*) as cnt, AVG(rideValue) as avgVal FROM ride_history WHERE status = 'ACCEPTED' AND dropoffNeighborhood != '' GROUP BY dropoffNeighborhood ORDER BY avgVal DESC LIMIT 10")
+    @Query("SELECT dropoffNeighborhood, COUNT(*) as cnt, AVG(rideValue) as avgVal FROM ride_history WHERE (status = 'COMPLETED' OR status = 'ACCEPTED') AND dropoffNeighborhood != '' GROUP BY dropoffNeighborhood ORDER BY avgVal DESC LIMIT 10")
     suspend fun topDropoffNeighborhoods(): List<NeighborhoodStats>
 
     @Insert

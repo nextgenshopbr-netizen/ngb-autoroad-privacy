@@ -291,7 +291,8 @@ class OverlayService : Service(),
         )
         currentScore = scorer.calculateScore(ride)
 
-        // Salvar no histórico com scoreBreakdown e criteriaUsed (item 5.2, 1.3)
+        // v6.1.0: Salvar no histórico como PENDING (NÃO registra ganho!)
+        // O ganho só será registrado quando RideLifecycleManager detectar COMPLETED
         // PROTEÇÃO: Não salvar corridas simuladas no banco de dados
         val scoreResult = currentScore
         if (scoreResult != null && !ride.isSimulation) {
@@ -312,7 +313,7 @@ class OverlayService : Service(),
                         pickupNeighborhood = ride.pickupNeighborhood,
                         dropoffNeighborhood = ride.dropoffNeighborhood,
                         score = scoreResult.totalScore,
-                        status = "REFUSED", // Status inicial; pode ser atualizado depois
+                        status = "PENDING", // v6.1.0: Status PENDING (não registra ganho)
                         scoreBreakdown = breakdown,
                         criteriaUsed = scoreResult.criteriaScores.size,
                         totalCriteria = weights.totalUsed.let { if (it == 0) 1 else it },
@@ -320,27 +321,22 @@ class OverlayService : Service(),
                     )
                     val rideId = appDb.rideHistoryDao().insert(entity)
 
-                    // Auto-import de ganhos (item 3.2)
-                    val autoImport = prefsManager.autoImportEarningsFlow.first()
-                    if (autoImport && ride.rideValue > 0) {
-                        val financeDb = com.ngbautoroad.data.db.FinanceDatabase.getInstance(applicationContext)
-                        val alreadyImported = financeDb.earningDao().countAutoImportedByRideId(rideId)
-                        if (alreadyImported == 0) {
-                            val earning = com.ngbautoroad.data.db.EarningEntity(
-                                platform = ride.platform.displayName,
-                                amount = ride.rideValue,
-                                distance = ride.dropoffDistance,
-                                duration = ride.rideDuration.toInt(),
-                                ridesCount = 1,
-                                description = "Auto-import",
-                                period = "DIA",
-                                isAutoImported = true,
-                                rideHistoryId = rideId
-                            )
-                            financeDb.earningDao().insert(earning)
-                        }
-                    }
-                } catch (_: Exception) {}
+                    // v6.1.0: Notificar LifecycleManager sobre a corrida detectada
+                    // O LifecycleManager rastreará aceitação/conclusão/cancelamento
+                    // e só registrará ganho quando COMPLETED
+                    val lifecycleManager = RideAccessibilityService.instance?.lifecycleManager
+                    lifecycleManager?.onRideDetected(ride, rideId)
+
+                    // v6.1.0: Notificar AutoPilot para avaliar auto-aceitar/recusar
+                    val autoPilot = RideAccessibilityService.instance?.autoPilotEngine
+                    autoPilot?.evaluateRide(ride, scoreResult.totalScore, rideId)
+
+                    // REMOVIDO v6.1.0: Auto-import de ganhos imediato
+                    // Ganho agora só é registrado pelo RideLifecycleManager.onRideCompleted()
+
+                } catch (e: Exception) {
+                    android.util.Log.e("OverlayService", "Erro ao salvar histórico: ${e.message}")
+                }
             }
         }
 

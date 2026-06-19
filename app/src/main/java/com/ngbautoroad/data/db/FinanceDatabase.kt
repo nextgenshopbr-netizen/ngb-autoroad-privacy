@@ -214,6 +214,10 @@ interface EarningDao {
     // Ganhos do dia para dashboard (item 3.4)
     @Query("SELECT SUM(amount + tips + bonus) FROM earnings WHERE date >= :dayStart AND date <= :dayEnd")
     suspend fun getTodayEarnings(dayStart: Long, dayEnd: Long): Double?
+
+    // v6.1.0: Deletar ganho por rideHistoryId (reversão de corrida cancelada)
+    @Query("DELETE FROM earnings WHERE rideHistoryId = :rideId AND isAutoImported = 1")
+    suspend fun deleteByRideHistoryId(rideId: Long)
 }
 
 @Dao

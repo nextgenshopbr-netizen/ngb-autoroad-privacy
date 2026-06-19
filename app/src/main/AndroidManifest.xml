@@ -116,6 +116,11 @@
         </service>
 
         <activity android:name=".ui.features.FeaturesActivity" android:exported="false" />
+
+        <!-- v6.1.0: BroadcastReceiver para ações da notificação UNCERTAIN -->
+        <receiver
+            android:name=".service.UncertainReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

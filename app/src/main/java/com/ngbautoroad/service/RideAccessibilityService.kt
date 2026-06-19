@@ -91,6 +91,7 @@ import android.view.accessibility.AccessibilityWindowInfo
 import com.ngbautoroad.data.model.Platform
 import com.ngbautoroad.data.model.RideData
 import com.ngbautoroad.data.model.RideType
+import com.ngbautoroad.data.prefs.PrefsManager
 
 class RideAccessibilityService : AccessibilityService() {
 
@@ -171,7 +172,15 @@ class RideAccessibilityService : AccessibilityService() {
     // =========================================================================
     // BLOCO: Estado interno do serviço
     // =========================================================================
-    
+
+    // --- v6.1.0: Lifecycle Manager (ciclo de vida completo de corridas) ---
+    var lifecycleManager: RideLifecycleManager? = null
+        private set
+
+    // --- v6.1.0: AutoPilot Engine ---
+    var autoPilotEngine: AutoPilotEngine? = null
+        private set
+
     // --- Controle de deduplicação ---
     private var lastRideHash: Int = 0
     private var lastRideHashTime = 0L
@@ -204,6 +213,10 @@ class RideAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         instance = this
         isServiceAlive = true
+
+        // v6.1.0: Inicializar Lifecycle Manager e AutoPilot Engine
+        lifecycleManager = RideLifecycleManager(applicationContext)
+        autoPilotEngine = AutoPilotEngine(applicationContext, this)
 
         // Configurar serviço com máxima capacidade de detecção
         serviceInfo = serviceInfo.apply {
@@ -297,6 +310,18 @@ class RideAccessibilityService : AccessibilityService() {
         // PROCESSAR EVENTO DE APP DE CORRIDA
         // ─────────────────────────────────────────────────────────────────────
         handleRideAppEvent(packageName, eventType, event)
+
+        // ─────────────────────────────────────────────────────────────────────
+        // v6.1.0: MONITORAMENTO PÓS-DETEÇÃO (Lifecycle)
+        // Envia textos coletados ao LifecycleManager para detectar
+        // aceitação, conclusão ou cancelamento da corrida ativa
+        // ─────────────────────────────────────────────────────────────────────
+        if (lifecycleManager?.isActive() == true) {
+            val textsForLifecycle = collectTextsMultiWindow(packageName, event)
+            if (textsForLifecycle.isNotEmpty()) {
+                lifecycleManager?.onTextsDetected(textsForLifecycle, packageName)
+            }
+        }
     }
 
     // =========================================================================
@@ -1214,6 +1239,11 @@ class RideAccessibilityService : AccessibilityService() {
         isServiceAlive = false
         stealthModeActive = false
         stopGhostModePolling()
+        // v6.1.0: Destruir lifecycle e autopilot
+        lifecycleManager?.destroy()
+        lifecycleManager = null
+        autoPilotEngine?.destroy()
+        autoPilotEngine = null
         Log.i(TAG_ENGINE, "AccessibilityService DESTRUÍDO")
     }
 

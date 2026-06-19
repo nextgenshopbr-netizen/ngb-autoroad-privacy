@@ -22,6 +22,7 @@ class NGBAutoRoadApp : Application() {
         const val CHANNEL_OVERLAY = "overlay_channel"
         const val CHANNEL_OCR = "ocr_channel"
         const val CHANNEL_GHOST = "ghost_channel" // v6.0.0: Alertas durante Ghost Mode
+        const val CHANNEL_LIFECYCLE = "lifecycle_channel" // v6.1.0: Confirmação de corrida UNCERTAIN
     }
 
     override fun onCreate() {
@@ -57,9 +58,20 @@ class NGBAutoRoadApp : Application() {
             vibrationPattern = longArrayOf(0, 200, 100, 200, 100, 400)
         }
 
+        // v6.1.0: Canal para confirmação de corrida UNCERTAIN
+        val lifecycleChannel = NotificationChannel(
+            CHANNEL_LIFECYCLE,
+            "Confirmação de Corrida",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Pergunta ao motorista se corrida foi concluída"
+            enableVibration(true)
+        }
+
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(overlayChannel)
         manager.createNotificationChannel(ocrChannel)
         manager.createNotificationChannel(ghostChannel)
+        manager.createNotificationChannel(lifecycleChannel)
     }
 }
