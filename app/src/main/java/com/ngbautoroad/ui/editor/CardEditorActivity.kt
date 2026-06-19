@@ -396,7 +396,8 @@ fun CardEditorScreen(
                         val cb = com.ngbautoroad.service.OverlayService.onRideDetected
                         if (cb != null) {
                             cb.invoke(rideData)
-                            Toast.makeText(context, "Overlay disparado! Minimize o app para ver.", android.widget.Toast.LENGTH_LONG).show()
+                            // Minimizar o app para que o overlay fique visível sem sobrepor o editor
+                            (context as? android.app.Activity)?.moveTaskToBack(true)
                         } else {
                             Toast.makeText(context, "Serviço não iniciado. Ative o overlay nas Configurações primeiro.", android.widget.Toast.LENGTH_LONG).show()
                         }

@@ -236,6 +236,8 @@ fun CardTab(prefsManager: PrefsManager) {
                             }
                             if (callback != null) {
                                 callback.invoke(ride)
+                                // Minimizar o app para o overlay ficar visível
+                                (context as? android.app.Activity)?.moveTaskToBack(true)
                             } else {
                                 android.widget.Toast.makeText(context, "Serviço não iniciou. Verifique permissões.", android.widget.Toast.LENGTH_LONG).show()
                             }
@@ -309,6 +311,8 @@ fun CardTab(prefsManager: PrefsManager) {
                                 android.util.Log.d("NGB_TESTAR_CARD", "[9] Invocando callback com corrida simulada")
                                 finalCallback.invoke(ride)
                                 android.util.Log.d("NGB_TESTAR_CARD", "[10] Callback invocado com sucesso")
+                                // Minimizar o app para o overlay ficar visível
+                                (context as? android.app.Activity)?.moveTaskToBack(true)
                             } else {
                                 android.util.Log.w("NGB_TESTAR_CARD", "[ERR] callback nulo após $retries tentativas. OverlayService.isRunning()=${OverlayService.isRunning()}")
                                 android.widget.Toast.makeText(context, "Serviço não iniciou. Verifique permissão de acessibilidade.", android.widget.Toast.LENGTH_LONG).show()

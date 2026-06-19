@@ -118,7 +118,7 @@ fun OverlayCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .clickable {
-                            val newScale = (fontScale - 0.1f).coerceIn(1.0f, 2.5f)
+                            val newScale = (fontScale - 0.1f).coerceIn(0.5f, 1.8f)
                             onFontScaleChange(newScale)
                         }
                         .padding(horizontal = 8.dp, vertical = 2.dp)
@@ -130,7 +130,7 @@ fun OverlayCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .clickable {
-                            val newScale = (fontScale + 0.1f).coerceIn(1.0f, 2.5f)
+                            val newScale = (fontScale + 0.1f).coerceIn(0.5f, 1.8f)
                             onFontScaleChange(newScale)
                         }
                         .padding(horizontal = 8.dp, vertical = 2.dp)
@@ -217,7 +217,7 @@ fun OverlayCard(
 
                     val fieldValue: String = when (editorField.fieldType) {
                         "PLATFORM" -> ride.platform.displayName
-                        "SCORE" -> score.totalScore.toString()
+                        "SCORE" -> score.totalScore.toInt().toString()
                         "VALUE" -> "R\$ ${ "%.2f".format(ride.rideValue) }"
                         "DISTANCE_KM", "DROPOFF_DISTANCE" -> "${ "%.1f".format(ride.dropoffDistance) } km"
                         "PICKUP_DISTANCE" -> "${ "%.1f".format(ride.pickupDistance) } km"

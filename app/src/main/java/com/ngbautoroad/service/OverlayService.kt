@@ -441,27 +441,32 @@ class OverlayService : Service(),
                                 val screenWidth = resources.displayMetrics.widthPixels
                                 val screenHeight = resources.displayMetrics.heightPixels
 
-                                // Capturar altura natural na PRIMEIRA interação (referência fixa para auto-zoom)
+                                // Capturar altura natural na PRIMEIRA interação
                                 if (naturalOverlayHeight == 0) {
-                                    naturalOverlayHeight = overlayView?.height?.takeIf { it > 0 } ?: (300 * density).toInt()
+                                    val measured = overlayView?.height ?: 0
+                                    naturalOverlayHeight = if (measured > 50) measured else (250 * density).toInt()
                                 }
 
-                                // Largura: respeita apenas bordas da tela
-                                val newWidth = (params.width + deltaX.toInt()).coerceIn((60 * density).toInt(), screenWidth)
+                                // Largura: mínimo 100dp, máximo = tela
+                                val minW = (100 * density).toInt()
+                                val newWidth = (params.width + deltaX.toInt()).coerceIn(minW, screenWidth)
                                 params.width = newWidth
 
-                                // Altura: sem limite para baixo, respeita apenas borda inferior da tela
-                                val currentH = if (params.height == WindowManager.LayoutParams.WRAP_CONTENT) {
-                                    overlayView?.height ?: naturalOverlayHeight
+                                // Altura: mínimo 60dp, máximo = tela
+                                val minH = (60 * density).toInt()
+                                val currentH = if (params.height <= 0 || params.height == WindowManager.LayoutParams.WRAP_CONTENT) {
+                                    overlayView?.height?.takeIf { it > 50 } ?: naturalOverlayHeight
                                 } else {
                                     params.height
                                 }
-                                val newHeight = (currentH + deltaY.toInt()).coerceIn((30 * density).toInt(), screenHeight)
+                                val newHeight = (currentH + deltaY.toInt()).coerceIn(minH, screenHeight)
                                 params.height = newHeight
 
-                                // Auto-zoom: fontScale = razão entre altura atual e altura natural original
-                                val heightRatio = newHeight.toFloat() / naturalOverlayHeight.toFloat()
-                                currentFontScale = heightRatio.coerceIn(0.3f, 3.0f)
+                                // Auto-zoom: ajustar fontScale proporcionalmente à altura
+                                if (naturalOverlayHeight > 0) {
+                                    val heightRatio = newHeight.toFloat() / naturalOverlayHeight.toFloat()
+                                    currentFontScale = heightRatio.coerceIn(0.5f, 1.8f)
+                                }
 
                                 try {
                                     windowManager?.updateViewLayout(overlayView, params)
@@ -587,25 +592,30 @@ class OverlayService : Service(),
 
                             // Capturar altura natural na PRIMEIRA interação
                             if (naturalOverlayHeight == 0) {
-                                naturalOverlayHeight = view.height.takeIf { it > 0 } ?: (300 * density).toInt()
+                                val measured = view.height
+                                naturalOverlayHeight = if (measured > 50) measured else (250 * density).toInt()
                             }
 
-                            // Largura: respeita apenas bordas da tela
-                            val newWidth = (lp.width + deltaX.toInt()).coerceIn((60 * density).toInt(), screenWidth)
+                            // Largura: mínimo 100dp, máximo = tela
+                            val minW = (100 * density).toInt()
+                            val newWidth = (lp.width + deltaX.toInt()).coerceIn(minW, screenWidth)
                             lp.width = newWidth
 
-                            // Altura: sem limite para baixo, respeita apenas borda inferior da tela
-                            val currentH = if (lp.height == WindowManager.LayoutParams.WRAP_CONTENT) {
-                                view.height.takeIf { it > 0 } ?: naturalOverlayHeight
+                            // Altura: mínimo 60dp, máximo = tela
+                            val minH = (60 * density).toInt()
+                            val currentH = if (lp.height <= 0 || lp.height == WindowManager.LayoutParams.WRAP_CONTENT) {
+                                view.height.takeIf { it > 50 } ?: naturalOverlayHeight
                             } else {
                                 lp.height
                             }
-                            val newHeight = (currentH + deltaY.toInt()).coerceIn((30 * density).toInt(), screenHeight)
+                            val newHeight = (currentH + deltaY.toInt()).coerceIn(minH, screenHeight)
                             lp.height = newHeight
 
-                            // Auto-zoom: fontScale = razão entre altura atual e altura natural original
-                            val heightRatio = newHeight.toFloat() / naturalOverlayHeight.toFloat()
-                            currentFontScale = heightRatio.coerceIn(0.3f, 3.0f)
+                            // Auto-zoom: ajustar fontScale proporcionalmente à altura
+                            if (naturalOverlayHeight > 0) {
+                                val heightRatio = newHeight.toFloat() / naturalOverlayHeight.toFloat()
+                                currentFontScale = heightRatio.coerceIn(0.5f, 1.8f)
+                            }
 
                             try {
                                 windowManager?.updateViewLayout(view, lp)
