@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ============================================================================
+     ARQUIVO: accessibility_service_config.xml
+     VERSÃO: v6.0.0
+     RESPONSABILIDADE: Configuração do AccessibilityService (Triple Engine)
+     MUDANÇAS v6.0.0:
+       - canTakeScreenshot="true" (Android 11+ screenshot silencioso para OCR)
+       - typeViewTextChanged adicionado (captura mudanças de texto em Compose)
+       - typeViewScrolled adicionado (detecta scroll em listas de corridas)
+       - notificationTimeout="0" (zero delay — máxima responsividade)
+       - flagRequestEnhancedWebAccessibility (para WebView dentro de apps)
+     ============================================================================ -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewTextChanged"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewTextChanged|typeViewScrolled"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:accessibilityFlags="flagDefault|flagIncludeNotImportantViews|flagReportViewIds|flagRetrieveInteractiveWindows"
+    android:accessibilityFlags="flagDefault|flagIncludeNotImportantViews|flagReportViewIds|flagRetrieveInteractiveWindows|flagRequestEnhancedWebAccessibility"
     android:canRetrieveWindowContent="true"
+    android:canTakeScreenshot="true"
     android:canPerformGestures="false"
     android:description="@string/accessibility_description"
-    android:notificationTimeout="100" />
+    android:notificationTimeout="0" />

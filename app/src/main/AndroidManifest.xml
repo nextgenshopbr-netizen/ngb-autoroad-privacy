@@ -17,6 +17,11 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- v6.0.0: Permissão para UsageStatsManager (Ghost Mode polling) -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <!-- v6.0.0: Vibração para alerta durante Ghost Mode -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:name=".NGBAutoRoadApp"
@@ -87,7 +92,7 @@
             android:exported="false"
             android:foregroundServiceType="specialUse" />
 
-        <!-- Accessibility Service -->
+        <!-- Accessibility Service (v6.0.0 Triple Engine) -->
         <service
             android:name=".service.RideAccessibilityService"
             android:exported="true"
@@ -98,6 +103,16 @@
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!-- v6.0.0: Notification Listener Service (Camada 3 — backup durante Ghost Mode) -->
+        <service
+            android:name=".service.RideNotificationListener"
+            android:exported="true"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
         </service>
 
         <activity android:name=".ui.features.FeaturesActivity" android:exported="false" />

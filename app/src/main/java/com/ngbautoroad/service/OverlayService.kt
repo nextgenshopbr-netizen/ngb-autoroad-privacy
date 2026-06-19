@@ -369,6 +369,27 @@ class OverlayService : Service(),
         overlayView = null
         isOverlayVisible = false
         naturalOverlayHeight = 0
+
+        // v6.0.0: Se era simulação (editor de cards), trazer o app de volta ao foco
+        // Isso resolve o bug onde o app ficava minimizado após fechar o card de teste
+        val ride = currentRide
+        if (ride != null && ride.isSimulation) {
+            try {
+                val intent = packageManager.getLaunchIntentForPackage(packageName)
+                if (intent != null) {
+                    intent.addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    )
+                    intent.putExtra("return_to_editor", true)
+                    startActivity(intent)
+                }
+            } catch (e: Exception) {
+                android.util.Log.w("OverlayService", "Erro ao trazer app de volta: ${e.message}")
+            }
+            currentRide = null // Limpar referência de simulação
+        }
     }
 
     // v5.0.0: Auto-dismiss configurável — fecha overlay após X segundos
