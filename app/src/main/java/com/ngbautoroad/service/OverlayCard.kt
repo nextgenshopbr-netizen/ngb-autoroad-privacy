@@ -196,9 +196,8 @@ fun OverlayCard(
                     ) else Modifier
                 )
                 .background(bgColor)
-                .padding(12.dp)
         ) {
-            Column {
+            Column(modifier = Modifier.padding(12.dp)) {
                 // Header: Platform + Score
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -357,17 +356,18 @@ fun OverlayCard(
                 }
             }
 
-            // Cores nos campos já comunicam violações visualmente
             }
 
-            // === RESIZE HANDLE — Dentro do card, canto inferior direito ===
+            // === RESIZE HANDLE — Grudado no canto inferior direito, acompanhando curvatura ===
             if (onResize != null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .size(22.dp)
-                        .clip(RoundedCornerShape(topStart = 6.dp, bottomEnd = borderRadius))
-                        .background(accentColor.copy(alpha = 0.30f))
+                        .size(borderRadius + 4.dp)
+                        .background(
+                            color = accentColor.copy(alpha = 0.35f),
+                            shape = RoundedCornerShape(topStart = borderRadius, bottomEnd = borderRadius)
+                        )
                         .pointerInput(Unit) {
                             detectDragGestures { change, dragAmount ->
                                 change.consume()
@@ -377,10 +377,9 @@ fun OverlayCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "⟋",
-                        color = textColor.copy(alpha = 0.5f),
-                        fontSize = (9 * fontScale).sp,
-                        fontWeight = FontWeight.Bold
+                        text = "╱",
+                        color = textColor.copy(alpha = 0.6f),
+                        fontSize = (8 * fontScale).sp
                     )
                 }
             }
