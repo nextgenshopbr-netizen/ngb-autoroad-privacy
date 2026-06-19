@@ -154,3 +154,129 @@
 
 ### Status: BUILD SUCCESSFUL, Push + Tag v5.0.0 no GitHub
 ### Versão: 5.0.0 (versionCode 54)
+
+---
+
+## v5.2.2 — 18/06/2026 17:00
+- Base compilada com mudanças iniciais
+- versionCode=25, versionName="5.2.2"
+
+## v5.2.3 — 18/06/2026 18:00
+- Unificação Gastos→Despesas no módulo financeiro
+- Logs de debug: NGB_PROJECAO, NGB_TESTAR_CARD, NGB_SIMULACAO
+- Meta obrigatória ao iniciar turno (dialog no DashboardTab)
+- Multi-idiomas: PT-BR (default), ES (values-es/strings.xml)
+- Campo Min→H:m no financeiro
+- versionCode=26, versionName="5.2.3"
+
+## v5.2.4 — 18/06/2026 18:30
+- Fix crash Compose BOM (NoSuchMethodError KeyframesSpec)
+- Downgrade BOM de 2024.01.00 para 2023.10.01
+- versionCode=27, versionName="5.2.4"
+
+## v5.2.5 — 18/06/2026 19:00
+- Fix crash Cards — adicionado ViewModelStoreOwner ao OverlayService
+- OverlayService agora implementa: LifecycleOwner, SavedStateRegistryOwner, ViewModelStoreOwner, OnBackPressedDispatcherOwner
+- versionCode=28, versionName="5.2.5"
+
+## v5.2.6 — 18/06/2026 19:30
+- Fix Simulação Admin — usa applicationContext em vez de Activity context
+- Retry automático 3s ao falhar
+- Toast de confirmação ao simular
+- versionCode=29, versionName="5.2.6"
+
+## v5.2.7 — 18/06/2026 20:00
+- Fix ClassCastException ContextThemeWrapper→Activity no OverlayService
+- versionCode=30, versionName="5.2.7"
+
+## v5.2.8 — 18/06/2026 20:30
+- Fix DEFINITIVO do overlay — causa raiz em Theme.kt linha 67
+- Corrigido: `(view.context as Activity).window` → `(view.context as? Activity)?.window`
+- versionCode=31, versionName="5.2.8"
+
+## v5.2.9 — 18/06/2026 21:00
+- Fix A+/A- acessibilidade — conectado callback onFontScaleChange no OverlayService
+- Limites de escala: 1.0f-2.5f
+- PrefsManager: saveOverlayFontScale com coerceIn
+- versionCode=31, versionName="5.2.9"
+
+## v5.3.0 — 18/06/2026 21:30
+- Botões A-/A+/X reorganizados (tentativa 1)
+- Posicionados no canto superior direito com Row + Alignment.TopEnd
+- Problema: ainda sobrepunham o Score
+- versionCode=31, versionName="5.3.0"
+
+## v5.3.1 — 18/06/2026 22:00
+- Botões A-/A+/X no canto superior direito com Box/Alignment.TopEnd
+- Score com padding-end=80.dp para evitar sobreposição
+- Problema: padding fixo não funciona bem em todos os cards
+- versionCode=32, versionName="5.3.1"
+
+## v5.3.2 — 19/06/2026 00:00
+- **SOLUÇÃO DEFINITIVA**: Barra de título SEPARADA acima do card (estilo Windows)
+- Estrutura: Column > [Row(barra título com A−/A+/✕)] + [Box(card conteúdo)]
+- Barra usa borderRadius no topo, card usa borderRadius na base → visual integrado
+- Score não precisa mais de padding extra — sem sobreposição
+- Funciona em TODOS os modelos de card da galeria automaticamente
+- Fonte negrito com espaçamento generoso nos botões
+- versionCode=33, versionName="5.3.2"
+
+---
+
+## Arquitetura Atual (v5.3.2)
+
+| Camada | Arquivo | Responsabilidade |
+|--------|---------|-----------------|
+| App | NGBAutoRoadApp.kt | Application class |
+| Model | RideData.kt | RideData, RideType enum, RideScore, ScoreLevel |
+| Model | CardGallery.kt | 35 cards, CardField enum, categorias |
+| Model | FinanceModels.kt | Modelos financeiros |
+| DB | FinanceDatabase.kt | Room DB (EarningEntity, VehicleProfile, IndividualExpense) |
+| DB | FinanceExtensions.kt | DAOs para veículos e despesas |
+| DB | RideHistoryEntity.kt | Histórico de corridas |
+| Service | RideAccessibilityService.kt | Parser de corridas (Uber, 99, inDrive, Cabify) |
+| Service | OverlayService.kt | Overlay flutuante (Lifecycle/ViewModel/SavedState owners) |
+| Service | OverlayCard.kt | Composable do card visual + barra de título |
+| Service | OcrCaptureService.kt | Captura OCR |
+| Service | BubbleService.kt | Bubble flutuante |
+| Domain | RideScorer.kt | Cálculo de score multi-critério |
+| Domain | ProjectionEngine.kt | Projeção financeira e simulação "E se?" |
+| Domain | ShiftManager.kt | Gestão de turnos |
+| Domain | LocalLearningEngine.kt | Aprendizado local (padrões estatísticos) |
+| Domain | NeighborhoodRanker.kt | Ranking de bairros |
+| Domain | NavigationHelper.kt | Integração Waze/Google Maps |
+| Domain | CriteriaShareManager.kt | Export/import critérios JSON |
+| Domain | BatteryOptimizer.kt | Modo economia de bateria |
+| Domain | SurgeDetector.kt | Detecção de surge/demanda |
+| Domain | ReportGenerator.kt | Relatório PDF |
+| Domain | DataExporter.kt | Exportar CSV |
+| UI | MainActivity.kt | Tela principal com abas |
+| UI | AdminActivity.kt | Painel admin + simulador |
+| UI | FinanceActivity.kt | Controle financeiro |
+| UI | FinanceExtTabs.kt | Abas: Projeção, Despesas individuais |
+| UI | DashboardTab.kt | Dashboard + turno + meta obrigatória |
+| UI | CardTab.kt | Aba de cards |
+| UI | CriteriaTab.kt | Configuração de critérios |
+| UI | HistoryTab.kt | Histórico |
+| UI | SettingsTab.kt | Configurações + seletor idioma |
+| UI | CardEditorActivity.kt | Editor de cards |
+| UI | CardGalleryActivity.kt | Galeria de cards |
+| UI | FeaturesActivity.kt | Features extras (Turno, Ranking, IA, Relatório, Export) |
+| UI | ZoneMapActivity.kt | Mapa de zonas |
+| Theme | Theme.kt | Tema (fix: safe cast Activity) |
+| Theme | Color.kt | Cores do app |
+| Theme | Typography.kt | Tipografia |
+| Util | Extensions.kt | Extensões Kotlin |
+| Prefs | PrefsManager.kt | DataStore (PIN, critérios, idioma, fontScale) |
+
+### Configuração de Build
+- **compileSdk**: 34 | **targetSdk**: 34 | **minSdk**: 26
+- **Compose BOM**: 2023.10.01 (downgraded para compatibilidade)
+- **Kotlin**: 1.9.22 | **KSP** habilitado
+- **Gradle**: 8.4 | **JDK**: 17
+- **Keystore**: keystore/ngbautoroad-release.jks (incluído no repo)
+
+### Idiomas Suportados
+- Português (BR) — default (values/strings.xml)
+- Espanhol — values-es/strings.xml
+- Inglês — strings hardcoded no código (fallback)
