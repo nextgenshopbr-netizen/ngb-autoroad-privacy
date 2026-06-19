@@ -82,92 +82,95 @@ fun OverlayCard(
     val scaledSmall = (11 * fontScale).sp
     val scaledLabel = (12 * fontScale).sp
 
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(borderRadius))
-            .then(
-                if (showBorder) Modifier.border(2.dp, borderColor, RoundedCornerShape(borderRadius))
-                else Modifier
-            )
-            .background(bgColor)
-            .padding(12.dp)
-    ) {
-        // Botões de controle fixos no canto superior direito (estilo barra de título Windows)
+    // Estrutura: Barra de título (fora do card) + Card com conteúdo
+    Column {
+        // === BARRA DE TÍTULO (estilo Windows) - FORA do card ===
         Row(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .background(
-                    color = textColor.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(bottomStart = 8.dp)
-                )
-                .padding(horizontal = 4.dp, vertical = 2.dp),
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = borderRadius, topEnd = borderRadius))
+                .background(bgColor.copy(alpha = 0.85f))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "A-",
-                color = textColor.copy(alpha = 0.8f),
-                fontSize = (13 * fontScale).sp,
+                text = "A\u2212",
+                color = textColor.copy(alpha = 0.85f),
+                fontSize = (14 * fontScale).sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .clickable {
                         val newScale = (fontScale - 0.1f).coerceIn(1.0f, 2.5f)
                         onFontScaleChange(newScale)
                     }
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
             )
             Text(
                 text = "A+",
-                color = textColor.copy(alpha = 0.8f),
-                fontSize = (13 * fontScale).sp,
+                color = textColor.copy(alpha = 0.85f),
+                fontSize = (14 * fontScale).sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .clickable {
                         val newScale = (fontScale + 0.1f).coerceIn(1.0f, 2.5f)
                         onFontScaleChange(newScale)
                     }
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
             )
             Text(
                 text = "✕",
                 color = textColor.copy(alpha = 0.9f),
-                fontSize = (14 * fontScale).sp,
+                fontSize = (15 * fontScale).sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .clickable { onDismiss() }
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
             )
         }
 
-        Column {
-            // Header: Platform + Score
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Platform
-                if (fields.contains(CardField.PLATFORM)) {
-                    Text(
-                        text = ride.platform.displayName,
-                        color = accentColor,
-                        fontSize = scaledBody,
-                        fontWeight = FontWeight.Bold
-                    )
+        // === CARD COM CONTEÚDO ===
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(bottomStart = borderRadius, bottomEnd = borderRadius))
+                .then(
+                    if (showBorder) Modifier.border(
+                        2.dp, borderColor,
+                        RoundedCornerShape(bottomStart = borderRadius, bottomEnd = borderRadius)
+                    ) else Modifier
+                )
+                .background(bgColor)
+                .padding(12.dp)
+        ) {
+            Column {
+                // Header: Platform + Score
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Platform
+                    if (fields.contains(CardField.PLATFORM)) {
+                        Text(
+                            text = ride.platform.displayName,
+                            color = accentColor,
+                            fontSize = scaledBody,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    // Score
+                    if (fields.contains(CardField.SCORE)) {
+                        Text(
+                            text = "${score.totalScore.toInt()}",
+                            color = totalScoreColor,
+                            fontSize = scaledTitle,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
-                // Score (com padding direito para não sobrepor os botões)
-                if (fields.contains(CardField.SCORE)) {
-                    Text(
-                        text = "${score.totalScore.toInt()}",
-                        color = totalScoreColor,
-                        fontSize = scaledTitle,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(end = 80.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
             // Campos dinâmicos baseados no card da galeria
             fields.forEach { field ->
@@ -299,6 +302,7 @@ fun OverlayCard(
             }
 
             // Cores nos campos já comunicam violações visualmente
+            }
         }
     }
 }
