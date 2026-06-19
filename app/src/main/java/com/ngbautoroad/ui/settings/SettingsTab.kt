@@ -616,8 +616,12 @@ fun SettingsTab(prefsManager: PrefsManager) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // === STATUS DO SISTEMA ===
+        SystemStatusCard(context, scope, prefsManager)
+
         Spacer(modifier = Modifier.height(24.dp))
-        // App Info - Gesto secreto: 7 toques abre Admin
+
+        // App Info - Gesto secreto: 7 toques abre Admin (SEMPRE no final da tela)
         var tapCount by remember { mutableIntStateOf(0) }
         var lastTapTime by remember { mutableLongStateOf(0L) }
 
@@ -643,11 +647,6 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     }
                 }
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // === STATUS DO SISTEMA ===
-        SystemStatusCard(context, scope, prefsManager)
 
         Spacer(modifier = Modifier.height(16.dp))
     }

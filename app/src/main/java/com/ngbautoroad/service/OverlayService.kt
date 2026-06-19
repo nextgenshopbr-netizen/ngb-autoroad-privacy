@@ -69,6 +69,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.RideHistoryEntity
+import com.ngbautoroad.ui.editor.CustomCardLayout
 
 /**
  * Serviço de overlay flutuante.
@@ -219,6 +220,41 @@ class OverlayService : Service(),
         currentGalleryCard = when (activeSlot) {
             1 -> CardGallery.getById(prefsManager.card1ModelIdFlow.first())
             2 -> CardGallery.getById(prefsManager.card2ModelIdFlow.first())
+            3 -> {
+                // Slot 3 = Custom: construir GalleryCard a partir do layout salvo no editor
+                val card3 = prefsManager.card3CustomFlow.first()
+                val layoutJson = prefsManager.card3LayoutJsonFlow.first()
+                // Extrair campos do JSON do editor (CustomCardLayout)
+                val fields = try {
+                    if (layoutJson.isNotBlank()) {
+                        val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                        val layoutObj = json.decodeFromString<CustomCardLayout>(layoutJson)
+                        layoutObj.fields
+                            .mapNotNull { f ->
+                                try { CardGallery.CardField.valueOf(f.fieldType) } catch (_: Exception) { null }
+                            }
+                            .ifEmpty { CardGallery.CardField.entries }
+                    } else {
+                        CardGallery.CardField.entries
+                    }
+                } catch (_: Exception) {
+                    CardGallery.CardField.entries
+                }
+                CardGallery.GalleryCard(
+                    id = -1,
+                    name = "Custom",
+                    description = "Card customizado",
+                    category = CardGallery.CardCategory.STANDARD,
+                    fields = fields,
+                    backgroundColor = card3.backgroundColor,
+                    textColor = card3.textColor,
+                    accentColor = card3.accentColor,
+                    borderColor = card3.borderColor,
+                    borderRadius = card3.borderRadius,
+                    fontSize = card3.fontSize,
+                    showBorder = true
+                )
+            }
             else -> null
         }
 

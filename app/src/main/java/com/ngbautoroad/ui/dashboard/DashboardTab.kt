@@ -988,6 +988,9 @@ fun ShiftDashboardCard(
                                 } catch (_: Exception) {}
                             }
                             shiftState = shiftManager.endShift()
+                            // Parar todos os serviços ao encerrar turno
+                            try { OverlayService.stop(context) } catch (_: Exception) {}
+                            try { com.ngbautoroad.service.BubbleService.stop(context) } catch (_: Exception) {}
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F))

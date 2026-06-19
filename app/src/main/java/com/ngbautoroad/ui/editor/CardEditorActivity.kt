@@ -11,7 +11,9 @@
 // ============================================================================
 package com.ngbautoroad.ui.editor
 
+import android.content.Context
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
@@ -335,24 +337,63 @@ fun CardEditorScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Botão Ver Card Real (simulação com dados aleatórios)
-            var showRealPreview by remember { mutableStateOf(false) }
+            // Botão Ver Card Real — dispara o overlay flutuante real com dados simulados
+            val context = androidx.compose.ui.platform.LocalContext.current
             OutlinedButton(
-                onClick = { showRealPreview = true },
+                onClick = {
+                    scope.launch {
+                        // 1. Salvar layout atual
+                        val json = Json.encodeToString(layout)
+                        prefsManager.saveCard3LayoutJson(json)
+                        val bgLong = parseColorToLong(layout.backgroundColor)
+                        val borderLong = parseColorToLong(layout.borderColor)
+                        prefsManager.saveCard3Custom(
+                            com.ngbautoroad.data.model.CardModel(
+                                id = 0, name = "Custom",
+                                backgroundColor = bgLong,
+                                borderColor = borderLong,
+                                borderRadius = layout.borderRadius,
+                                isCustom = true
+                            )
+                        )
+                        // 2. Ativar slot 3
+                        prefsManager.setActiveCardSlot(3)
+                        // 3. Garantir que o OverlayService está rodando
+                        if (!com.ngbautoroad.service.OverlayService.isRunning()) {
+                            com.ngbautoroad.service.OverlayService.start(context)
+                            var retries = 0
+                            while (!com.ngbautoroad.service.OverlayService.isRunning() && retries < 6) {
+                                kotlinx.coroutines.delay(500L)
+                                retries++
+                            }
+                        }
+                        // 4. Criar RideData simulado e disparar via callback
+                        val rideData = com.ngbautoroad.data.model.RideData(
+                            platform = com.ngbautoroad.data.model.Platform.UBER,
+                            rideValue = 18.50,
+                            rideDuration = 22.0,
+                            pickupDistance = 1.2,
+                            dropoffDistance = 7.8,
+                            passengerRating = 4.8,
+                            intermediateStops = 0,
+                            pickupNeighborhood = "Pituba",
+                            dropoffNeighborhood = "Barra",
+                            isSimulation = true
+                        )
+                        val cb = com.ngbautoroad.service.OverlayService.onRideDetected
+                        if (cb != null) {
+                            cb.invoke(rideData)
+                            Toast.makeText(context, "Overlay disparado! Minimize o app para ver.", android.widget.Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(context, "Serviço não iniciado. Ative o overlay nas Configurações primeiro.", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Default.Visibility, contentDescription = "Preview")
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Ver Card Real (com dados)")
-            }
-
-            if (showRealPreview) {
-                Spacer(modifier = Modifier.height(8.dp))
-                RealCardPreview(layout = layout)
-                Spacer(modifier = Modifier.height(8.dp))
-                TextButton(onClick = { showRealPreview = false }) {
-                    Text("Fechar Preview")
-                }
+                Text("Ver Card Real (overlay flutuante)")
             }
 
             Spacer(modifier = Modifier.height(12.dp))
