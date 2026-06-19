@@ -418,19 +418,34 @@ class OverlayService : Service(),
                                 serviceScope.launch { prefsManager.saveOverlayFontScale(newScale) }
                                 updateOverlayContent()
                             },
-                            onResize = { deltaX, _ ->
-                                // Resize handle: ajusta largura arrastando no canto inferior direito
+                            onResize = { deltaX, deltaY ->
+                                // Resize handle: ajusta largura E altura arrastando
                                 val screenWidth = resources.displayMetrics.widthPixels
+                                val screenHeight = resources.displayMetrics.heightPixels
                                 val minW = (120 * density).toInt()
                                 val maxW = screenWidth
+                                val minH = (80 * density).toInt()
+                                val maxH = screenHeight
+
+                                // Ajustar largura
                                 val newWidth = (params.width + deltaX.toInt()).coerceIn(minW, maxW)
                                 params.width = newWidth
+
+                                // Ajustar altura (se WRAP_CONTENT, converter para valor fixo primeiro)
+                                val currentH = if (params.height == WindowManager.LayoutParams.WRAP_CONTENT) {
+                                    overlayView?.height ?: (200 * density).toInt()
+                                } else {
+                                    params.height
+                                }
+                                val newHeight = (currentH + deltaY.toInt()).coerceIn(minH, maxH)
+                                params.height = newHeight
+
                                 try {
                                     windowManager?.updateViewLayout(overlayView, params)
                                 } catch (_: Exception) {}
                                 overlayWidth = (newWidth / density).toInt()
                                 serviceScope.launch {
-                                    prefsManager.saveOverlaySize(overlayWidth, 0)
+                                    prefsManager.saveOverlaySize(overlayWidth, (newHeight / density).toInt())
                                 }
                             }
                         )
@@ -538,20 +553,35 @@ class OverlayService : Service(),
                             serviceScope.launch { prefsManager.saveOverlayFontScale(newScale) }
                             updateOverlayContent()
                         },
-                        onResize = { deltaX, _ ->
+                        onResize = { deltaX, deltaY ->
                             val screenWidth = resources.displayMetrics.widthPixels
+                            val screenHeight = resources.displayMetrics.heightPixels
                             val minW = (120 * density).toInt()
                             val maxW = screenWidth
+                            val minH = (80 * density).toInt()
+                            val maxH = screenHeight
                             val view = overlayView ?: return@OverlayCard
                             val params = view.layoutParams as? WindowManager.LayoutParams ?: return@OverlayCard
+
+                            // Ajustar largura
                             val newWidth = (params.width + deltaX.toInt()).coerceIn(minW, maxW)
                             params.width = newWidth
+
+                            // Ajustar altura
+                            val currentH = if (params.height == WindowManager.LayoutParams.WRAP_CONTENT) {
+                                view.height.takeIf { it > 0 } ?: (200 * density).toInt()
+                            } else {
+                                params.height
+                            }
+                            val newHeight = (currentH + deltaY.toInt()).coerceIn(minH, maxH)
+                            params.height = newHeight
+
                             try {
                                 windowManager?.updateViewLayout(view, params)
                             } catch (_: Exception) {}
                             overlayWidth = (newWidth / density).toInt()
                             serviceScope.launch {
-                                prefsManager.saveOverlaySize(overlayWidth, 0)
+                                prefsManager.saveOverlaySize(overlayWidth, (newHeight / density).toInt())
                             }
                         }
                     )
