@@ -147,6 +147,7 @@ enum class RideStatus(val displayName: String) {
 // VALIDAÇÃO: CriteriaTab.kt impede que totalUsed > 100 via slider com maxValue dinâmico
 // PERSISTÊNCIA: PrefsManager.criteriaWeightsFlow
 // ============================================================================
+@kotlinx.serialization.Serializable
 data class CriteriaWeights(
     val valuePerKm: Int = 30,         // Peso: Valor por quilômetro
     val valuePerHour: Int = 30,       // Peso: Valor por hora
@@ -172,6 +173,7 @@ data class CriteriaWeights(
 // PERSISTÊNCIA: PrefsManager.driverThresholdsFlow
 // DEPENDENTE: RideScorer aplica penalidade de 50-70% do peso do critério violado
 // ============================================================================
+@kotlinx.serialization.Serializable
 data class DriverThresholds(
     val minValuePerKm: Double = 0.0,        // R$/km mínimo desejado (0=desativado)
     val minValuePerHour: Double = 0.0,      // R$/hora mínimo desejado (0=desativado)

@@ -808,6 +808,7 @@ fun ThresholdIntField(
 // v6.1.0: COMPOSABLE AutoPilotSection
 // Seção de configuração do AutoPilot com modo, scores e filtros
 // ============================================================================
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AutoPilotSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineScope) {
     val autoPilotMode by prefsManager.autoPilotModeFlow.collectAsState(initial = "OFF")

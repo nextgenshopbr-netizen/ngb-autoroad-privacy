@@ -29,7 +29,6 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.ngbautoroad.NGBAutoRoadApp
-import com.ngbautoroad.R
 import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.FinanceDatabase
 import com.ngbautoroad.data.db.EarningEntity
@@ -485,15 +484,15 @@ class RideLifecycleManager(private val context: Context) {
         )
 
         val notification = NotificationCompat.Builder(context, NGBAutoRoadApp.CHANNEL_LIFECYCLE)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Corrida R$ ${String.format("%.2f", ride.rideValue)} — foi concluída?")
             .setContentText("${ride.platform.displayName} • Não detectamos o resultado automaticamente")
             .setStyle(NotificationCompat.BigTextStyle()
                 .bigText("Corrida de R$ ${String.format("%.2f", ride.rideValue)} (${ride.platform.displayName})\n" +
                         "Não conseguimos detectar se foi concluída ou cancelada.\n" +
                         "Confirme para registrar corretamente seus ganhos."))
-            .addAction(R.drawable.ic_notification, "✓ Concluída", yesPending)
-            .addAction(R.drawable.ic_notification, "✗ Cancelada", noPending)
+            .addAction(android.R.drawable.ic_menu_send, "✓ Concluída", yesPending)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "✗ Cancelada", noPending)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(false)
             .setOngoing(true)
