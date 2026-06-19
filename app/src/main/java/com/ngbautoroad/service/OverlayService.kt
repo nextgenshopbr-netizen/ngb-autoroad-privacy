@@ -122,6 +122,7 @@ class OverlayService : Service(),
         const val NOTIFICATION_ID = 1001
         const val ACTION_STOP = "com.ngbautoroad.STOP_SERVICE"
         var onRideDetected: ((RideData) -> Unit)? = null
+        var onStealthModeChanged: ((Boolean) -> Unit)? = null
 
         // Referência ao serviço ativo para resize ao vivo
         private var instance: OverlayService? = null
@@ -174,6 +175,20 @@ class OverlayService : Service(),
             }
         }
 
+        // Stealth mode: remover/restaurar overlay quando app bancário está ativo
+        onStealthModeChanged = { stealthActive ->
+            serviceScope.launch {
+                if (stealthActive) {
+                    hideOverlay()
+                    // Também esconder o bubble
+                    BubbleService.stop(this@OverlayService)
+                } else {
+                    // Restaurar bubble se turno estiver ativo
+                    BubbleService.start(this@OverlayService)
+                }
+            }
+        }
+
         // Limpar referência ao destruir
         lifecycleRegistry.addObserver(object : DefaultLifecycleObserver {
             override fun onDestroy(owner: LifecycleOwner) {
@@ -202,6 +217,7 @@ class OverlayService : Service(),
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
         hideOverlay()
         onRideDetected = null
+        onStealthModeChanged = null
         serviceScope.cancel()
         _viewModelStore.clear()
         super.onDestroy()

@@ -490,6 +490,24 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    // --- Stealth Mode: Apps bancários ---
+    private val KEY_STEALTH_BANK_PACKAGES = stringPreferencesKey("stealth_bank_packages")
+    private val KEY_STEALTH_ENABLED = booleanPreferencesKey("stealth_enabled")
+
+    val stealthEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_STEALTH_ENABLED] ?: true // Ativado por padrão
+    }
+    suspend fun saveStealthEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs -> prefs[KEY_STEALTH_ENABLED] = enabled }
+    }
+
+    val stealthBankPackagesFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_STEALTH_BANK_PACKAGES] ?: "" // Vazio = usar lista padrão
+    }
+    suspend fun saveStealthBankPackages(packages: String) {
+        context.dataStore.edit { prefs -> prefs[KEY_STEALTH_BANK_PACKAGES] = packages }
+    }
+
     suspend fun resetAll() {
         context.dataStore.edit { it.clear() }
     }
