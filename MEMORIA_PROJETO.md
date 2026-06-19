@@ -395,3 +395,28 @@
 
 ### Release
 - GitHub: https://github.com/nextgenshopbr-netizen/ngb-autoroad-privacy/releases/tag/v6.1.0
+
+---
+
+## v6.1.1 — Correções da Auditoria + Melhorias UX (19/06/2026)
+
+### Correções da Auditoria:
+- **DashboardTab/HistoryTab**: Filtros de ganhos incluem status COMPLETED (antes só ACCEPTED = ganhos zerados)
+- **OverlayService.hideOverlay()**: Agora notifica lifecycle via onOverlayDismissed() (corrida não fica presa em PENDING)
+- **RideLifecycleManager**: Respeita toggle autoImportEarnings antes de registrar ganho
+- **RideLifecycleManager**: Atualiza ShiftManager quando corrida é COMPLETED (turno mostra ganhos reais)
+- **UncertainReceiver**: Fallback direto ao banco quando lifecycle não está disponível
+- **Ghost Mode**: Consome pendingGhostRide ao desativar (corrida detectada durante banco não se perde)
+- **RideNotificationListener**: Expõe instance estática para acesso ao pendingGhostRide
+
+### Melhorias do Usuário:
+1. **Perfis no topo** da tela de Critérios (acesso rápido em vez de no final)
+2. **Seletor rápido de perfis na Dashboard** (antes de iniciar turno — motorista já seleciona perfil)
+3. **AutoPilot multi-seleção**: Checkboxes independentes "Aceitar" e "Recusar" (ambos podem estar ativos)
+4. **AutoPilot novos modos**: ACCEPT, REFUSE, BOTH (retrocompatível com legado ACCEPT_ONLY/REFUSE_ONLY/FULL)
+5. **Backup & Restauração** movido para último card de Configurações
+
+### Técnico:
+- versionCode: 46 | versionName: 6.1.1
+- 12 arquivos alterados, +248 -66 linhas
+- Build: compilou com sucesso (R8 minificado, 41MB)
