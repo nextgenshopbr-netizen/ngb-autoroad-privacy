@@ -506,7 +506,7 @@ class OverlayService : Service(),
                                 val newWidth = (params.width + deltaX.toInt()).coerceIn(minW, screenWidth)
                                 params.width = newWidth
 
-                                // Altura: mínimo 60dp, máximo = tela
+                                // v6.3.6: Altura livre — mínimo 60dp, máximo = tela inteira
                                 val minH = (60 * density).toInt()
                                 val currentH = if (params.height <= 0 || params.height == WindowManager.LayoutParams.WRAP_CONTENT) {
                                     overlayView?.height?.takeIf { it > 50 } ?: naturalOverlayHeight
@@ -516,18 +516,13 @@ class OverlayService : Service(),
                                 val newHeight = (currentH + deltaY.toInt()).coerceIn(minH, screenHeight)
                                 params.height = newHeight
 
-                                // Auto-zoom: ajustar fontScale proporcionalmente à altura
-                                if (naturalOverlayHeight > 0) {
-                                    val heightRatio = newHeight.toFloat() / naturalOverlayHeight.toFloat()
-                                    currentFontScale = heightRatio.coerceIn(0.5f, 1.8f)
-                                }
+                                // v6.3.6: Auto-zoom REMOVIDO — fontScale não muda ao redimensionar
 
                                 try {
                                     windowManager?.updateViewLayout(overlayView, params)
                                 } catch (_: Exception) {}
                                 overlayWidth = (newWidth / density).toInt()
                                 serviceScope.launch {
-                                    prefsManager.saveOverlayFontScale(currentFontScale)
                                     prefsManager.saveOverlaySize(overlayWidth, (newHeight / density).toInt())
                                 }
                                 updateOverlayContent()
@@ -628,7 +623,7 @@ class OverlayService : Service(),
                             val newWidth = (lp.width + deltaX.toInt()).coerceIn(minW, screenWidth)
                             lp.width = newWidth
 
-                            // Altura: mínimo 60dp, máximo = tela
+                            // v6.3.6: Altura livre — mínimo 60dp, máximo = tela inteira
                             val minH = (60 * density).toInt()
                             val currentH = if (lp.height <= 0 || lp.height == WindowManager.LayoutParams.WRAP_CONTENT) {
                                 view.height.takeIf { it > 50 } ?: naturalOverlayHeight
@@ -638,18 +633,13 @@ class OverlayService : Service(),
                             val newHeight = (currentH + deltaY.toInt()).coerceIn(minH, screenHeight)
                             lp.height = newHeight
 
-                            // Auto-zoom: ajustar fontScale proporcionalmente à altura
-                            if (naturalOverlayHeight > 0) {
-                                val heightRatio = newHeight.toFloat() / naturalOverlayHeight.toFloat()
-                                currentFontScale = heightRatio.coerceIn(0.5f, 1.8f)
-                            }
+                            // v6.3.6: Auto-zoom REMOVIDO — fontScale não muda ao redimensionar
 
                             try {
                                 windowManager?.updateViewLayout(view, lp)
                             } catch (_: Exception) {}
                             overlayWidth = (newWidth / density).toInt()
                             serviceScope.launch {
-                                prefsManager.saveOverlayFontScale(currentFontScale)
                                 prefsManager.saveOverlaySize(overlayWidth, (newHeight / density).toInt())
                             }
                             updateOverlayContent()

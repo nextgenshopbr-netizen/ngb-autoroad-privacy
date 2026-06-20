@@ -24,8 +24,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.TextDecrease
-import androidx.compose.material.icons.filled.TextIncrease
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +37,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import com.ngbautoroad.data.model.*
 import com.ngbautoroad.data.model.CardGallery.CardField
 import com.ngbautoroad.ui.theme.*
@@ -105,36 +105,12 @@ fun OverlayCard(
                 .background(bgColor.copy(alpha = 0.9f))
                 .padding(horizontal = 6.dp, vertical = 2.dp)
         ) {
-            // Linha 1: Botões A-/A+/✕ alinhados à direita
+            // v6.3.6: Apenas botão fechar (zoom A-/A+ removido)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "A\u2212",
-                    color = textColor.copy(alpha = 0.85f),
-                    fontSize = (12 * fontScale).sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clickable {
-                            val newScale = (fontScale - 0.1f).coerceIn(0.5f, 1.8f)
-                            onFontScaleChange(newScale)
-                        }
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                )
-                Text(
-                    text = "A+",
-                    color = textColor.copy(alpha = 0.85f),
-                    fontSize = (12 * fontScale).sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clickable {
-                            val newScale = (fontScale + 0.1f).coerceIn(0.5f, 1.8f)
-                            onFontScaleChange(newScale)
-                        }
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                )
                 Text(
                     text = "\u2715",
                     color = textColor.copy(alpha = 0.9f),
@@ -321,133 +297,144 @@ fun OverlayCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-            // Campos dinâmicos baseados no card da galeria
-            fields.forEach { field ->
-                when (field) {
-                    CardField.SCORE -> {} // Já exibido no header
-                    CardField.PLATFORM -> {} // Já exibido no header
-                    CardField.RIDE_TYPE -> {
-                        if (ride.rideType != RideType.UNKNOWN) {
-                            OverlayCriteriaRow(
+            // v6.3.6: Layout responsivo com FlowRow — campos se reorganizam ao redimensionar
+            // Score bar fica separada (full-width), demais campos usam FlowRow
+            @OptIn(ExperimentalLayoutApi::class)
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                fields.forEach { field ->
+                    when (field) {
+                        CardField.SCORE -> {} // Já exibido no header
+                        CardField.PLATFORM -> {} // Já exibido no header
+                        CardField.SCORE_BAR -> {} // Renderizado abaixo separadamente
+                        CardField.RIDE_TYPE -> {
+                            if (ride.rideType != RideType.UNKNOWN) {
+                                OverlayFieldChip(
+                                    label = field.shortLabel,
+                                    value = ride.rideType.displayName,
+                                    textColor = textColor,
+                                    valueColor = accentColor,
+                                    fontSize = scaledLabel
+                                )
+                            }
+                        }
+                        CardField.RIDE_VALUE -> {
+                            OverlayFieldChip(
                                 label = field.shortLabel,
-                                value = ride.rideType.displayName,
+                                value = "R$ ${"%.2f".format(ride.rideValue)}",
                                 textColor = textColor,
-                                valueColor = accentColor,
+                                valueColor = getCriteriaColor(score, "rideValue", accentColor),
                                 fontSize = scaledLabel
                             )
                         }
-                    }
-                    CardField.RIDE_VALUE -> {
-                        OverlayCriteriaRow(
-                            label = field.shortLabel,
-                            value = "R$ ${"%.2f".format(ride.rideValue)}",
-                            textColor = textColor,
-                            valueColor = getCriteriaColor(score, "rideValue", accentColor),
-                            fontSize = scaledLabel
-                        )
-                    }
-                    CardField.VALUE_PER_KM -> {
-                        OverlayCriteriaRow(
-                            label = field.shortLabel,
-                            value = "R$ ${"%.2f".format(ride.valuePerKm)}",
-                            textColor = textColor,
-                            valueColor = getCriteriaColor(score, "valuePerKm", accentColor),
-                            fontSize = scaledLabel
-                        )
-                    }
-                    CardField.VALUE_PER_HOUR -> {
-                        OverlayCriteriaRow(
-                            label = field.shortLabel,
-                            value = "R$ ${"%.0f".format(ride.valuePerHour)}",
-                            textColor = textColor,
-                            valueColor = getCriteriaColor(score, "valuePerHour", accentColor),
-                            fontSize = scaledLabel
-                        )
-                    }
-                    CardField.PICKUP_DISTANCE -> {
-                        OverlayCriteriaRow(
-                            label = field.shortLabel,
-                            value = "${"%.1f".format(ride.pickupDistance)} km",
-                            textColor = textColor,
-                            valueColor = getCriteriaColor(score, "pickupDistance", accentColor),
-                            fontSize = scaledLabel
-                        )
-                    }
-                    CardField.DROPOFF_DISTANCE -> {
-                        OverlayCriteriaRow(
-                            label = field.shortLabel,
-                            value = "${"%.1f".format(ride.dropoffDistance)} km",
-                            textColor = textColor,
-                            valueColor = getCriteriaColor(score, "dropoffDistance", accentColor),
-                            fontSize = scaledLabel
-                        )
-                    }
-                    CardField.DURATION -> {
-                        OverlayCriteriaRow(
-                            label = field.shortLabel,
-                            value = "${ride.rideDuration.toInt()} min",
-                            textColor = textColor,
-                            valueColor = getCriteriaColor(score, "rideDuration", accentColor),
-                            fontSize = scaledLabel
-                        )
-                    }
-                    CardField.PASSENGER_RATING -> {
-                        if (ride.passengerRating > 0) {
-                            OverlayCriteriaRow(
+                        CardField.VALUE_PER_KM -> {
+                            OverlayFieldChip(
                                 label = field.shortLabel,
-                                value = "★ ${"%.1f".format(ride.passengerRating)}",
+                                value = "R$ ${"%.2f".format(ride.valuePerKm)}",
                                 textColor = textColor,
-                                valueColor = getCriteriaColor(score, "passengerRating", accentColor),
+                                valueColor = getCriteriaColor(score, "valuePerKm", accentColor),
                                 fontSize = scaledLabel
                             )
                         }
-                    }
-                    CardField.STOPS -> {
-                        if (ride.intermediateStops > 0) {
-                            OverlayCriteriaRow(
+                        CardField.VALUE_PER_HOUR -> {
+                            OverlayFieldChip(
                                 label = field.shortLabel,
-                                value = "${ride.intermediateStops}",
+                                value = "R$ ${"%.0f".format(ride.valuePerHour)}",
                                 textColor = textColor,
-                                valueColor = getCriteriaColor(score, "intermediateStops", accentColor),
+                                valueColor = getCriteriaColor(score, "valuePerHour", accentColor),
                                 fontSize = scaledLabel
                             )
                         }
-                    }
-                    CardField.PICKUP_NEIGHBORHOOD -> {
-                        if (ride.pickupNeighborhood.isNotBlank()) {
-                            OverlayCriteriaRow(
+                        CardField.PICKUP_DISTANCE -> {
+                            OverlayFieldChip(
                                 label = field.shortLabel,
-                                value = ride.pickupNeighborhood,
+                                value = "${"%.1f".format(ride.pickupDistance)} km",
                                 textColor = textColor,
-                                valueColor = textColor.copy(alpha = 0.9f),
+                                valueColor = getCriteriaColor(score, "pickupDistance", accentColor),
                                 fontSize = scaledLabel
                             )
                         }
-                    }
-                    CardField.DROPOFF_NEIGHBORHOOD -> {
-                        if (ride.dropoffNeighborhood.isNotBlank()) {
-                            OverlayCriteriaRow(
+                        CardField.DROPOFF_DISTANCE -> {
+                            OverlayFieldChip(
                                 label = field.shortLabel,
-                                value = ride.dropoffNeighborhood,
+                                value = "${"%.1f".format(ride.dropoffDistance)} km",
                                 textColor = textColor,
-                                valueColor = textColor.copy(alpha = 0.9f),
+                                valueColor = getCriteriaColor(score, "dropoffDistance", accentColor),
                                 fontSize = scaledLabel
                             )
                         }
-                    }
-                    CardField.SCORE_BAR -> {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        LinearProgressIndicator(
-                            progress = (score.totalScore / 100.0).toFloat().coerceIn(0f, 1f),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(scoreBarHeightDp)
-                                .clip(RoundedCornerShape(scoreBarHeightDp / 2)),
-                            color = totalScoreColor,
-                            trackColor = textColor.copy(alpha = 0.15f),
-                        )
+                        CardField.DURATION -> {
+                            OverlayFieldChip(
+                                label = field.shortLabel,
+                                value = "${ride.rideDuration.toInt()} min",
+                                textColor = textColor,
+                                valueColor = getCriteriaColor(score, "rideDuration", accentColor),
+                                fontSize = scaledLabel
+                            )
+                        }
+                        CardField.PASSENGER_RATING -> {
+                            if (ride.passengerRating > 0) {
+                                OverlayFieldChip(
+                                    label = field.shortLabel,
+                                    value = "★ ${"%.1f".format(ride.passengerRating)}",
+                                    textColor = textColor,
+                                    valueColor = getCriteriaColor(score, "passengerRating", accentColor),
+                                    fontSize = scaledLabel
+                                )
+                            }
+                        }
+                        CardField.STOPS -> {
+                            if (ride.intermediateStops > 0) {
+                                OverlayFieldChip(
+                                    label = field.shortLabel,
+                                    value = "${ride.intermediateStops}",
+                                    textColor = textColor,
+                                    valueColor = getCriteriaColor(score, "intermediateStops", accentColor),
+                                    fontSize = scaledLabel
+                                )
+                            }
+                        }
+                        CardField.PICKUP_NEIGHBORHOOD -> {
+                            if (ride.pickupNeighborhood.isNotBlank()) {
+                                OverlayFieldChip(
+                                    label = field.shortLabel,
+                                    value = ride.pickupNeighborhood,
+                                    textColor = textColor,
+                                    valueColor = textColor.copy(alpha = 0.9f),
+                                    fontSize = scaledLabel
+                                )
+                            }
+                        }
+                        CardField.DROPOFF_NEIGHBORHOOD -> {
+                            if (ride.dropoffNeighborhood.isNotBlank()) {
+                                OverlayFieldChip(
+                                    label = field.shortLabel,
+                                    value = ride.dropoffNeighborhood,
+                                    textColor = textColor,
+                                    valueColor = textColor.copy(alpha = 0.9f),
+                                    fontSize = scaledLabel
+                                )
+                            }
+                        }
                     }
                 }
+            }
+
+            // Score bar (full-width, fora do FlowRow)
+            if (fields.contains(CardField.SCORE_BAR)) {
+                Spacer(modifier = Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = (score.totalScore / 100.0).toFloat().coerceIn(0f, 1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(scoreBarHeightDp)
+                        .clip(RoundedCornerShape(scoreBarHeightDp / 2)),
+                    color = totalScoreColor,
+                    trackColor = textColor.copy(alpha = 0.15f),
+                )
             }
 
             }
@@ -482,8 +469,12 @@ fun OverlayCard(
     }
 }
 
+/**
+ * v6.3.6: Chip compacto para FlowRow — se reorganiza automaticamente ao redimensionar
+ * Cada campo ocupa apenas o espaço necessário e "quebra linha" quando não cabe na largura.
+ */
 @Composable
-fun OverlayCriteriaRow(
+fun OverlayFieldChip(
     label: String,
     value: String,
     textColor: Color,
@@ -492,24 +483,22 @@ fun OverlayCriteriaRow(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 1.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = label,
+            text = "$label ",
             color = textColor.copy(alpha = 0.6f),
-            fontSize = fontSize
+            fontSize = fontSize,
+            maxLines = 1
         )
-        Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = value,
             color = valueColor,
             fontSize = fontSize,
             fontWeight = FontWeight.Medium,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f, fill = false)
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
