@@ -420,3 +420,28 @@
 - versionCode: 46 | versionName: 6.1.1
 - 12 arquivos alterados, +248 -66 linhas
 - Build: compilou com sucesso (R8 minificado, 41MB)
+
+---
+
+## v6.3.0 — Redesign + Tutorial + Zonas + Ranking Real (20/06/2026)
+
+### Arquivos criados:
+- `ui/finance/FinanceTab.kt` — Aba Financeiro inline na navegação principal
+- `ui/tutorial/TutorialOverlay.kt` — Sistema de tutorial guiado com tooltips
+- `ui/tutorial/HelpBottomSheet.kt` — Central de Ajuda com FAQ contextual
+
+### Arquivos modificados:
+- `ui/MainActivity.kt` — Nova navegação 5 abas (Critérios|Cards|INICIO|Financeiro|Config)
+- `ui/dashboard/DashboardTab.kt` — Removidos botões topo, card perfis favoritos
+- `ui/criteria/CriteriaTab.kt` — Dividido em 4 sub-abas
+- `ui/settings/SettingsTab.kt` — Dividido em 3 sub-abas
+- `ui/features/FeaturesActivity.kt` — Dados reais do banco (não mais mocks)
+- `service/OverlayService.kt` — Integração zonas do mapa no Score
+- `data/prefs/PrefsManager.kt` — Chaves tutorial + favoriteProfiles
+
+### Funcionalidades:
+- I1: Redesign completo com ícones Material Design profissionais
+- I2: Tutorial guiado interativo no primeiro acesso
+- I3: Central de Ajuda com ícone ? e bottom sheet
+- I4: Mapa de Zonas funcional (penaliza Score real)
+- I5: Ranking e Relatórios com dados reais do banco
