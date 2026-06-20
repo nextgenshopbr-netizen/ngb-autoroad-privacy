@@ -445,3 +445,27 @@
 - I3: Central de Ajuda com ícone ? e bottom sheet
 - I4: Mapa de Zonas funcional (penaliza Score real)
 - I5: Ranking e Relatórios com dados reais do banco
+
+---
+
+## v6.3.1 — Fechamento da Categoria 2 do Roadmap (20/06/2026)
+
+### I6 — Learning Engine com Dados Reais
+- `seedFromDatabase()`: carrega histórico completo do banco (COMPLETED, ACCEPTED, REFUSED) ao inicializar
+- Nova sugestão automática: bairros com 70%+ de recusa são sugeridos para bloqueio
+- FeaturesActivity simplificado — sem loops manuais, engine alimentado automaticamente
+
+### I7 — ProjectionEngine Refatorada
+- `simulateWhatIf` filtra apenas corridas COMPLETED (não ACCEPTED)
+- Removido `coerceAtLeast(1)` em `avgDailyRides` que inflava projeções
+- Projeções financeiras agora refletem dados reais sem distorção
+
+### I8 — Limpeza de Código
+- Import `RidePattern` desnecessário removido do FeaturesActivity
+- Deduplicação mantida por canal (necessário para fallback AAPM Android 17)
+- Comentários de versão atualizados
+
+### Status do Roadmap após v6.3.1
+- Categoria 1 (Críticos): ✅ 5/5 concluídos
+- Categoria 2 (Importantes): ✅ 8/8 concluídos
+- Próxima: Categoria 3 — AppFunctions + Gemini (v7.0.0, Out 2026)
