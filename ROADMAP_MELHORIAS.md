@@ -92,7 +92,7 @@ O GigU possui mais de **1 milhão de downloads** e é o líder atual da categori
 
 O NGB AutoRoad Privacy se posiciona de forma oposta ao mercado: **sem assinatura, sem mensalidade, sem surpresas na fatura**. A filosofia é simples — o motorista já paga taxa para a Uber, para a 99, para o combustível e para o seguro. O app que deveria ajudá-lo a ganhar mais não pode ser mais uma sangria mensal.
 
-> "O motorista que usa o NGB AutoRoad paga uma única vez e recebe todas as atualizações futuras. Enquanto o concorrente cobra R$ 12,90 todo mês, o NGB custa menos que **dois meses do GigU** e dura para sempre."
+> "O motorista que usa o NGB AutoRoad paga uma única vez e recebe todas as atualizações futuras. Enquanto o concorrente cobra R$ 12,90 todo mês durante anos, o NGB custa o equivalente a **19 meses do GigU** — mas dura para sempre. Em menos de 2 anos, o motorista já economizou. Daí em diante, é lucro puro."
 
 ---
 
@@ -116,17 +116,17 @@ O app é distribuído gratuitamente com funcionalidades básicas desbloqueadas, 
 | Atualizações futuras | ✅ (correções) | ✅ (tudo) |
 
 #### Plano Vitalício — Preço Único
-**R$ 24,90** (pagamento único, sem recorrência)
+**R$ 249,90** (pagamento único, sem recorrência)
 
 Esse valor foi calculado com base nos seguintes critérios:
 
-- **Ponto de equilíbrio psicológico:** Abaixo de R$ 29,90, o motorista percebe como "menos que 3 meses do GigU" e o custo-benefício é imediato e óbvio.
-- **Retorno sobre investimento imediato:** Com o AutoPilot recusando apenas 2 corridas ruins por dia (economia de ~R$ 5,00/dia), o app se paga em **menos de 5 dias** de uso.
-- **Barreira de entrada baixa:** R$ 24,90 equivale a menos de 1% da renda mensal média do motorista, eliminando a objeção de preço.
-- **Sustentabilidade do negócio:** Com 1% do mercado brasileiro (17.200 motoristas), a receita seria de **R$ 428.580** — suficiente para manter o desenvolvimento por anos sem depender de assinatura.
+- **Ponto de equilíbrio em 20 meses:** O GigU cobra R$ 12,90/mês. Em 20 meses de assinatura, o motorista teria gasto R$ 258,00. Com o NGB, ele paga R$ 249,90 uma vez e nunca mais. A partir do 20º mês, cada centavo que ele deixa de pagar ao concorrente é economia real.
+- **Retorno sobre investimento rápido:** Com o AutoPilot recusando apenas 2 corridas ruins por dia (economia de ~R$ 5,00/dia em tempo e combustível desperdiçados), o app se paga em **menos de 50 dias** de uso — e continua gerando economia por anos.
+- **Valor percebido premium:** R$ 249,90 posiciona o app como uma ferramenta profissional séria, não como um "appzinho barato". Motoristas que investem nesse valor tendem a usar o app com mais disciplina e obter melhores resultados.
+- **Sustentabilidade do negócio:** Com 1% do mercado brasileiro (17.200 motoristas), a receita seria de **R$ 4.298.280** — garantindo desenvolvimento contínuo por anos sem depender de assinatura.
 
 #### Promoção de Lançamento (Primeiros 90 dias)
-**R$ 14,90** — Oferta de fundador para os primeiros 500 compradores. Cria urgência, gera os primeiros reviews e financia o desenvolvimento da Fase 1 do roadmap.
+**R$ 149,90** — Oferta de fundador para os primeiros 500 compradores (40% de desconto). Cria urgência, gera os primeiros reviews e financia o desenvolvimento da Fase 1 do roadmap. Após os 500, o preço volta ao valor cheio de R$ 249,90.
 
 ---
 
@@ -137,12 +137,12 @@ A compra do Plano Vitalício é feita dentro do próprio app via `Google Play Bi
 
 | Cenário | Vendas/mês | Receita Bruta | Receita Líquida (85%) |
 |---|---|---|---|
-| Conservador | 100 | R$ 2.490 | R$ 2.117 |
-| Realista | 500 | R$ 12.450 | R$ 10.583 |
-| Otimista | 2.000 | R$ 49.800 | R$ 42.330 |
+| Conservador | 100 | R$ 24.990 | R$ 21.242 |
+| Realista | 500 | R$ 124.950 | R$ 106.208 |
+| Otimista | 2.000 | R$ 499.800 | R$ 424.830 |
 
 **Canal Secundário — Comunidades de Motoristas**
-Grupos de WhatsApp e Telegram de motoristas são o principal vetor orgânico de divulgação. Uma estratégia de "indique e ganhe" (ex: código de desconto de R$ 5,00 para quem indicar) pode acelerar o crescimento viral sem custo de mídia paga.
+Grupos de WhatsApp e Telegram de motoristas são o principal vetor orgânico de divulgação. Uma estratégia de "indique e ganhe" (ex: código de desconto de R$ 30,00 para quem indicar) pode acelerar o crescimento viral sem custo de mídia paga.
 
 **Canal Terciário — YouTube e TikTok**
 Parcerias com criadores de conteúdo do nicho de motoristas (canais com 10k-100k seguidores) para demonstrações do app em funcionamento real. O formato "veja quanto eu ganhei a mais usando o NGB" tem alto potencial de conversão nesse público.
@@ -155,7 +155,7 @@ O modelo vitalício levanta uma questão legítima: como sustentar o desenvolvim
 
 **1. Volume e Crescimento Orgânico:** Com 1,72 milhão de motoristas no Brasil e crescimento de 35% ao ano, novos motoristas entram no mercado constantemente. Cada novo motorista é um potencial comprador do plano vitalício.
 
-**2. Versões Futuras com Upgrade Opcional:** Quando funcionalidades de grande porte forem lançadas (ex: Dashboard Web, Integração WhatsApp, IA preditiva), poderá ser oferecido um "Upgrade v2" opcional por um valor simbólico (ex: R$ 9,90) para quem já possui o plano vitalício v1. Motoristas que compraram na fundação sempre terão prioridade e desconto.
+**2. Versões Futuras com Upgrade Opcional:** Quando funcionalidades de grande porte forem lançadas (ex: Dashboard Web, Integração WhatsApp, IA preditiva), poderá ser oferecido um "Upgrade v2" opcional por um valor simbólico (ex: R$ 49,90) para quem já possui o plano vitalício v1. Motoristas que compraram na fundação sempre terão prioridade e desconto.
 
 **3. Custo Operacional Baixo:** Por ser um app 100% local (sem servidor, sem banco de dados na nuvem, sem custos de infraestrutura), o custo de manutenção é essencialmente zero além do tempo de desenvolvimento. Isso torna o modelo vitalício viável onde seria inviável para um SaaS tradicional.
 
@@ -166,8 +166,9 @@ O modelo vitalício levanta uma questão legítima: como sustentar o desenvolvim
 | Critério | NGB AutoRoad Privacy | GigU | Apps Gratuitos |
 |---|---|---|---|
 | Modelo de cobrança | Pagamento único | Assinatura mensal | Gratuito (com anúncios) |
-| Custo em 12 meses | R$ 24,90 | R$ 154,80 | R$ 0 (mas sem AutoPilot) |
-| Custo em 24 meses | R$ 24,90 | R$ 309,60 | R$ 0 |
+| Custo em 12 meses | R$ 249,90 | R$ 154,80 | R$ 0 (mas sem AutoPilot) |
+| Custo em 24 meses | R$ 249,90 | R$ 309,60 | R$ 0 |
+| Custo em 36 meses | R$ 249,90 | R$ 464,40 | R$ 0 |
 | AutoPilot (aceitar/recusar) | ✅ | ❌ | ❌ |
 | Ghost Mode bancário | ✅ | ❌ | ❌ |
 | Privacidade (100% local) | ✅ | ❌ (dados na nuvem) | ❌ |
