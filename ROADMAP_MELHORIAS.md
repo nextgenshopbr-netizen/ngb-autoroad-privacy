@@ -1,72 +1,212 @@
-# Roadmap de Melhorias Futuras: NGB AutoRoad Privacy
+# Roadmap de Melhorias: NGB AutoRoad Privacy
 
-Este documento estabelece o roteiro de evolução do NGB AutoRoad Privacy, organizado em fases de curto, médio e longo prazo. As melhorias visam consolidar a estabilidade da versão 6.1.1, substituir recursos simulados (mocks) por inteligência real baseada nos dados do motorista, e introduzir um sistema de onboarding para maximizar o engajamento de novos usuários.
-
----
-
-## Fase 1: Onboarding e Guias (Curto Prazo)
-O foco desta fase é reduzir a curva de aprendizado para novos motoristas, explicando de forma interativa como as funcionalidades protegem e otimizam seus ganhos.
-
-### 1. Tutorial Guiado Interativo (Onboarding)
-- **Tela de Boas-Vindas:** Apresentação dos pilares do app (Privacidade, AutoPilot, Controle Financeiro).
-- **Tour pelas Telas Principais:** Utilização de um componente de overlay (ex: `ShowcaseView` ou tooltips nativos do Jetpack Compose) para destacar botões e explicar funções no primeiro acesso.
-  - *Dashboard:* Explicar o card de turno e o resumo de ganhos.
-  - *Critérios:* Mostrar como distribuir os 100 pontos e como os perfis funcionam.
-  - *AutoPilot:* Explicar o funcionamento da "Zona Neutra" e do delay humanizado.
-- **Armazenamento de Estado:** Variável no `PrefsManager` (`hasCompletedTutorial`) para garantir que o tour seja exibido apenas uma vez, com opção de reprisar via aba de Configurações.
-
-### 2. Central de Ajuda Integrada
-- **Guia de Bolso:** Ícone de ajuda (`?`) no topo de cada aba que abre um modal ou bottom sheet explicativo sobre a tela atual.
-- **FAQ Dinâmico:** Seção nas configurações com respostas para dúvidas comuns (ex: "Por que o AutoPilot não clicou?", "Como o Ghost Mode protege meu banco?").
+Este documento estabelece o roteiro completo de evolução do NGB AutoRoad Privacy, organizado por **prioridade de risco e impacto**, com datas estimadas e janelas de implantação para cada item. Os recursos estão divididos em quatro categorias: Críticos (riscos ativos que precisam de ação imediata), Importantes (melhorias de estabilidade e qualidade), Oportunidades (novos recursos que ampliam o diferencial competitivo) e Visão de Longo Prazo (expansões futuras).
 
 ---
 
-## Fase 2: Substituição de Mocks e Inteligência Real (Médio Prazo)
-A versão atual possui uma aba de "Recursos Avançados" (`FeaturesActivity`) que exibe dados falsos (mocks). Esta fase conecta essas telas ao banco de dados real.
+## Categoria 1 — Críticos: Ação Imediata
 
-### 1. Mapa de Zonas Funcional (ZoneMapActivity)
-- **Integração Real:** Conectar os polígonos desenhados no mapa ao `RideScorer`.
-- **Lógica:** Implementar algoritmo *Point-in-Polygon* (Ray-casting) para verificar se as coordenadas de origem ou destino da corrida detectada caem dentro das áreas vermelhas desenhadas pelo motorista.
-- **Penalidade:** Aplicar redução drástica no score (ex: -50 pontos) para corridas que terminam em zonas de risco.
+Estes itens representam **riscos ativos** que afetam usuários hoje ou afetarão em semanas. Não há justificativa para adiá-los.
 
-### 2. Ranking e Relatórios Reais (FeaturesActivity)
-- **RankingTab:** Substituir a lista estática de bairros por uma agregação SQL (`GROUP BY`) no `RideHistoryDao`, ordenando os bairros reais onde o motorista mais pegou corridas ou onde obteve o melhor valor por km.
-- **ExportTab:** Substituir o gerador de CSV estático por um exportador real que lê o `AppDatabase` e gera planilhas verdadeiras para a contabilidade do motorista.
-- **ReportTab:** Conectar o gerador de PDF aos ganhos consolidados do `FinanceDatabase`, criando resumos semanais ou mensais reais.
+### C1. Flag `isAccessibilityTool` no Manifest
+**Janela:** Imediatamente — próximo commit (esta semana)
+**Versão alvo:** v6.1.2 (hotfix)
+**Risco sem ação:** Qualquer motorista que ative o Advanced Protection Mode (AAPM) do Android 16/17 tem o `RideAccessibilityService` **bloqueado automaticamente** pelo sistema. O AutoPilot, a detecção de corridas e o click automático param de funcionar sem aviso.
+**Ação:** Adicionar `android:isAccessibilityTool="true"` na declaração do `RideAccessibilityService` no `AndroidManifest.xml`. É uma única linha de código que elimina o risco imediatamente.
 
-### 3. Local Learning Engine Verdadeiro
-- **Fim dos Padrões Artificiais:** O `LocalLearningEngine` atualmente injeta 50 corridas fictícias. A melhoria consistirá em treiná-lo com o histórico real (`RideHistoryDao`).
-- **Sugestões Ativas:** Se o motorista recusa consistentemente corridas para um bairro específico, o app deve sugerir automaticamente a adição desse bairro à lista de bloqueios na aba de Critérios.
-
----
-
-## Fase 3: Aprimoramento Financeiro e de Lifecycle (Médio Prazo)
-O ciclo de vida da corrida foi estabilizado na v6.1.1, mas a camada financeira e de projeção precisa ser ajustada para refletir apenas a realidade.
-
-### 1. Refatoração da ProjectionEngine
-- **Projeções Realistas:** O método `simulateWhatIf()` atualmente usa `allRides` (incluindo recusadas e canceladas) para calcular ganhos reais. Deve ser ajustado para filtrar estritamente por `status == "COMPLETED"`.
-- **Remoção de Dados Fantasmas:** Remover a lógica que força uma média mínima de 1 corrida/dia (`coerceAtLeast(1)`), o que gera projeções infladas para motoristas que não trabalharam.
-
-### 2. Limpeza de Código Morto (VehicleTab)
-- **Remoção do Legado:** O arquivo `FinanceActivity.kt` contém um `VehicleTab` inteiro (linhas 937-1144) que nunca é chamado, pois a navegação utiliza o `VehicleProfilesTab` de `FinanceExtTabs.kt`. Esse código morto deve ser removido para reduzir o tamanho do APK e o tempo de compilação.
-
-### 3. Unificação da Deduplicação de Corridas
-- **Problema Atual:** Existem três sistemas de deduplicação independentes (`RideAccessibilityService`, `OverlayService` e `RideNotificationListener`), o que pode gerar conflitos.
-- **Solução:** Centralizar a lógica de hash e deduplicação de corridas no `RideLifecycleManager`, que atuará como a única fonte da verdade para o estado da corrida atual.
+```xml
+<service android:name=".service.RideAccessibilityService"
+    android:isAccessibilityTool="true"
+    ... />
+```
 
 ---
 
-## Fase 4: Integrações Externas e Escalabilidade (Longo Prazo)
-Expansão das capacidades do aplicativo para interagir com o ambiente externo e oferecer mais comodidade.
+### C2. Filtros de Status ACCEPTED → COMPLETED no Dashboard e Histórico
+**Janela:** Imediatamente — já corrigido na v6.1.1
+**Status:** ✅ Concluído na v6.1.1
 
-### 1. Integração com WhatsApp/Telegram
-- **Mensagem de Segurança Automática:** Ao aceitar uma corrida (status `ACCEPTED`), o app pode enviar automaticamente a placa do carro, localização atual e destino para um contato de emergência via intent do WhatsApp.
+---
 
-### 2. Controle de Manutenção Preditiva
-- **Aba de Veículos Aprimorada:** O módulo financeiro atual já possui perfis de veículos. A melhoria consistirá em rastrear a quilometragem total percorrida (somando o `dropoffDistance` das corridas `COMPLETED`) e emitir alertas automáticos para troca de óleo, pastilhas de freio e pneus.
+### C3. Overlay Dismiss sem Notificar o Lifecycle
+**Janela:** Imediatamente — já corrigido na v6.1.1
+**Status:** ✅ Concluído na v6.1.1
 
-### 3. Dashboard Web para Motoristas
-- **Sincronização Nuvem (Opcional):** Para motoristas que desejam ver seus relatórios no computador, implementar uma sincronização segura ponta-a-ponta com um backend leve (ex: Firebase ou Supabase), permitindo visualizar o Dashboard em uma interface web. (Sempre respeitando a filosofia "Privacy First" do app, com opt-in explícito).
+---
+
+### C4. Otimização de Memória para Android 17
+**Janela:** Julho de 2026 — v6.2.0
+**Versão alvo:** v6.2.0
+**Risco sem ação:** O Android 17 (lançado em 16/06/2026) impõe limites rígidos de RAM por app baseados na memória total do dispositivo. Em celulares com 4 GB de RAM (comuns entre motoristas de aplicativo), o app pode ser encerrado abruptamente pelo sistema durante o monitoramento de corridas.
+**Ações:**
+- Implementar profiling de memória com `Debug.MemoryInfo` para medir consumo real em background.
+- Aplicar lazy loading no `CardGallery` (35 cards carregados simultaneamente na memória).
+- Monitorar `ApplicationExitInfo` para detectar e registrar kills por excesso de memória.
+- Otimizar `ZoneMapActivity` e `FinanceDatabase` para carregamento sob demanda.
+
+---
+
+### C5. Rota Alternativa ao AccessibilityService (Plano B para AAPM)
+**Janela:** Agosto de 2026 — v6.2.0
+**Versão alvo:** v6.2.0
+**Risco sem ação:** Mesmo com a flag `isAccessibilityTool`, o Google pode revisar sua política e reclassificar o app. Ter o `NotificationListenerService` como canal primário de detecção garante que o app continue funcionando mesmo que o AccessibilityService seja revogado.
+**Ação:** Migrar a detecção de corridas para o `NotificationListenerService` como canal primário (já existente no app). O AccessibilityService passa a ser canal secundário, responsável apenas pelo parsing avançado de texto na tela e pelo click automático do AutoPilot.
+
+---
+
+## Categoria 2 — Importantes: Próximas Versões (Julho–Setembro 2026)
+
+Estes itens não representam risco imediato, mas impactam diretamente a qualidade e a confiança do motorista no app.
+
+### I1. Tutorial Guiado Interativo (Onboarding)
+**Janela:** Julho de 2026 — v6.2.0
+**Versão alvo:** v6.2.0
+**Motivação:** Novos motoristas que instalam o app ficam perdidos sem entender como distribuir os 100 pontos de critério, o que é a Zona Neutra do AutoPilot ou como o Ghost Mode funciona. Um tutorial interativo no primeiro acesso reduz o churn e aumenta a conversão para o plano pago.
+**Escopo:**
+- Tela de boas-vindas com os 3 pilares (Privacidade, AutoPilot, Controle Financeiro).
+- Tour interativo por cada aba com tooltips destacando os elementos principais.
+- Flag `hasCompletedTutorial` no `PrefsManager` para exibir apenas uma vez.
+- Botão "Reprisar Tutorial" nas Configurações.
+
+### I2. Central de Ajuda Integrada
+**Janela:** Julho de 2026 — v6.2.0
+**Versão alvo:** v6.2.0
+**Motivação:** Reduzir dúvidas recorrentes ("Por que o AutoPilot não clicou?", "Como o Ghost Mode protege meu banco?") sem depender de suporte externo.
+**Escopo:** Ícone `?` no topo de cada aba que abre um bottom sheet explicativo. Seção de FAQ dinâmico nas Configurações.
+
+### I3. Mapa de Zonas Funcional
+**Janela:** Agosto de 2026 — v6.3.0
+**Versão alvo:** v6.3.0
+**Motivação:** O motorista desenha áreas de risco no mapa, mas o app não usa esses desenhos para nada. É um recurso que parece funcionar mas não tem efeito real no score.
+**Ação:** Implementar algoritmo Point-in-Polygon (Ray-casting) para verificar se as coordenadas da corrida detectada caem dentro das zonas desenhadas. Aplicar penalidade de -50 pontos no score para corridas com destino em zona de risco.
+
+### I4. Ranking e Relatórios Reais
+**Janela:** Agosto de 2026 — v6.3.0
+**Versão alvo:** v6.3.0
+**Motivação:** A aba de Recursos Avançados exibe dados completamente falsos (bairros fictícios, valores inventados). Isso destrói a credibilidade do app se o motorista perceber.
+**Ações:**
+- `RankingTab`: Substituir lista estática por `GROUP BY` no `RideHistoryDao`.
+- `ExportTab`: Gerar CSV real a partir do `AppDatabase`.
+- `ReportTab`: Conectar gerador de PDF ao `FinanceDatabase`.
+
+### I5. Local Learning Engine com Dados Reais
+**Janela:** Setembro de 2026 — v6.3.0
+**Versão alvo:** v6.3.0
+**Motivação:** O `LocalLearningEngine` injeta 50 corridas fictícias para treinar o modelo. Com histórico real, as sugestões passam a refletir o padrão real do motorista.
+**Ação:** Treinar o engine com dados do `RideHistoryDao`. Adicionar sugestão automática de bloqueio de bairros onde o motorista recusa corridas consistentemente.
+
+### I6. Refatoração da ProjectionEngine
+**Janela:** Setembro de 2026 — v6.3.0
+**Versão alvo:** v6.3.0
+**Ações:**
+- Filtrar `simulateWhatIf()` estritamente por `status == "COMPLETED"`.
+- Remover `coerceAtLeast(1)` que gera projeções infladas.
+
+### I7. Limpeza de Código Morto e Unificação de Deduplicação
+**Janela:** Setembro de 2026 — v6.3.0
+**Versão alvo:** v6.3.0
+**Ações:**
+- Remover `VehicleTab` legado (linhas 937-1144 do `FinanceActivity.kt`).
+- Centralizar lógica de hash e deduplicação no `RideLifecycleManager`.
+
+---
+
+## Categoria 3 — Oportunidades: Diferencial Competitivo (Outubro 2026–Março 2027)
+
+Estes itens não são urgentes, mas representam o maior potencial de diferenciação do NGB AutoRoad em relação a todos os concorrentes.
+
+### O1. AppFunctions — Controle por Voz via Gemini
+**Janela:** Outubro–Dezembro de 2026 — v7.0.0
+**Versão alvo:** v7.0.0
+**Contexto:** O Android 17 introduziu o AppFunctions, que permite que apps exponham funcionalidades como "tools" para agentes de IA como o Gemini. A integração com o Gemini está em private preview (junho 2026) e deve abrir para todos os desenvolvedores no segundo semestre de 2026. **Nenhum concorrente de app para motoristas implementou isso ainda.**
+
+**O que o motorista ganha:** Controle completo do app por voz, sem tirar as mãos do volante.
+
+| Comando de Voz | Ação no App |
+|---|---|
+| "Gemini, ativa o perfil Noturno" | Troca o perfil de critérios ativo |
+| "Quanto ganhei hoje?" | Retorna ganhos do dia |
+| "Qual minha projeção essa semana?" | Retorna projeção semanal |
+| "Liga o AutoPilot" | Ativa o AutoPilot |
+| "Configura pra só aceitar" | Define modo AutoPilot como Aceitar |
+| "Inicia meu turno" | Inicia o ShiftManager |
+| "Como tá meu turno?" | Retorna resumo do turno atual |
+| "Ativa o modo fantasma" | Liga o Ghost Mode |
+
+**Estratégia de implantação:**
+- **Agora (preparação):** Criar a classe `AutoRoadAppFunctions`, anotar as funções com `@AppFunction`, testar via ADB.
+- **Outubro 2026 (quando Gemini abrir):** Publicar atualização com integração ativa.
+- **Marketing:** "O único app de motorista que funciona com o Gemini. Controle por voz, sem tirar as mãos do volante."
+
+---
+
+### O2. NPU On-Device — Inteligência Local Real
+**Janela:** Janeiro–Março de 2027 — v7.1.0
+**Versão alvo:** v7.1.0
+**Contexto:** O Android 17 exige declaração de `android.hardware.npu` para apps que usam a Neural Processing Unit. Com o LiteRT (antigo TensorFlow Lite) e aceleração NPU, é possível rodar modelos de machine learning diretamente no celular, sem enviar dados para nuvem — alinhado com a filosofia "Privacy First" do app.
+**Aplicações:**
+- Previsão de demanda: modelo treinado com histórico local que prevê horários de pico por região.
+- Score adaptativo: ajustar pesos automaticamente com base no padrão real de aceitação/recusa do motorista.
+- OCR local: ler valores da tela com modelo local em vez de regex frágil, aumentando a precisão da detecção.
+**Pré-requisito:** Base de dados real de pelo menos 3 meses de uso (disponível após lançamento comercial).
+
+---
+
+### O3. App Bubbles — Card Flutuante Nativo do Sistema
+**Janela:** Março de 2027 — v7.2.0
+**Versão alvo:** v7.2.0
+**Contexto:** O Android 17 permite que qualquer app seja transformado em uma "bolha flutuante" nativa, sem necessidade da permissão `SYSTEM_ALERT_WINDOW`. Isso é exatamente o que o NGB AutoRoad já faz com o `OverlayService`, mas com uma solução customizada que depende de permissão especial.
+**Vantagem:** Melhor integração com o sistema, gerenciamento automático de posição e ciclo de vida pelo Android, sem necessidade de permissão especial que assusta usuários na instalação.
+**Estratégia:** Oferecer como opção nas Configurações ("Usar card flutuante nativo do sistema") enquanto mantém o overlay customizado como padrão para compatibilidade com Android 14/15/16.
+
+---
+
+### O4. Handoff Multi-Device
+**Janela:** Segundo semestre de 2027 — v8.0.0
+**Versão alvo:** v8.0.0
+**Contexto:** O Android 17 introduz o recurso "Continue On" que permite continuar uma tarefa em outro dispositivo. Para o motorista, isso significa verificar o Dashboard no tablet com tela maior enquanto o celular está no suporte do carro, ou configurar perfis e critérios no computador.
+**Escopo:** Implementar `setHandoffEnabled(true)` nas Activities principais e serializar o estado atual para transferência entre devices.
+
+---
+
+### O5. Complicação de Relógio (Wear OS)
+**Janela:** Segundo semestre de 2027 — v8.0.0
+**Versão alvo:** v8.0.0
+**Contexto:** O Android 17 introduz o `MetricStyle` template para Wear OS, suportando métricas de viagens e timers.
+**Escopo:** Criar uma complicação que exibe no relógio: ganho do turno atual, número de corridas aceitas, score da última corrida e status do AutoPilot.
+
+---
+
+## Categoria 4 — Integrações Externas (2027 em Diante)
+
+### E1. Integração com WhatsApp/Telegram
+**Janela:** Primeiro semestre de 2027 — v8.1.0
+**Motivação:** Segurança do motorista. Ao aceitar uma corrida, o app envia automaticamente a placa, localização atual e destino para um contato de emergência.
+
+### E2. Controle de Manutenção Preditiva
+**Janela:** Primeiro semestre de 2027 — v8.1.0
+**Motivação:** Rastrear quilometragem total percorrida (somando `dropoffDistance` das corridas `COMPLETED`) e emitir alertas para troca de óleo, pastilhas de freio e pneus.
+
+### E3. Dashboard Web (Opt-In)
+**Janela:** Segundo semestre de 2027 — v8.2.0
+**Motivação:** Para motoristas que desejam ver relatórios no computador. Sincronização segura ponta-a-ponta com backend leve (Firebase ou Supabase), sempre com opt-in explícito e respeitando a filosofia "Privacy First".
+
+---
+
+## Visão Geral: Linha do Tempo
+
+| Período | Versão | Foco Principal |
+|---|---|---|
+| **Imediatamente (Jun 2026)** | v6.1.2 (hotfix) | Flag `isAccessibilityTool` — 1 linha, risco eliminado |
+| **Julho 2026** | v6.2.0 | Tutorial, Central de Ajuda, Otimização de Memória |
+| **Agosto 2026** | v6.3.0 | Mapa de Zonas funcional, Ranking real, Rota alternativa AccessibilityService |
+| **Setembro 2026** | v6.3.0 | Learning Engine real, ProjectionEngine, Limpeza de código |
+| **Outubro–Dezembro 2026** | v7.0.0 | AppFunctions + Integração Gemini (controle por voz) |
+| **Janeiro–Março 2027** | v7.1.0 | NPU On-Device, Score adaptativo com ML local |
+| **Março 2027** | v7.2.0 | App Bubbles nativo (opcional) |
+| **Primeiro semestre 2027** | v8.0.0 | Handoff multi-device, Wear OS |
+| **Segundo semestre 2027** | v8.1.0 | WhatsApp/Telegram, Manutenção preditiva |
+| **Final 2027** | v8.2.0 | Dashboard Web opt-in |
 
 ---
 
@@ -113,6 +253,7 @@ O app é distribuído gratuitamente com funcionalidades básicas desbloqueadas, 
 | Projeção de ganhos e "E se?" | ❌ | ✅ |
 | Mapa de zonas de risco | ❌ | ✅ |
 | Exportação CSV/PDF | ❌ | ✅ |
+| Integração com Gemini (AppFunctions) | ❌ | ✅ |
 | Atualizações futuras | ✅ (correções) | ✅ (tudo) |
 
 #### Plano Vitalício — Preço Único
@@ -172,10 +313,11 @@ O modelo vitalício levanta uma questão legítima: como sustentar o desenvolvim
 | AutoPilot (aceitar/recusar) | ✅ | ❌ | ❌ |
 | Ghost Mode bancário | ✅ | ❌ | ❌ |
 | Privacidade (100% local) | ✅ | ❌ (dados na nuvem) | ❌ |
+| Integração com Gemini | ✅ (v7.0) | ❌ | ❌ |
 | Atualizações futuras | ✅ (incluídas) | ✅ (enquanto pagar) | ✅ |
 | Perfis de critérios | ✅ (5 perfis) | ❌ | ❌ |
 | Controle financeiro | ✅ (completo) | Parcial | Parcial |
 
 ---
 
-*Plano comercial elaborado com base em dados de mercado de junho de 2026. Valores e estratégias sujeitos a revisão conforme evolução do produto e do mercado.*
+*Roadmap elaborado com base na auditoria v6.1.0, análise de compatibilidade Android 17 e dados de mercado de junho de 2026. Última atualização: 20/06/2026.*
