@@ -207,7 +207,7 @@ fun OverlayCard(
                     )
                     .background(customBgColor)
                     .fillMaxWidth()
-                    .heightIn(min = 80.dp)
+                    .heightIn(min = if (customL.cardHeight > 0) customL.cardHeight.dp else 80.dp)
             ) {
                 customL.fields.forEach { editorField ->
                     val fieldColor = try { android.graphics.Color.parseColor(editorField.colorHex).let { Color(it) } } catch (_: Exception) { textColor }
@@ -218,10 +218,12 @@ fun OverlayCard(
                     val fieldValue: String = when (editorField.fieldType) {
                         "PLATFORM" -> ride.platform.displayName
                         "SCORE" -> score.totalScore.toInt().toString()
-                        "VALUE" -> "R\$ ${ "%.2f".format(ride.rideValue) }"
+                        "VALUE", "RIDE_VALUE" -> "R\$ ${ "%.2f".format(ride.rideValue) }"
+                        "RIDE_TYPE" -> ride.rideType.displayName
                         "DISTANCE_KM", "DROPOFF_DISTANCE" -> "${ "%.1f".format(ride.dropoffDistance) } km"
                         "PICKUP_DISTANCE" -> "${ "%.1f".format(ride.pickupDistance) } km"
                         "VALUE_PER_KM" -> "R\$ ${ "%.2f".format(ride.valuePerKm) }/km"
+                        "VALUE_PER_HOUR" -> "R\$ ${ "%.2f".format(if (ride.rideDuration > 0) ride.rideValue / (ride.rideDuration / 60.0) else 0.0) }/h"
                         "DURATION_MIN", "DURATION" -> "${ride.rideDuration.toInt()} min"
                         "PASSENGER_RATING" -> "★ ${ "%.1f".format(ride.passengerRating) }"
                         "STOPS", "INTERMEDIATE_STOPS" -> "${ride.intermediateStops}"
@@ -266,12 +268,12 @@ fun OverlayCard(
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
-                            .size(customRadius + 4.dp)
-                            .background(color = accentColor.copy(alpha = 0.35f), shape = RoundedCornerShape(topStart = customRadius, bottomEnd = customRadius))
+                            .size(32.dp)
+                            .background(color = accentColor.copy(alpha = 0.5f), shape = RoundedCornerShape(topStart = 8.dp, bottomEnd = customRadius))
                             .pointerInput(Unit) { detectDragGestures { change, dragAmount -> change.consume(); onResize(dragAmount.x, dragAmount.y) } },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = "╯", color = textColor.copy(alpha = 0.6f), fontSize = (8 * fontScale).sp)
+                        Text(text = "⤡", color = textColor.copy(alpha = 0.8f), fontSize = (14 * fontScale).sp)
                     }
                 }
             }
@@ -450,15 +452,15 @@ fun OverlayCard(
 
             }
 
-            // === RESIZE HANDLE — Grudado no canto inferior direito, acompanhando curvatura ===
+            // === RESIZE HANDLE — Grudado no canto inferior direito (v6.3.4: área maior 32dp) ===
             if (onResize != null) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .size(borderRadius + 4.dp)
+                        .size(32.dp)
                         .background(
-                            color = accentColor.copy(alpha = 0.35f),
-                            shape = RoundedCornerShape(topStart = borderRadius, bottomEnd = borderRadius)
+                            color = accentColor.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(topStart = 8.dp, bottomEnd = borderRadius)
                         )
                         .pointerInput(Unit) {
                             detectDragGestures { change, dragAmount ->
@@ -469,9 +471,9 @@ fun OverlayCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "╯",
-                        color = textColor.copy(alpha = 0.6f),
-                        fontSize = (8 * fontScale).sp
+                        text = "⤡",
+                        color = textColor.copy(alpha = 0.8f),
+                        fontSize = (14 * fontScale).sp
                     )
                 }
             }

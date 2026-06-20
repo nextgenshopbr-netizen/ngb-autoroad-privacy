@@ -492,3 +492,38 @@
 - versionCode: 15 | versionName: 6.3.2
 - Build: compilou com sucesso (R8 minificado, 41MB)
 - APK: ngb-autoroad-privacy-v6.3.2.apk
+
+---
+
+## v6.3.4 — IA Inline, Finanças CRUD Completo, Android Auto, Overlay Fixes (20/06/2026)
+
+### Arquivos criados:
+- `ui/ai/AiTab.kt` — Nova tela inline da aba IA com sub-abas (Turno, Ranking, IA Local, Projeção, Histórico, Relatório, Exportar)
+- `res/xml/automotive_app_desc.xml` — Declaração de suporte Android Auto (notification)
+
+### Arquivos modificados:
+- `ui/MainActivity.kt` — Ícone IA = AutoAwesome (estrelas), "Financeiro"→"Finanças", AiTab inline (não mais Activity separada), keepScreenOn corrigido, import Intent restaurado
+- `ui/finance/FinanceTab.kt` — CRUD completo com todas as abas: Resumo, Ganhos, Despesas, Veículos, Desp. Fixas, Metas (restauradas do FinanceActivity original)
+- `ui/settings/SettingsTab.kt` — Sub-aba "Adicionais" renomeada para "Mais", HistoryTab removido (movido para IA), toggle Android Auto adicionado em Sistema
+- `ui/criteria/CriteriaTab.kt` — Fallback para nomes vazios de perfis ("Perfil N")
+- `ui/dashboard/DashboardTab.kt` — Fallback para nomes vazios de perfis
+- `service/OverlayService.kt` — Pinch-to-zoom removido (atrapalhava), resizeOverlay corrigido para preservar altura
+- `service/OverlayCard.kt` — Resize handle aumentado para 32dp com ícone ⤡, campos RIDE_TYPE/RIDE_VALUE/VALUE_PER_HOUR adicionados, altura usa customL.cardHeight, fix: ride.rideType.displayName
+- `data/prefs/PrefsManager.kt` — androidAutoEnabled adicionado
+- `AndroidManifest.xml` — Metadata Android Auto adicionada
+- `build.gradle.kts` — versionCode=19, versionName=6.3.4
+
+### Funcionalidades implementadas:
+1. **Aba IA inline com dashboard**: Cards de resumo + sub-abas (Turno, Ranking, IA Local, Projeção, Histórico, Relatório, Exportar) — sem Activity separada
+2. **Finanças com CRUD completo**: Todas as abas restauradas (Resumo, Ganhos, Despesas, Veículos, Desp. Fixas, Metas)
+3. **Projeção Financeira movida para IA**: Removida do Financeiro, adicionada como sub-aba na IA
+4. **Histórico de corridas movido para IA**: Removido de Config > Mais, adicionado como sub-aba na IA
+5. **Perfis com nomes**: Fallback "Perfil N" para perfis sem nome em CriteriaTab e DashboardTab
+6. **keepScreenOn corrigido**: Funciona corretamente na MainActivity
+7. **Android Auto**: Toggle em Config > Sistema, metadata no Manifest, automotive_app_desc.xml
+8. **Overlay melhorado**: Pinch-to-zoom removido, resize handle 32dp, altura respeita cardHeight, campos mostram valor real
+
+### Técnico:
+- versionCode: 19 | versionName: 6.3.4
+- Build: compilou com sucesso (R8 minificado, ~43MB)
+- APK: ngb-autoroad-privacy-v6.3.4.apk

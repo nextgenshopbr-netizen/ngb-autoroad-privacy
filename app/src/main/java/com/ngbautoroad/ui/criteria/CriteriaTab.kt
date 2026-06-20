@@ -1095,7 +1095,11 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(profile.name, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                        Text(
+                            text = profile.name.ifBlank { "Perfil ${profile.id}" },
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp
+                        )
                         Text(
                             "AutoPilot: ${profile.autoPilotMode} | Min: ${profile.minAcceptScore}",
                             fontSize = 11.sp,

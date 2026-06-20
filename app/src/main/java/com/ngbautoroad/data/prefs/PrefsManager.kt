@@ -575,6 +575,15 @@ class PrefsManager(private val context: Context) {
 
     // --- Tutorial Guiado (v6.3.0) ---
 
+    // === ANDROID AUTO ===
+    private val KEY_ANDROID_AUTO_ENABLED = booleanPreferencesKey("android_auto_enabled")
+    val androidAutoEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_ANDROID_AUTO_ENABLED] ?: false
+    }
+    suspend fun setAndroidAutoEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs -> prefs[KEY_ANDROID_AUTO_ENABLED] = enabled }
+    }
+
     private val KEY_TUTORIAL_COMPLETED = stringPreferencesKey("tutorial_completed_screens")
 
     val tutorialCompletedScreensFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->

@@ -33,6 +33,11 @@
         android:theme="@style/Theme.NGBAutoRoad"
         tools:targetApi="34">
 
+        <!-- v6.3.4: Android Auto — permite overlay ser exibido via Android Auto -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
         <!-- Main Activity -->
         <activity
             android:name=".ui.MainActivity"

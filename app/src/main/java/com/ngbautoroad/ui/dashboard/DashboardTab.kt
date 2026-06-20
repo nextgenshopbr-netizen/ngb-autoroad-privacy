@@ -1130,10 +1130,11 @@ fun ProfileQuickSelector(prefsManager: PrefsManager, scope: kotlinx.coroutines.C
         try {
             val parsed = kotlinx.serialization.json.Json.decodeFromString<List<kotlinx.serialization.json.JsonObject>>(profilesJson)
             parsed.mapIndexed { idx, obj ->
+                val profileId = obj["id"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() } ?: (idx + 1)
                 QuickProfile(
-                    id = idx + 1,
-                    name = obj["name"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content } ?: "Perfil ${idx + 1}",
-                    isFavorite = (idx + 1) in favoriteIds
+                    id = profileId,
+                    name = obj["name"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.takeIf { n -> n.isNotBlank() } } ?: "Perfil ${idx + 1}",
+                    isFavorite = profileId in favoriteIds
                 )
             }
         } catch (_: Exception) { emptyList() }

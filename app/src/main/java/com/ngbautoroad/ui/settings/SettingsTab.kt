@@ -46,7 +46,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.ngbautoroad.ui.theme.*
 import com.ngbautoroad.data.backup.BackupManager
-import com.ngbautoroad.ui.history.HistoryTab
 import com.ngbautoroad.ui.card.CardTab
 import kotlinx.coroutines.launch
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -62,7 +61,7 @@ fun SettingsTab(prefsManager: PrefsManager, database: AppDatabase) {
 
     // Sub-abas: APP | SISTEMA | CARDS | ADICIONAIS
     var selectedSubTab by remember { mutableIntStateOf(0) }
-    val subTabs = listOf("App", "Sistema", "Cards", "Adicionais")
+    val subTabs = listOf("App", "Sistema", "Cards", "Mais")
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -678,6 +677,36 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
             }
         }
 
+        // === ANDROID AUTO ===
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                val androidAutoEnabled by prefsManager.androidAutoEnabledFlow.collectAsState(initial = false)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Android Auto", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Exibir overlay no Android Auto",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = androidAutoEnabled,
+                        onCheckedChange = { enabled ->
+                            scope.launch { prefsManager.setAndroidAutoEnabled(enabled) }
+                        }
+                    )
+                }
+            }
+        }
+
         // === STATUS DO SISTEMA ===
         SystemStatusCard(context, scope, prefsManager)
 
@@ -686,7 +715,7 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
 }
 
 // =====================================================================
-// SUB-ABA 3: ADICIONAIS (Historico, Backup & Restauracao)
+// SUB-ABA 3: MAIS (Tutorial, Backup & Restauracao)
 // =====================================================================
 @Composable
 private fun SettingsAdicionaisContent(prefsManager: PrefsManager, database: AppDatabase) {
@@ -696,25 +725,10 @@ private fun SettingsAdicionaisContent(prefsManager: PrefsManager, database: AppD
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // === HISTORICO DE CORRIDAS (movido da barra de navegacao) ===
-        Text(
-            text = "Historico de Corridas",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-
-        // Reutilizar o HistoryTab existente inline
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-            HistoryTab(prefsManager = prefsManager, database = database)
-        }
-
         // === TUTORIAL ===
         OutlinedButton(
             onClick = { scope.launch { prefsManager.resetTutorial() } },
