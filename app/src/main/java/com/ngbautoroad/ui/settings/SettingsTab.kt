@@ -3,17 +3,15 @@ package com.ngbautoroad.ui.settings
 // ============================================================================
 // ARQUIVO: SettingsTab.kt
 // LOCALIZAÇÃO: ui/settings/SettingsTab.kt
-// RESPONSABILIDADE: Configurações do app (serviço, overlay, OCR, bairros)
-// COMPOSABLES:
-//   - SettingsTab (L27): Tela com toggles de serviço, tamanho do overlay, etc.
-//   - NeighborhoodInput (L611): Input de bairros bloqueados
+// v6.3.0 REDESIGN: Dividido em 3 sub-abas:
+//   - APP: Tema, Idioma, Permissões
+//   - SISTEMA: Ghost Mode, Serviços, Overlay, Botão Flutuante, Status
+//   - ADICIONAIS: Histórico, Backup & Restauração
 // DEPENDÊNCIAS:
 //   - service/OverlayService.kt → start/stop/resize
 //   - service/OcrCaptureService.kt → start/stop
 //   - data/prefs/PrefsManager.kt → todas as configurações
-// PROTEÇÕES:
-//   - Verifica permissões antes de ativar serviços
-//   - Slider de tamanho com range fixo (200-600dp)
+//   - data/db/AppDatabase.kt → histórico de corridas
 // ============================================================================
 
 import android.content.Context
@@ -36,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.service.BubbleService
 import com.ngbautoroad.service.OcrCaptureService
@@ -47,6 +46,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.ngbautoroad.ui.theme.*
 import com.ngbautoroad.data.backup.BackupManager
+import com.ngbautoroad.ui.history.HistoryTab
 import kotlinx.coroutines.launch
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -56,34 +56,78 @@ import androidx.lifecycle.LifecycleEventObserver
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsTab(prefsManager: PrefsManager) {
+fun SettingsTab(prefsManager: PrefsManager, database: AppDatabase) {
+    val context = LocalContext.current
+
+    // Sub-abas: APP | SISTEMA | ADICIONAIS
+    var selectedSubTab by remember { mutableIntStateOf(0) }
+    val subTabs = listOf("App", "Sistema", "Adicionais")
+
+    Box(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Header com botão de ajuda
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Configurações",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            com.ngbautoroad.ui.tutorial.HelpButton(screenId = "settings")
+        }
+
+        // Tab Row
+        TabRow(
+            selectedTabIndex = selectedSubTab,
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
+            subTabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedSubTab == index,
+                    onClick = { selectedSubTab = index },
+                    text = { Text(title, fontSize = 13.sp, fontWeight = FontWeight.Medium) }
+                )
+            }
+        }
+
+        // Conteúdo por sub-aba
+        when (selectedSubTab) {
+            0 -> SettingsAppContent(prefsManager = prefsManager)
+            1 -> SettingsSystemContent(prefsManager = prefsManager)
+            2 -> SettingsAdicionaisContent(prefsManager = prefsManager, database = database)
+        }
+    }
+    // v6.3.0: Tutorial guiado no primeiro acesso
+    com.ngbautoroad.ui.tutorial.TutorialOverlay(
+        screenId = "settings",
+        steps = com.ngbautoroad.ui.tutorial.TutorialContent.settingsSteps,
+        prefsManager = prefsManager
+    )
+    } // Box
+}
+
+// =====================================================================
+// SUB-ABA 1: APP (Tema, Idioma, Tela Ligada, Permissões)
+// =====================================================================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsAppContent(prefsManager: PrefsManager) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val serviceEnabled by prefsManager.serviceEnabledFlow.collectAsState(initial = false)
-    val ocrEnabled by prefsManager.ocrEnabledFlow.collectAsState(initial = true)
-    val protectionEnabled by prefsManager.protectionEnabledFlow.collectAsState(initial = false)
-    val overlayWidth by prefsManager.overlayWidthFlow.collectAsState(initial = 320)
-    val overlayFontScale by prefsManager.overlayFontScaleFlow.collectAsState(initial = 1.0f)
     val keepScreenOn by prefsManager.keepScreenOnFlow.collectAsState(initial = false)
-
-
-    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = "Configurações",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // === TEMA (DARK MODE) v5.1.0 ===
+        // === TEMA (DARK MODE) ===
         val darkMode by prefsManager.darkModeFlow.collectAsState(initial = "system")
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -112,9 +156,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // === IDIOMA (v5.2.3) ===
+        // === IDIOMA ===
         val language by prefsManager.languageFlow.collectAsState(initial = "pt")
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -132,7 +174,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("pt" to "🇧🇷 Português", "en" to "🇺🇸 English", "es" to "🇪🇸 Español").forEach { (key, label) ->
+                    listOf("pt" to "Portugues", "en" to "English", "es" to "Espanol").forEach { (key, label) ->
                         FilterChip(
                             selected = language == key,
                             onClick = { scope.launch { prefsManager.saveLanguage(key) } },
@@ -143,7 +185,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 if (language != "pt") {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "ℹ️ Reinicie o app para aplicar o idioma completamente.",
+                        "Reinicie o app para aplicar o idioma completamente.",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -151,14 +193,10 @@ fun SettingsTab(prefsManager: PrefsManager) {
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
         // === MANTER TELA LIGADA ===
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Row(
                 modifier = Modifier
@@ -170,7 +208,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.Brightness7,
-                        contentDescription = "Ícone",
+                        contentDescription = null,
                         tint = if (keepScreenOn) ScoreYellow else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -181,7 +219,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            if (keepScreenOn) "Tela não apagará automaticamente" else "Comportamento padrão do sistema",
+                            if (keepScreenOn) "Tela nao apagara automaticamente" else "Comportamento padrao do sistema",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -196,9 +234,189 @@ fun SettingsTab(prefsManager: PrefsManager) {
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        // === PERMISSOES ===
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Permissoes Necessarias",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Ative todas para funcionamento completo",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-        // === PROTEÇÃO ANTI-DETECÇÃO ===
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val lifecycleOwner = LocalLifecycleOwner.current
+                var permissionRefreshKey by remember { mutableIntStateOf(0) }
+                DisposableEffect(lifecycleOwner) {
+                    val observer = LifecycleEventObserver { _, event ->
+                        if (event == Lifecycle.Event.ON_RESUME) {
+                            permissionRefreshKey++
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                }
+
+                // 1. Acessibilidade
+                val isAccessibilityEnabled = remember(permissionRefreshKey) {
+                    try {
+                        val enabledServices = Settings.Secure.getString(
+                            context.contentResolver,
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+                        ) ?: ""
+                        enabledServices.contains(context.packageName)
+                    } catch (_: Exception) { false }
+                }
+                PermissionCheckItem(
+                    title = "Acessibilidade",
+                    description = "Detectar corridas nos apps (Uber, 99, inDrive)",
+                    isGranted = isAccessibilityEnabled,
+                    icon = Icons.Default.Accessibility,
+                    onClick = {
+                        context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 2. Sobreposicao de tela
+                val isOverlayEnabled = remember(permissionRefreshKey) { Settings.canDrawOverlays(context) }
+                PermissionCheckItem(
+                    title = "Sobreposicao de Tela",
+                    description = "Exibir card sobre outros apps",
+                    isGranted = isOverlayEnabled,
+                    icon = Icons.Default.Layers,
+                    onClick = {
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            android.net.Uri.parse("package:${context.packageName}")
+                        )
+                        context.startActivity(intent)
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 3. Notificacoes
+                val isNotificationEnabled = remember(permissionRefreshKey) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        androidx.core.content.ContextCompat.checkSelfPermission(
+                            context, android.Manifest.permission.POST_NOTIFICATIONS
+                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    } else true
+                }
+                PermissionCheckItem(
+                    title = "Notificacoes",
+                    description = "Manter servico ativo em background (obrigatorio)",
+                    isGranted = isNotificationEnabled,
+                    icon = Icons.Default.Notifications,
+                    onClick = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                            }
+                            context.startActivity(intent)
+                        }
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 4. Otimizacao de bateria
+                val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+                val isIgnoringBattery = remember(permissionRefreshKey) { pm.isIgnoringBatteryOptimizations(context.packageName) }
+                PermissionCheckItem(
+                    title = "Sem Restricao de Bateria",
+                    description = "Impedir que o sistema mate o servico",
+                    isGranted = isIgnoringBattery,
+                    icon = Icons.Default.BatteryChargingFull,
+                    onClick = {
+                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = android.net.Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Resumo
+                val totalGranted = listOf(isAccessibilityEnabled, isOverlayEnabled, isNotificationEnabled, isIgnoringBattery).count { it }
+                val statusColor = when (totalGranted) {
+                    4 -> MaterialTheme.colorScheme.primary
+                    3 -> MaterialTheme.colorScheme.tertiary
+                    else -> MaterialTheme.colorScheme.error
+                }
+                Text(
+                    text = "$totalGranted/4 permissoes ativas",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = statusColor,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        // App Info - Gesto secreto: 7 toques abre Admin
+        var tapCount by remember { mutableIntStateOf(0) }
+        var lastTapTime by remember { mutableLongStateOf(0L) }
+
+        Text(
+            text = "NGB AutoRoad v${com.ngbautoroad.BuildConfig.VERSION_NAME}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .clickable {
+                    val now = System.currentTimeMillis()
+                    if (now - lastTapTime > 3000) tapCount = 0
+                    lastTapTime = now
+                    tapCount++
+                    if (tapCount == 5) {
+                        Toast.makeText(context, "Mais 2 toques...", Toast.LENGTH_SHORT).show()
+                    }
+                    if (tapCount >= 7) {
+                        tapCount = 0
+                        context.startActivity(
+                            Intent(context, com.ngbautoroad.ui.admin.AdminActivity::class.java)
+                        )
+                    }
+                }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+// =====================================================================
+// SUB-ABA 2: SISTEMA (Protecao, Servicos, Overlay, Bubble, Status)
+// =====================================================================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsSystemContent(prefsManager: PrefsManager) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val serviceEnabled by prefsManager.serviceEnabledFlow.collectAsState(initial = false)
+    val ocrEnabled by prefsManager.ocrEnabledFlow.collectAsState(initial = true)
+    val protectionEnabled by prefsManager.protectionEnabledFlow.collectAsState(initial = false)
+    val overlayWidth by prefsManager.overlayWidthFlow.collectAsState(initial = 320)
+    val overlayFontScale by prefsManager.overlayFontScaleFlow.collectAsState(initial = 1.0f)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // === PROTECAO ANTI-DETECCAO ===
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
@@ -217,18 +435,18 @@ fun SettingsTab(prefsManager: PrefsManager) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.Shield,
-                            contentDescription = "Ícone",
+                            contentDescription = null,
                             tint = if (protectionEnabled) ScoreGreen else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(
-                                text = "Proteção",
+                                text = "Protecao",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = if (protectionEnabled) "Ativa — modo furtivo" else "Desativada",
+                                text = if (protectionEnabled) "Ativa - modo furtivo" else "Desativada",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = if (protectionEnabled) ScoreGreen else MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -249,10 +467,10 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 if (protectionEnabled) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "• Randomiza intervalos de leitura OCR\n" +
-                                "• Oculta overlay durante screenshots\n" +
-                                "• Desativa AccessibilityService periodicamente\n" +
-                                "• Simula comportamento humano nos tempos de resposta",
+                        text = "- Randomiza intervalos de leitura OCR\n" +
+                                "- Oculta overlay durante screenshots\n" +
+                                "- Desativa AccessibilityService periodicamente\n" +
+                                "- Simula comportamento humano nos tempos de resposta",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -260,16 +478,14 @@ fun SettingsTab(prefsManager: PrefsManager) {
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // === SERVIÇOS ===
+        // === SERVICOS ===
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Serviços",
+                    text = "Servicos",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -294,7 +510,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                         checked = serviceEnabled,
                         onCheckedChange = { enabled ->
                             if (enabled && !Settings.canDrawOverlays(context)) {
-                                Toast.makeText(context, "Permissão de overlay necessária", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Permissao de overlay necessaria", Toast.LENGTH_LONG).show()
                                 val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
                                 context.startActivity(intent)
                             } else {
@@ -331,7 +547,7 @@ fun SettingsTab(prefsManager: PrefsManager) {
                         checked = ocrEnabled,
                         onCheckedChange = { enabled ->
                             if (enabled && !Settings.canDrawOverlays(context)) {
-                                Toast.makeText(context, "Permissão de overlay necessária para captura OCR", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, "Permissao de overlay necessaria para captura OCR", Toast.LENGTH_LONG).show()
                                 val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
                                 context.startActivity(intent)
                             } else {
@@ -351,16 +567,14 @@ fun SettingsTab(prefsManager: PrefsManager) {
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // === OVERLAY - TAMANHO E ACESSIBILIDADE ===
+        // === OVERLAY - APARENCIA ===
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Overlay - Aparência",
+                    text = "Overlay - Aparencia",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -368,19 +582,12 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Largura do overlay
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Largura: ${overlayWidth}dp", style = MaterialTheme.typography.bodyMedium)
-                }
+                Text("Largura: ${overlayWidth}dp", style = MaterialTheme.typography.bodyMedium)
                 Slider(
                     value = overlayWidth.toFloat(),
                     onValueChange = { newWidth ->
                         scope.launch {
                             prefsManager.saveOverlaySize(newWidth.toInt(), 0)
-                            // Aplicar resize ao vivo no overlay ativo (item 4.3)
                             OverlayService.resizeFromOutside(newWidth.toInt())
                         }
                     },
@@ -391,16 +598,10 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Escala de fonte
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Fonte: ${String.format("%.0f", overlayFontScale * 100)}%",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                Text(
+                    "Fonte: ${String.format("%.0f", overlayFontScale * 100)}%",
+                    style = MaterialTheme.typography.bodyMedium
+                )
                 Slider(
                     value = overlayFontScale,
                     onValueChange = { newScale ->
@@ -414,18 +615,12 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 Divider()
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Transparência do overlay
+                // Transparencia do overlay
                 val overlayOpacity by prefsManager.overlayOpacityFlow.collectAsState(initial = 1.0f)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Transparência: ${String.format("%.0f", overlayOpacity * 100)}%",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                Text(
+                    "Transparencia: ${String.format("%.0f", overlayOpacity * 100)}%",
+                    style = MaterialTheme.typography.bodyMedium
+                )
                 Slider(
                     value = overlayOpacity,
                     onValueChange = { newOpacity ->
@@ -439,14 +634,14 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 Divider()
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Botão Flutuante (Bubble)
+                // Botao Flutuante (Bubble)
                 Text(
-                    text = "Botão Flutuante Lateral",
+                    text = "Botao Flutuante Lateral",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Aparece na lateral quando o app não está ativo",
+                    text = "Aparece na lateral quando o app nao esta ativo",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -454,7 +649,6 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 val bubbleEnabled by prefsManager.bubbleEnabledFlow.collectAsState(initial = true)
-                val bubbleSide by prefsManager.bubbleSideFlow.collectAsState(initial = "right")
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -478,187 +672,67 @@ fun SettingsTab(prefsManager: PrefsManager) {
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Arraste o botão livremente pela tela", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Arraste o botao livremente pela tela", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // === PERMISSÕES ===
-        // === CHECKLIST DE PERMISSÕES COMPLETO ===
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Permissões Necessárias",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Ative todas para funcionamento completo",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // v5.2.0: Permissões reativas - atualizam ao voltar do settings
-                val lifecycleOwner = LocalLifecycleOwner.current
-                var permissionRefreshKey by remember { mutableIntStateOf(0) }
-                DisposableEffect(lifecycleOwner) {
-                    val observer = LifecycleEventObserver { _, event ->
-                        if (event == Lifecycle.Event.ON_RESUME) {
-                            permissionRefreshKey++
-                        }
-                    }
-                    lifecycleOwner.lifecycle.addObserver(observer)
-                    onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-                }
-                // 1. Acessibilidade
-                val isAccessibilityEnabled = remember(permissionRefreshKey) {
-                    try {
-                        val enabledServices = Settings.Secure.getString(
-                            context.contentResolver,
-                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-                        ) ?: ""
-                        enabledServices.contains(context.packageName)
-                    } catch (_: Exception) { false }
-                }
-                PermissionCheckItem(
-                    title = "Acessibilidade",
-                    description = "Detectar corridas nos apps (Uber, 99, inDrive)",
-                    isGranted = isAccessibilityEnabled,
-                    icon = Icons.Default.Accessibility,
-                    onClick = {
-                        context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 2. Sobreposição de tela
-                val isOverlayEnabled = remember(permissionRefreshKey) { Settings.canDrawOverlays(context) }
-                PermissionCheckItem(
-                    title = "Sobreposição de Tela",
-                    description = "Exibir card sobre outros apps",
-                    isGranted = isOverlayEnabled,
-                    icon = Icons.Default.Layers,
-                    onClick = {
-                        val intent = Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            android.net.Uri.parse("package:${context.packageName}")
-                        )
-                        context.startActivity(intent)
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 3. Notificações
-                val isNotificationEnabled = remember(permissionRefreshKey) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        androidx.core.content.ContextCompat.checkSelfPermission(
-                            context, android.Manifest.permission.POST_NOTIFICATIONS
-                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                    } else true
-                }
-                PermissionCheckItem(
-                    title = "Notificações",
-                    description = "Manter serviço ativo em background (obrigatório)",
-                    isGranted = isNotificationEnabled,
-                    icon = Icons.Default.Notifications,
-                    onClick = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                            }
-                            context.startActivity(intent)
-                        }
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 4. Otimização de bateria
-                val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
-                val isIgnoringBattery = remember(permissionRefreshKey) { pm.isIgnoringBatteryOptimizations(context.packageName) }
-                PermissionCheckItem(
-                    title = "Sem Restrição de Bateria",
-                    description = "Impedir que o sistema mate o serviço",
-                    isGranted = isIgnoringBattery,
-                    icon = Icons.Default.BatteryChargingFull,
-                    onClick = {
-                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                            data = android.net.Uri.parse("package:${context.packageName}")
-                        }
-                        context.startActivity(intent)
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Resumo
-                val totalGranted = listOf(isAccessibilityEnabled, isOverlayEnabled, isNotificationEnabled, isIgnoringBattery).count { it }
-                val statusColor = when (totalGranted) {
-                    4 -> MaterialTheme.colorScheme.primary
-                    3 -> MaterialTheme.colorScheme.tertiary
-                    else -> MaterialTheme.colorScheme.error
-                }
-                Text(
-                    text = "$totalGranted/4 permissões ativas",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = statusColor,
-                    fontWeight = FontWeight.Bold
-                )
-
-
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         // === STATUS DO SISTEMA ===
         SystemStatusCard(context, scope, prefsManager)
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
 
-        // === BACKUP & RESTORE (v6.1.1: movido para o final) ===
-        BackupRestoreSection(context, scope, prefsManager)
+// =====================================================================
+// SUB-ABA 3: ADICIONAIS (Historico, Backup & Restauracao)
+// =====================================================================
+@Composable
+private fun SettingsAdicionaisContent(prefsManager: PrefsManager, database: AppDatabase) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // App Info - Gesto secreto: 7 toques abre Admin (SEMPRE no final da tela)
-        var tapCount by remember { mutableIntStateOf(0) }
-        var lastTapTime by remember { mutableLongStateOf(0L) }
-
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // === HISTORICO DE CORRIDAS (movido da barra de navegacao) ===
         Text(
-            text = "NGB AutoRoad v${com.ngbautoroad.BuildConfig.VERSION_NAME}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .clickable {
-                    val now = System.currentTimeMillis()
-                    if (now - lastTapTime > 3000) tapCount = 0
-                    lastTapTime = now
-                    tapCount++
-                    if (tapCount == 5) {
-                        Toast.makeText(context, "Mais 2 toques...", Toast.LENGTH_SHORT).show()
-                    }
-                    if (tapCount >= 7) {
-                        tapCount = 0
-                        context.startActivity(
-                            Intent(context, com.ngbautoroad.ui.admin.AdminActivity::class.java)
-                        )
-                    }
-                }
+            text = "Historico de Corridas",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
         )
+
+        // Reutilizar o HistoryTab existente inline
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
+            HistoryTab(prefsManager = prefsManager, database = database)
+        }
+
+        // === TUTORIAL ===
+        OutlinedButton(
+            onClick = { scope.launch { prefsManager.resetTutorial() } },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.Replay, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Reprisar Tutorial")
+        }
+
+        // === BACKUP & RESTAURACAO (sempre ultimo) ===
+        BackupRestoreSection(context, scope, prefsManager)
 
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
+
+// =====================================================================
+// COMPOSABLES AUXILIARES (mantidos da versao anterior)
+// =====================================================================
 
 @Composable
 fun BackupRestoreSection(
@@ -670,7 +744,6 @@ fun BackupRestoreSection(
     var backupStatus by remember { mutableStateOf("") }
     var isProcessing by remember { mutableStateOf(false) }
 
-    // Launcher para exportar (criar arquivo)
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/zip")
     ) { uri ->
@@ -680,12 +753,11 @@ fun BackupRestoreSection(
             scope.launch {
                 try {
                     val metadata = backupManager.exportBackup(uri)
-                    backupStatus = "✅ Backup exportado!\n" +
+                    backupStatus = "Backup exportado! " +
                         "${metadata.ridesCount} corridas, " +
-                        "${metadata.financeRecords} registros financeiros\n" +
-                        "Data: ${metadata.backupDate}"
+                        "${metadata.financeRecords} registros financeiros"
                 } catch (e: Exception) {
-                    backupStatus = "❌ Erro ao exportar: ${e.message}"
+                    backupStatus = "Erro ao exportar: ${e.message}"
                 } finally {
                     isProcessing = false
                 }
@@ -693,7 +765,6 @@ fun BackupRestoreSection(
         }
     }
 
-    // Launcher para importar (abrir arquivo)
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -703,13 +774,13 @@ fun BackupRestoreSection(
             scope.launch {
                 try {
                     val metadata = backupManager.importBackup(uri)
-                    backupStatus = "✅ Backup importado!\n" +
-                        "Versão: v${metadata.appVersion}\n" +
+                    backupStatus = "Backup importado! " +
+                        "Versao: v${metadata.appVersion}, " +
                         "${metadata.ridesCount} corridas, " +
-                        "${metadata.financeRecords} registros financeiros\n" +
-                        "Reinicie o app para aplicar todas as configurações."
+                        "${metadata.financeRecords} registros financeiros. " +
+                        "Reinicie o app para aplicar."
                 } catch (e: Exception) {
-                    backupStatus = "❌ Erro ao importar: ${e.message}"
+                    backupStatus = "Erro ao importar: ${e.message}"
                 } finally {
                     isProcessing = false
                 }
@@ -729,9 +800,7 @@ fun BackupRestoreSection(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.CloudUpload,
                     contentDescription = "Backup",
@@ -739,7 +808,7 @@ fun BackupRestoreSection(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "Backup & Restauração",
+                    "Backup e Restauracao",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -747,7 +816,7 @@ fun BackupRestoreSection(
 
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                "Exporte ou importe todas as configurações, corridas, dados financeiros e cards customizados.",
+                "Exporte ou importe todas as configuracoes, corridas, dados financeiros e cards customizados.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -797,12 +866,7 @@ fun BackupRestoreSection(
                 Text(
                     text = backupStatus,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (backupStatus.startsWith("✅"))
-                        MaterialTheme.colorScheme.primary
-                    else if (backupStatus.startsWith("❌"))
-                        MaterialTheme.colorScheme.error
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -811,7 +875,6 @@ fun BackupRestoreSection(
 
 @Composable
 fun SystemStatusCard(context: android.content.Context, scope: kotlinx.coroutines.CoroutineScope, prefsManager: PrefsManager) {
-    // Logs em memória por serviço
     var overlayLogs by remember { mutableStateOf(listOf<String>()) }
     var bubbleLogs by remember { mutableStateOf(listOf<String>()) }
     var showOverlayLogs by remember { mutableStateOf(false) }
@@ -820,7 +883,6 @@ fun SystemStatusCard(context: android.content.Context, scope: kotlinx.coroutines
     val overlayRunning = remember { mutableStateOf(OverlayService.isRunning()) }
     val bubbleRunning = remember { mutableStateOf(com.ngbautoroad.service.BubbleService.isRunning()) }
 
-    // Atualizar status a cada 2s
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(2000L)
@@ -845,7 +907,7 @@ fun SystemStatusCard(context: android.content.Context, scope: kotlinx.coroutines
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Controle e logs dos serviços em execução",
+                "Controle e logs dos servicos em execucao",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -862,7 +924,7 @@ fun SystemStatusCard(context: android.content.Context, scope: kotlinx.coroutines
                 onStart = {
                     try {
                         OverlayService.start(context)
-                        overlayLogs = addLog(overlayLogs, "Serviço iniciado")
+                        overlayLogs = addLog(overlayLogs, "Servico iniciado")
                         overlayRunning.value = true
                     } catch (e: Exception) {
                         overlayLogs = addLog(overlayLogs, "ERRO ao iniciar: ${e.message}")
@@ -871,7 +933,7 @@ fun SystemStatusCard(context: android.content.Context, scope: kotlinx.coroutines
                 onStop = {
                     try {
                         OverlayService.stop(context)
-                        overlayLogs = addLog(overlayLogs, "Serviço parado")
+                        overlayLogs = addLog(overlayLogs, "Servico parado")
                         overlayRunning.value = false
                     } catch (e: Exception) {
                         overlayLogs = addLog(overlayLogs, "ERRO ao parar: ${e.message}")
@@ -884,7 +946,7 @@ fun SystemStatusCard(context: android.content.Context, scope: kotlinx.coroutines
                             kotlinx.coroutines.delay(500L)
                             OverlayService.start(context)
                         }
-                        overlayLogs = addLog(overlayLogs, "Serviço reiniciado")
+                        overlayLogs = addLog(overlayLogs, "Servico reiniciado")
                     } catch (e: Exception) {
                         overlayLogs = addLog(overlayLogs, "ERRO ao reiniciar: ${e.message}")
                     }
@@ -897,8 +959,8 @@ fun SystemStatusCard(context: android.content.Context, scope: kotlinx.coroutines
 
             // === Bubble Service ===
             ServiceStatusRow(
-                name = "Botão Flutuante",
-                description = "Ícone lateral de acesso rápido",
+                name = "Botao Flutuante",
+                description = "Icone lateral de acesso rapido",
                 isRunning = bubbleRunning.value,
                 showLogs = showBubbleLogs,
                 logs = bubbleLogs,
@@ -906,7 +968,7 @@ fun SystemStatusCard(context: android.content.Context, scope: kotlinx.coroutines
                 onStart = {
                     try {
                         com.ngbautoroad.service.BubbleService.start(context)
-                        bubbleLogs = addLog(bubbleLogs, "Serviço iniciado")
+                        bubbleLogs = addLog(bubbleLogs, "Servico iniciado")
                         bubbleRunning.value = true
                     } catch (e: Exception) {
                         bubbleLogs = addLog(bubbleLogs, "ERRO ao iniciar: ${e.message}")
@@ -915,7 +977,7 @@ fun SystemStatusCard(context: android.content.Context, scope: kotlinx.coroutines
                 onStop = {
                     try {
                         com.ngbautoroad.service.BubbleService.stop(context)
-                        bubbleLogs = addLog(bubbleLogs, "Serviço parado")
+                        bubbleLogs = addLog(bubbleLogs, "Servico parado")
                         bubbleRunning.value = false
                     } catch (e: Exception) {
                         bubbleLogs = addLog(bubbleLogs, "ERRO ao parar: ${e.message}")
@@ -928,7 +990,7 @@ fun SystemStatusCard(context: android.content.Context, scope: kotlinx.coroutines
                             kotlinx.coroutines.delay(500L)
                             com.ngbautoroad.service.BubbleService.start(context)
                         }
-                        bubbleLogs = addLog(bubbleLogs, "Serviço reiniciado")
+                        bubbleLogs = addLog(bubbleLogs, "Servico reiniciado")
                     } catch (e: Exception) {
                         bubbleLogs = addLog(bubbleLogs, "ERRO ao reiniciar: ${e.message}")
                     }
@@ -973,14 +1035,13 @@ fun ServiceStatusRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    if (isRunning) "● Rodando" else "○ Parado",
+                    if (isRunning) "Rodando" else "Parado",
                     style = MaterialTheme.typography.labelSmall,
                     color = if (isRunning) ScoreGreen else ScoreRed
                 )
             }
         }
         Spacer(modifier = Modifier.height(6.dp))
-        // Botões de controle
         Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier.fillMaxWidth()
@@ -1025,7 +1086,6 @@ fun ServiceStatusRow(
                 Text("Logs", fontSize = 12.sp)
             }
         }
-        // Painel de logs
         if (showLogs) {
             Spacer(modifier = Modifier.height(6.dp))
             Card(

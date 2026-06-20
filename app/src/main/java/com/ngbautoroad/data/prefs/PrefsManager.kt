@@ -564,6 +564,37 @@ class PrefsManager(private val context: Context) {
         context.dataStore.edit { prefs -> prefs[KEY_PROFILES_JSON] = json }
     }
 
+    // v6.3.0: Perfis favoritos (até 3 IDs em JSON array)
+    private val KEY_FAVORITE_PROFILES = stringPreferencesKey("favorite_profiles_json")
+    val favoriteProfilesFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_FAVORITE_PROFILES] ?: "[]"
+    }
+    suspend fun saveFavoriteProfiles(json: String) {
+        context.dataStore.edit { prefs -> prefs[KEY_FAVORITE_PROFILES] = json }
+    }
+
+    // --- Tutorial Guiado (v6.3.0) ---
+
+    private val KEY_TUTORIAL_COMPLETED = stringPreferencesKey("tutorial_completed_screens")
+
+    val tutorialCompletedScreensFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        val raw = prefs[KEY_TUTORIAL_COMPLETED] ?: ""
+        if (raw.isBlank()) emptySet() else raw.split(",").toSet()
+    }
+
+    suspend fun markTutorialCompleted(screenId: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[KEY_TUTORIAL_COMPLETED] ?: ""
+            val screens = if (current.isBlank()) mutableSetOf() else current.split(",").toMutableSet()
+            screens.add(screenId)
+            prefs[KEY_TUTORIAL_COMPLETED] = screens.joinToString(",")
+        }
+    }
+
+    suspend fun resetTutorial() {
+        context.dataStore.edit { prefs -> prefs[KEY_TUTORIAL_COMPLETED] = "" }
+    }
+
     suspend fun resetAll() {
         context.dataStore.edit { it.clear() }
     }

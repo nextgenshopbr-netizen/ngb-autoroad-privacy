@@ -1,33 +1,19 @@
 package com.ngbautoroad.ui.criteria
 
 // ============================================================================
-// ARQUIVO: CriteriaTab.kt
+// ARQUIVO: CriteriaTab.kt (v6.3.0 — Redesign com 4 sub-abas)
 // LOCALIZAÇÃO: ui/criteria/CriteriaTab.kt
-// RESPONSABILIDADE: Configuração dos 8 critérios de avaliação e thresholds
-// COMPOSABLES:
-//   - CriteriaTab (L29-321): Tela principal com sliders e thresholds
-//   - PointsCounter (L323-387): Indicador visual de pontos usados/restantes
-//   - CriteriaSlider (L390-447): Slider individual com maxValue dinâmico
-//   - ThresholdField (L450-489): Campo de threshold Double com validação
-//   - ThresholdIntField (L492-525): Campo de threshold Int
-// DEPENDÊNCIAS:
-//   - data/model/RideData.kt → CriteriaWeights, DriverThresholds
-//   - data/prefs/PrefsManager.kt → persiste pesos e thresholds
-// DEPENDENTES:
-//   - domain/RideScorer.kt → usa CriteriaWeights e DriverThresholds
-//   - service/OverlayService.kt → carrega config via PrefsManager
-// LÓGICA DE VALIDAÇÃO:
-//   - Soma dos pesos DEVE ser exatamente 100
-//   - Cada slider tem maxValue = 100 - somaOutros (impede ultrapassar 100)
-//   - ThresholdField com maxValue=5.0 para avaliação (não aceita >5 estrelas)
-//   - Feedback visual: borda vermelha quando valor fora do range
+// RESPONSABILIDADE: Configuração dos critérios, perfis, mapas e AutoPilot
+// SUB-ABAS:
+//   1. PAINEL — Perfis (destaque), card IA/Android 17, toggles rápidos
+//   2. PESOS E VALORES — Sliders de critérios + valores mínimos
+//   3. MAPAS E ZONAS — Editor de mapa + bairros bloqueados
+//   4. AUTOPILOT — Configuração completa do AutoPilot
 // ============================================================================
 
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,23 +40,185 @@ import com.ngbautoroad.ui.theme.ScoreOrange
 import com.ngbautoroad.ui.theme.ScoreRed
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CriteriaTab(prefsManager: PrefsManager) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var selectedTab by remember { mutableIntStateOf(0) }
+
+    val tabTitles = listOf("Painel", "Pesos", "Mapas", "AutoPilot")
+    val tabIcons = listOf(
+        Icons.Default.Dashboard,
+        Icons.Default.Tune,
+        Icons.Default.Map,
+        Icons.Default.SmartToy
+    )
+
+    Box(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Tab Row no topo
+        TabRow(
+            selectedTabIndex = selectedTab,
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
+            tabTitles.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTab == index,
+                    onClick = { selectedTab = index },
+                    text = { Text(title, fontSize = 11.sp, maxLines = 1) },
+                    icon = {
+                        Icon(
+                            tabIcons[index],
+                            contentDescription = title,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                )
+            }
+        }
+
+        // Conteúdo da aba selecionada
+        when (selectedTab) {
+            0 -> PainelSubTab(prefsManager, scope)
+            1 -> PesosSubTab(prefsManager, scope)
+            2 -> MapasSubTab(prefsManager, scope)
+            3 -> AutoPilotSubTab(prefsManager, scope)
+        }
+    }
+    // v6.3.0: Tutorial guiado no primeiro acesso
+    com.ngbautoroad.ui.tutorial.TutorialOverlay(
+        screenId = "criteria",
+        steps = com.ngbautoroad.ui.tutorial.TutorialContent.criteriaSteps,
+        prefsManager = prefsManager
+    )
+    } // Box
+}
+
+// ============================================================================
+// SUB-ABA 1: PAINEL — Perfis, card IA, toggles rápidos
+// ============================================================================
+@Composable
+fun PainelSubTab(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineScope) {
+    val scrollState = rememberScrollState()
+    val weights by prefsManager.criteriaWeightsFlow.collectAsState(initial = CriteriaWeights())
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(16.dp)
+    ) {
+        // Contador de pontos (resumo rápido)
+        PointsCounter(weights = weights)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // PERFIS — destaque principal desta aba
+        ProfilesSection(prefsManager = prefsManager, scope = scope)
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Card informativo: IA / Android 17
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        "Inteligência Adaptativa",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "O sistema aprende com suas decisões e ajusta os pesos automaticamente. " +
+                    "Quanto mais corridas você avalia, mais preciso o Score se torna.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Resumo rápido do AutoPilot
+        val autoPilotMode by prefsManager.autoPilotModeFlow.collectAsState(initial = "OFF")
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = if (autoPilotMode != "OFF")
+                    ScoreGreen.copy(alpha = 0.1f)
+                else MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.SmartToy,
+                        contentDescription = null,
+                        tint = if (autoPilotMode != "OFF") ScoreGreen
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            "AutoPilot",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            when (autoPilotMode) {
+                                "OFF" -> "Desativado"
+                                "ACCEPT" -> "Aceitar ativo"
+                                "REFUSE" -> "Recusar ativo"
+                                "BOTH", "FULL" -> "Aceitar + Recusar ativos"
+                                else -> autoPilotMode
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Icon(
+                    if (autoPilotMode != "OFF") Icons.Default.CheckCircle
+                    else Icons.Default.Cancel,
+                    contentDescription = null,
+                    tint = if (autoPilotMode != "OFF") ScoreGreen else ScoreRed
+                )
+            }
+        }
+    }
+}
+
+// ============================================================================
+// SUB-ABA 2: PESOS E VALORES — Sliders + Thresholds
+// ============================================================================
+@Composable
+fun PesosSubTab(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineScope) {
+    val scrollState = rememberScrollState()
     val weights by prefsManager.criteriaWeightsFlow.collectAsState(initial = CriteriaWeights())
     val thresholds by prefsManager.driverThresholdsFlow.collectAsState(initial = DriverThresholds())
-    val blockedPickup by prefsManager.blockedPickupFlow.collectAsState(initial = emptyList())
-    val blockedDropoff by prefsManager.blockedDropoffFlow.collectAsState(initial = emptyList())
-    var showAddPickup by remember { mutableStateOf(false) }
-    var showAddDropoff by remember { mutableStateOf(false) }
-    var newNeighborhoodName by remember { mutableStateOf("") }
-    var newNeighborhoodWeight by remember { mutableIntStateOf(20) }
-
     var showThresholds by remember { mutableStateOf(true) }
-    val scrollState = rememberScrollState()
 
-    // Calcula o total e o máximo disponível para cada critério
     val totalUsed = weights.totalUsed
 
     fun maxForCriteria(currentValue: Int): Int {
@@ -84,18 +232,9 @@ fun CriteriaTab(prefsManager: PrefsManager) {
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // Header com contador de pontos
+        // Header com contador
         PointsCounter(weights = weights)
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // ================================================================
-        // v6.1.1: SEÇÃO PERFIS NO TOPO (acesso rápido)
-        // ================================================================
-        ProfilesSection(prefsManager = prefsManager, scope = scope)
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Divider()
         Spacer(modifier = Modifier.height(16.dp))
 
         // Seção: Pesos dos Critérios
@@ -114,7 +253,7 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         if (totalUsed > 100) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                "⚠️ Total excede 100 pontos! Reduza algum critério.",
+                "Total excede 100 pontos! Reduza algum critério.",
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = ScoreRed
@@ -123,96 +262,34 @@ fun CriteriaTab(prefsManager: PrefsManager) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Sliders INDIVIDUAIS com limite baseado no restante disponível
-        CriteriaSlider(
-            label = "Valor por KM",
-            value = weights.valuePerKm,
-            maxValue = maxForCriteria(weights.valuePerKm),
-            onValueChange = { newVal ->
-                scope.launch {
-                    prefsManager.saveCriteriaWeights(weights.copy(valuePerKm = newVal))
-                }
-            }
-        )
-
-        CriteriaSlider(
-            label = "Valor por Hora",
-            value = weights.valuePerHour,
-            maxValue = maxForCriteria(weights.valuePerHour),
-            onValueChange = { newVal ->
-                scope.launch {
-                    prefsManager.saveCriteriaWeights(weights.copy(valuePerHour = newVal))
-                }
-            }
-        )
-
-        CriteriaSlider(
-            label = "Paradas Intermediárias",
-            value = weights.intermediateStops,
-            maxValue = maxForCriteria(weights.intermediateStops),
-            onValueChange = { newVal ->
-                scope.launch {
-                    prefsManager.saveCriteriaWeights(weights.copy(intermediateStops = newVal))
-                }
-            }
-        )
-
-        CriteriaSlider(
-            label = "Avaliação do Passageiro",
-            value = weights.passengerRating,
-            maxValue = maxForCriteria(weights.passengerRating),
-            onValueChange = { newVal ->
-                scope.launch {
-                    prefsManager.saveCriteriaWeights(weights.copy(passengerRating = newVal))
-                }
-            }
-        )
-
-        CriteriaSlider(
-            label = "Valor da Corrida",
-            value = weights.rideValue,
-            maxValue = maxForCriteria(weights.rideValue),
-            onValueChange = { newVal ->
-                scope.launch {
-                    prefsManager.saveCriteriaWeights(weights.copy(rideValue = newVal))
-                }
-            }
-        )
-
-        CriteriaSlider(
-            label = "Duração da Corrida",
-            value = weights.rideDuration,
-            maxValue = maxForCriteria(weights.rideDuration),
-            onValueChange = { newVal ->
-                scope.launch {
-                    prefsManager.saveCriteriaWeights(weights.copy(rideDuration = newVal))
-                }
-            }
-        )
-
-        CriteriaSlider(
-            label = "Distância até Embarque",
-            value = weights.pickupDistance,
-            maxValue = maxForCriteria(weights.pickupDistance),
-            onValueChange = { newVal ->
-                scope.launch {
-                    prefsManager.saveCriteriaWeights(weights.copy(pickupDistance = newVal))
-                }
-            }
-        )
-
-        CriteriaSlider(
-            label = "Distância até Desembarque",
-            value = weights.dropoffDistance,
-            maxValue = maxForCriteria(weights.dropoffDistance),
-            onValueChange = { newVal ->
-                scope.launch {
-                    prefsManager.saveCriteriaWeights(weights.copy(dropoffDistance = newVal))
-                }
-            }
-        )
+        CriteriaSlider("Valor por KM", weights.valuePerKm, maxForCriteria(weights.valuePerKm)) { newVal ->
+            scope.launch { prefsManager.saveCriteriaWeights(weights.copy(valuePerKm = newVal)) }
+        }
+        CriteriaSlider("Valor por Hora", weights.valuePerHour, maxForCriteria(weights.valuePerHour)) { newVal ->
+            scope.launch { prefsManager.saveCriteriaWeights(weights.copy(valuePerHour = newVal)) }
+        }
+        CriteriaSlider("Paradas Intermediárias", weights.intermediateStops, maxForCriteria(weights.intermediateStops)) { newVal ->
+            scope.launch { prefsManager.saveCriteriaWeights(weights.copy(intermediateStops = newVal)) }
+        }
+        CriteriaSlider("Avaliação do Passageiro", weights.passengerRating, maxForCriteria(weights.passengerRating)) { newVal ->
+            scope.launch { prefsManager.saveCriteriaWeights(weights.copy(passengerRating = newVal)) }
+        }
+        CriteriaSlider("Valor da Corrida", weights.rideValue, maxForCriteria(weights.rideValue)) { newVal ->
+            scope.launch { prefsManager.saveCriteriaWeights(weights.copy(rideValue = newVal)) }
+        }
+        CriteriaSlider("Duração da Corrida", weights.rideDuration, maxForCriteria(weights.rideDuration)) { newVal ->
+            scope.launch { prefsManager.saveCriteriaWeights(weights.copy(rideDuration = newVal)) }
+        }
+        CriteriaSlider("Distância até Embarque", weights.pickupDistance, maxForCriteria(weights.pickupDistance)) { newVal ->
+            scope.launch { prefsManager.saveCriteriaWeights(weights.copy(pickupDistance = newVal)) }
+        }
+        CriteriaSlider("Distância até Desembarque", weights.dropoffDistance, maxForCriteria(weights.dropoffDistance)) { newVal ->
+            scope.launch { prefsManager.saveCriteriaWeights(weights.copy(dropoffDistance = newVal)) }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
+        Divider()
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Seção: Valores Mínimos Desejados
         Row(
@@ -235,8 +312,8 @@ fun CriteriaTab(prefsManager: PrefsManager) {
             }
             IconButton(onClick = { showThresholds = !showThresholds }) {
                 Icon(
-                    Icons.Default.Info,
-                    contentDescription = "Info"
+                    if (showThresholds) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = "Expandir"
                 )
             }
         }
@@ -244,94 +321,30 @@ fun CriteriaTab(prefsManager: PrefsManager) {
         Spacer(modifier = Modifier.height(8.dp))
 
         if (showThresholds) {
-            ThresholdField(
-                label = "R$/KM mínimo",
-                value = thresholds.minValuePerKm,
-                suffix = "R$/km",
-                onValueChange = { newVal ->
-                    scope.launch {
-                        prefsManager.saveDriverThresholds(thresholds.copy(minValuePerKm = newVal))
-                    }
-                }
-            )
-
-            ThresholdField(
-                label = "R$/Hora mínimo",
-                value = thresholds.minValuePerHour,
-                suffix = "R$/h",
-                onValueChange = { newVal ->
-                    scope.launch {
-                        prefsManager.saveDriverThresholds(thresholds.copy(minValuePerHour = newVal))
-                    }
-                }
-            )
-
-            ThresholdField(
-                label = "Valor mínimo da corrida",
-                value = thresholds.minRideValue,
-                suffix = "R$",
-                onValueChange = { newVal ->
-                    scope.launch {
-                        prefsManager.saveDriverThresholds(thresholds.copy(minRideValue = newVal))
-                    }
-                }
-            )
-
-            ThresholdField(
-                label = "Distância máx. até embarque",
-                value = thresholds.maxPickupDistance,
-                suffix = "km",
-                onValueChange = { newVal ->
-                    scope.launch {
-                        prefsManager.saveDriverThresholds(thresholds.copy(maxPickupDistance = newVal))
-                    }
-                }
-            )
-
-            ThresholdField(
-                label = "Avaliação mínima do passageiro",
-                value = thresholds.minPassengerRating,
-                suffix = "estrelas",
-                maxValue = 5.0,
-                onValueChange = { newVal ->
-                    scope.launch {
-                        prefsManager.saveDriverThresholds(thresholds.copy(minPassengerRating = newVal))
-                    }
-                }
-            )
-
-            ThresholdField(
-                label = "Duração máxima aceitável",
-                value = thresholds.maxDuration,
-                suffix = "min",
-                onValueChange = { newVal ->
-                    scope.launch {
-                        prefsManager.saveDriverThresholds(thresholds.copy(maxDuration = newVal))
-                    }
-                }
-            )
-
-            ThresholdIntField(
-                label = "Máximo de paradas",
-                value = thresholds.maxStops,
-                suffix = "paradas",
-                onValueChange = { newVal ->
-                    scope.launch {
-                        prefsManager.saveDriverThresholds(thresholds.copy(maxStops = newVal))
-                    }
-                }
-            )
-
-            ThresholdField(
-                label = "Distância mín. do destino",
-                value = thresholds.minDropoffDistance,
-                suffix = "km",
-                onValueChange = { newVal ->
-                    scope.launch {
-                        prefsManager.saveDriverThresholds(thresholds.copy(minDropoffDistance = newVal))
-                    }
-                }
-            )
+            ThresholdField("R$/KM mínimo", thresholds.minValuePerKm, "R$/km") { newVal ->
+                scope.launch { prefsManager.saveDriverThresholds(thresholds.copy(minValuePerKm = newVal)) }
+            }
+            ThresholdField("R$/Hora mínimo", thresholds.minValuePerHour, "R$/h") { newVal ->
+                scope.launch { prefsManager.saveDriverThresholds(thresholds.copy(minValuePerHour = newVal)) }
+            }
+            ThresholdField("Valor mínimo da corrida", thresholds.minRideValue, "R$") { newVal ->
+                scope.launch { prefsManager.saveDriverThresholds(thresholds.copy(minRideValue = newVal)) }
+            }
+            ThresholdField("Distância máx. até embarque", thresholds.maxPickupDistance, "km") { newVal ->
+                scope.launch { prefsManager.saveDriverThresholds(thresholds.copy(maxPickupDistance = newVal)) }
+            }
+            ThresholdField("Avaliação mínima do passageiro", thresholds.minPassengerRating, "estrelas", maxValue = 5.0) { newVal ->
+                scope.launch { prefsManager.saveDriverThresholds(thresholds.copy(minPassengerRating = newVal)) }
+            }
+            ThresholdField("Duração máxima aceitável", thresholds.maxDuration, "min") { newVal ->
+                scope.launch { prefsManager.saveDriverThresholds(thresholds.copy(maxDuration = newVal)) }
+            }
+            ThresholdIntField("Máximo de paradas", thresholds.maxStops, "paradas") { newVal ->
+                scope.launch { prefsManager.saveDriverThresholds(thresholds.copy(maxStops = newVal)) }
+            }
+            ThresholdField("Distância mín. do destino", thresholds.minDropoffDistance, "km") { newVal ->
+                scope.launch { prefsManager.saveDriverThresholds(thresholds.copy(minDropoffDistance = newVal)) }
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -346,10 +359,10 @@ fun CriteriaTab(prefsManager: PrefsManager) {
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = totalUsed <= 100,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
+            Icon(Icons.Default.Save, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
             Text("Salvar Critérios", color = MaterialTheme.colorScheme.onPrimary)
         }
 
@@ -362,14 +375,31 @@ fun CriteriaTab(prefsManager: PrefsManager) {
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-        Divider()
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(32.dp))
+    }
+}
 
-        // ================================================================
-        // SEÇÃO: ZONAS BLOQUEADAS (Editor de Mapa)
-        // v5.1.0: Movido de Config para Critérios (faz mais sentido aqui)
-        // ================================================================
+// ============================================================================
+// SUB-ABA 3: MAPAS E ZONAS — Editor de mapa + bairros bloqueados
+// ============================================================================
+@Composable
+fun MapasSubTab(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineScope) {
+    val context = LocalContext.current
+    val scrollState = rememberScrollState()
+    val blockedPickup by prefsManager.blockedPickupFlow.collectAsState(initial = emptyList())
+    val blockedDropoff by prefsManager.blockedDropoffFlow.collectAsState(initial = emptyList())
+    var showAddPickup by remember { mutableStateOf(false) }
+    var showAddDropoff by remember { mutableStateOf(false) }
+    var newNeighborhoodName by remember { mutableStateOf("") }
+    var newNeighborhoodWeight by remember { mutableIntStateOf(20) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(16.dp)
+    ) {
+        // Seção: Editor de Zonas no Mapa
         Text(
             text = "Zonas Bloqueadas",
             style = MaterialTheme.typography.titleMedium,
@@ -389,17 +419,16 @@ fun CriteriaTab(prefsManager: PrefsManager) {
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
-            Icon(Icons.Default.EditLocation, contentDescription = "Editar zona")
+            Icon(Icons.Default.EditLocation, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Abrir Editor de Zonas")
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+        Divider()
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // ================================================================
-        // SEÇÃO: BAIRROS BLOQUEADOS (Embarque + Destino)
-        // v5.1.0: Movido de Config para Critérios
-        // ================================================================
+        // Seção: Bairros Bloqueados
         Text(
             text = "Bairros Bloqueados",
             style = MaterialTheme.typography.titleMedium,
@@ -523,9 +552,7 @@ fun CriteriaTab(prefsManager: PrefsManager) {
                         if (newNeighborhoodName.isNotBlank()) {
                             val names = newNeighborhoodName.split(",").map { it.trim() }.filter { it.isNotBlank() }
                             scope.launch {
-                                prefsManager.saveBlockedPickup(
-                                    blockedPickup + names.map { it to newNeighborhoodWeight }
-                                )
+                                prefsManager.saveBlockedPickup(blockedPickup + names.map { it to newNeighborhoodWeight })
                             }
                             newNeighborhoodName = ""
                             newNeighborhoodWeight = 20
@@ -570,9 +597,7 @@ fun CriteriaTab(prefsManager: PrefsManager) {
                         if (newNeighborhoodName.isNotBlank()) {
                             val names = newNeighborhoodName.split(",").map { it.trim() }.filter { it.isNotBlank() }
                             scope.launch {
-                                prefsManager.saveBlockedDropoff(
-                                    blockedDropoff + names.map { it to newNeighborhoodWeight }
-                                )
+                                prefsManager.saveBlockedDropoff(blockedDropoff + names.map { it to newNeighborhoodWeight })
                             }
                             newNeighborhoodName = ""
                             newNeighborhoodWeight = 20
@@ -586,18 +611,229 @@ fun CriteriaTab(prefsManager: PrefsManager) {
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-        Divider()
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(32.dp))
+    }
+}
 
-        // ================================================================
-        // v6.1.0: SEÇÃO AUTOPILOT
-        // ================================================================
-        AutoPilotSection(prefsManager = prefsManager, scope = scope)
+// ============================================================================
+// SUB-ABA 4: AUTOPILOT — Configuração completa
+// ============================================================================
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AutoPilotSubTab(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineScope) {
+    val scrollState = rememberScrollState()
+    val autoPilotMode by prefsManager.autoPilotModeFlow.collectAsState(initial = "OFF")
+    val minScore by prefsManager.autoPilotMinScoreFlow.collectAsState(initial = 75)
+    val maxRefuseScore by prefsManager.autoPilotMaxRefuseScoreFlow.collectAsState(initial = 40)
+    val geoFilters by prefsManager.autoPilotGeoFiltersEnabledFlow.collectAsState(initial = true)
+
+    // Derivar flags independentes
+    val acceptEnabled = autoPilotMode in listOf("ACCEPT_ONLY", "FULL", "ACCEPT", "BOTH")
+    val refuseEnabled = autoPilotMode in listOf("REFUSE_ONLY", "FULL", "REFUSE", "BOTH")
+
+    fun computeMode(accept: Boolean, refuse: Boolean): String {
+        return when {
+            accept && refuse -> "BOTH"
+            accept -> "ACCEPT"
+            refuse -> "REFUSE"
+            else -> "OFF"
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .padding(16.dp)
+    ) {
+        // Header
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Default.SmartToy,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(28.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+                Text(
+                    "AutoPilot",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Aceita/recusa corridas automaticamente baseado no Score",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Status atual
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = if (acceptEnabled || refuseEnabled)
+                    ScoreGreen.copy(alpha = 0.1f)
+                else MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "Status: ${if (acceptEnabled || refuseEnabled) "ATIVO" else "DESATIVADO"}",
+                    fontWeight = FontWeight.Bold,
+                    color = if (acceptEnabled || refuseEnabled) ScoreGreen else ScoreRed
+                )
+                Text(
+                    "Modo: $autoPilotMode",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Checkboxes independentes
+        Text("Funções ativas:", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = acceptEnabled,
+                onCheckedChange = { checked ->
+                    val newMode = computeMode(checked, refuseEnabled)
+                    scope.launch { prefsManager.saveAutoPilotMode(newMode) }
+                }
+            )
+            Text("Aceitar", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.width(32.dp))
+            Checkbox(
+                checked = refuseEnabled,
+                onCheckedChange = { checked ->
+                    val newMode = computeMode(acceptEnabled, checked)
+                    scope.launch { prefsManager.saveAutoPilotMode(newMode) }
+                }
+            )
+            Text("Recusar", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        }
+
+        if (acceptEnabled || refuseEnabled) {
+            Spacer(modifier = Modifier.height(20.dp))
+            Divider()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Score mínimo para aceitar
+            if (acceptEnabled) {
+                Text(
+                    "Score mínimo para aceitar automaticamente",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Text("Valor atual: $minScore", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Slider(
+                    value = minScore.toFloat(),
+                    onValueChange = { scope.launch { prefsManager.saveAutoPilotMinScore(it.toInt()) } },
+                    valueRange = 50f..100f,
+                    steps = 9
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // Score máximo para recusar
+            if (refuseEnabled) {
+                Text(
+                    "Score máximo para recusar automaticamente",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Text("Valor atual: $maxRefuseScore", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Slider(
+                    value = maxRefuseScore.toFloat(),
+                    onValueChange = { scope.launch { prefsManager.saveAutoPilotMaxRefuseScore(it.toInt()) } },
+                    valueRange = 0f..60f,
+                    steps = 11
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // Zona neutra
+            if (acceptEnabled && refuseEnabled) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = ScoreYellow.copy(alpha = 0.1f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Info, contentDescription = null, tint = ScoreYellow)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Zona neutra: Score entre $maxRefuseScore e $minScore — você decide manualmente",
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // Filtros geográficos
+            Divider()
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = geoFilters,
+                    onCheckedChange = { scope.launch { prefsManager.saveAutoPilotGeoFilters(it) } }
+                )
+                Column {
+                    Text("Respeitar bairros/zonas bloqueadas", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text(
+                        "Recusa automaticamente se embarque/destino estiver em zona bloqueada",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Aviso de segurança
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                colors = CardDefaults.cardColors(containerColor = ScoreRed.copy(alpha = 0.1f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = ScoreRed)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "AutoPilot usa delay humanizado para simular comportamento natural. " +
+                        "Use com responsabilidade.",
+                        fontSize = 11.sp,
+                        color = ScoreRed
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
+
+// ============================================================================
+// COMPOSABLES AUXILIARES
+// ============================================================================
 
 @Composable
 fun PointsCounter(weights: CriteriaWeights) {
@@ -619,9 +855,7 @@ fun PointsCounter(weights: CriteriaWeights) {
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Row(
             modifier = Modifier
@@ -642,7 +876,6 @@ fun PointsCounter(weights: CriteriaWeights) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-
             Text(
                 text = "$total/100",
                 style = MaterialTheme.typography.headlineMedium,
@@ -650,10 +883,9 @@ fun PointsCounter(weights: CriteriaWeights) {
                 color = usedColor
             )
         }
-
-        // Progress bar
+        @Suppress("DEPRECATION")
         LinearProgressIndicator(
-            progress = (total.coerceAtMost(100) / 100f),
+            progress = total.coerceAtMost(100) / 100f,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
@@ -673,8 +905,6 @@ fun CriteriaSlider(
     maxValue: Int,
     onValueChange: (Int) -> Unit
 ) {
-    // maxValue é o máximo real disponível (100 - soma dos outros)
-    // O slider vai de 0 até maxValue, impedindo visualmente de ultrapassar
     val sliderRange = maxValue.toFloat().coerceAtLeast(0f)
 
     Column(
@@ -712,7 +942,6 @@ fun CriteriaSlider(
         Slider(
             value = value.toFloat().coerceIn(0f, sliderRange),
             onValueChange = { newVal ->
-                // Limita estritamente ao máximo disponível (100 - soma dos outros)
                 val clamped = newVal.toInt().coerceIn(0, maxValue)
                 onValueChange(clamped)
             },
@@ -805,151 +1034,7 @@ fun ThresholdIntField(
 }
 
 // ============================================================================
-// v6.1.0: COMPOSABLE AutoPilotSection
-// Seção de configuração do AutoPilot com modo, scores e filtros
-// ============================================================================
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AutoPilotSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineScope) {
-    val autoPilotMode by prefsManager.autoPilotModeFlow.collectAsState(initial = "OFF")
-    val minScore by prefsManager.autoPilotMinScoreFlow.collectAsState(initial = 75)
-    val maxRefuseScore by prefsManager.autoPilotMaxRefuseScoreFlow.collectAsState(initial = 40)
-    val geoFilters by prefsManager.autoPilotGeoFiltersEnabledFlow.collectAsState(initial = true)
-
-    // v6.1.1: Derivar flags independentes do mode string para compatibilidade
-    val acceptEnabled = autoPilotMode == "ACCEPT_ONLY" || autoPilotMode == "FULL" || autoPilotMode == "ACCEPT"
-    val refuseEnabled = autoPilotMode == "REFUSE_ONLY" || autoPilotMode == "FULL" || autoPilotMode == "REFUSE"
-    // Detectar modo combinado (ambos ativos mas não FULL legado)
-    val bothEnabled = autoPilotMode == "BOTH" || autoPilotMode == "FULL"
-
-    fun computeMode(accept: Boolean, refuse: Boolean): String {
-        return when {
-            accept && refuse -> "BOTH"
-            accept -> "ACCEPT"
-            refuse -> "REFUSE"
-            else -> "OFF"
-        }
-    }
-
-    Text(
-        text = "🤖 AutoPilot",
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold
-    )
-    Text(
-        text = "Aceita/recusa corridas automaticamente baseado no Score",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-    Spacer(modifier = Modifier.height(12.dp))
-
-    // v6.1.1: Checkboxes independentes em vez de modos exclusivos
-    Text("Funções ativas:", style = MaterialTheme.typography.labelLarge)
-    Spacer(modifier = Modifier.height(4.dp))
-
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(
-            checked = acceptEnabled,
-            onCheckedChange = { checked ->
-                val newMode = computeMode(checked, refuseEnabled)
-                scope.launch { prefsManager.saveAutoPilotMode(newMode) }
-            }
-        )
-        Text("Aceitar", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-        Spacer(modifier = Modifier.width(24.dp))
-        Checkbox(
-            checked = refuseEnabled,
-            onCheckedChange = { checked ->
-                val newMode = computeMode(acceptEnabled, checked)
-                scope.launch { prefsManager.saveAutoPilotMode(newMode) }
-            }
-        )
-        Text("Recusar", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-    }
-
-    if (acceptEnabled || refuseEnabled) {
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Score mínimo para aceitar
-        if (acceptEnabled) {
-            Text("Score mínimo para aceitar: $minScore", fontSize = 13.sp)
-            Slider(
-                value = minScore.toFloat(),
-                onValueChange = { scope.launch { prefsManager.saveAutoPilotMinScore(it.toInt()) } },
-                valueRange = 50f..100f,
-                steps = 9
-            )
-        }
-
-        // Score máximo para recusar
-        if (refuseEnabled) {
-            Text("Score máximo para recusar: $maxRefuseScore", fontSize = 13.sp)
-            Slider(
-                value = maxRefuseScore.toFloat(),
-                onValueChange = { scope.launch { prefsManager.saveAutoPilotMaxRefuseScore(it.toInt()) } },
-                valueRange = 0f..60f,
-                steps = 11
-            )
-        }
-
-        // Zona neutra (quando ambos ativos)
-        if (acceptEnabled && refuseEnabled) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = ScoreYellow)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "Zona neutra: Score $maxRefuseScore–$minScore → você decide",
-                        fontSize = 12.sp
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Filtros geográficos
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(
-                checked = geoFilters,
-                onCheckedChange = { scope.launch { prefsManager.saveAutoPilotGeoFilters(it) } }
-            )
-            Text("Respeitar bairros/zonas bloqueadas", fontSize = 13.sp)
-        }
-
-        // Aviso de segurança
-        Spacer(modifier = Modifier.height(8.dp))
-        Card(
-            colors = CardDefaults.cardColors(containerColor = ScoreRed.copy(alpha = 0.1f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.Warning, contentDescription = null, tint = ScoreRed)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "AutoPilot usa delay humanizado para simular comportamento natural. " +
-                    "Use com responsabilidade.",
-                    fontSize = 11.sp,
-                    color = ScoreRed
-                )
-            }
-        }
-    }
-}
-
-// ============================================================================
-// v6.1.0: COMPOSABLE ProfilesSection
-// Seção de gerenciamento de perfis de critérios
+// COMPOSABLE ProfilesSection
 // ============================================================================
 @Composable
 fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineScope) {
@@ -961,7 +1046,6 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
     var showSaveDialog by remember { mutableStateOf(false) }
     var newProfileName by remember { mutableStateOf("") }
 
-    // Parse profiles JSON
     val profiles = remember(profilesJson) {
         try {
             val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
@@ -970,7 +1054,7 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
     }
 
     Text(
-        text = "📋 Perfis de Critérios",
+        text = "Perfis de Critérios",
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold
     )
@@ -981,7 +1065,6 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
     )
     Spacer(modifier = Modifier.height(12.dp))
 
-    // Lista de perfis salvos
     if (profiles.isEmpty()) {
         Text(
             "Nenhum perfil salvo. Salve sua configuração atual como perfil.",
@@ -1016,7 +1099,6 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
                         )
                     }
                     Row {
-                        // Botão carregar
                         IconButton(onClick = {
                             scope.launch {
                                 prefsManager.saveCriteriaWeights(profile.weights)
@@ -1035,7 +1117,6 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
                                 else MaterialTheme.colorScheme.primary
                             )
                         }
-                        // Botão excluir
                         IconButton(onClick = {
                             scope.launch {
                                 val updated = profiles.filter { it.id != profile.id }
@@ -1059,7 +1140,6 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    // Botão salvar perfil atual
     Button(
         onClick = { showSaveDialog = true },
         modifier = Modifier.fillMaxWidth(),
@@ -1075,7 +1155,6 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
         Text("Máximo de 5 perfis atingido", fontSize = 11.sp, color = ScoreOrange)
     }
 
-    // Dialog para salvar perfil
     if (showSaveDialog) {
         val autoPilotMode by prefsManager.autoPilotModeFlow.collectAsState(initial = "OFF")
         val minScore by prefsManager.autoPilotMinScoreFlow.collectAsState(initial = 75)
@@ -1133,7 +1212,7 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
 }
 
 // ============================================================================
-// v6.1.0: Data class para perfis salvos (serializable)
+// Data class para perfis salvos (serializable)
 // ============================================================================
 @kotlinx.serialization.Serializable
 data class SavedProfile(

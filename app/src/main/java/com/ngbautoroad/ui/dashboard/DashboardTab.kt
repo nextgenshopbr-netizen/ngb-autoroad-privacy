@@ -21,6 +21,7 @@ package com.ngbautoroad.ui.dashboard
 
 import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,8 +42,7 @@ import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.FinanceDatabase
 import com.ngbautoroad.data.model.DashboardData
 import com.ngbautoroad.data.prefs.PrefsManager
-import com.ngbautoroad.ui.finance.FinanceActivity
-import com.ngbautoroad.ui.features.FeaturesActivity
+// Removidos: FinanceActivity e FeaturesActivity (agora acessíveis via abas de navegação)
 import com.ngbautoroad.ui.theme.*
 import com.ngbautoroad.domain.ShiftManager
 import com.ngbautoroad.domain.ShiftState
@@ -107,14 +107,22 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
 
     val scrollState = rememberScrollState()
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // v6.1.1: Seletor rápido de perfil antes de iniciar turno
+        // v6.3.0: Header com botão de ajuda
         val context = LocalContext.current
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("Início", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+            com.ngbautoroad.ui.tutorial.HelpButton(screenId = "dashboard")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // v6.1.1: Seletor rápido de perfil antes de iniciar turno
         ProfileQuickSelector(prefsManager, scope)
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -123,37 +131,6 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
         ShiftDashboardCard(context, scope, prefsManager)
 
         Spacer(modifier = Modifier.height(12.dp))
-
-        // Botão Controle Financeiro (topo)
-        Button(
-            onClick = {
-                context.startActivity(Intent(context, FinanceActivity::class.java))
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
-        ) {
-            Icon(Icons.Default.AccountBalance, contentDescription = "Financeiro")
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Controle Financeiro")
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Botão Recursos Avançados (Turno, Ranking, IA, Relatório, Exportar)
-        OutlinedButton(
-            onClick = {
-                context.startActivity(Intent(context, FeaturesActivity::class.java))
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.AutoAwesome, contentDescription = "Recursos")
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Recursos Avançados")
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         // Estado vazio: sem corridas
         if (dashData.totalRidesToday == 0 && dashData.totalRidesWeek == 0) {
@@ -293,11 +270,17 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
+                Spacer(modifier = Modifier.height(12.dp))
         // Resumo financeiro e metas
         FinancialSummarySection(database)
     }
+    // v6.3.0: Tutorial guiado no primeiro acesso
+    com.ngbautoroad.ui.tutorial.TutorialOverlay(
+        screenId = "dashboard",
+        steps = com.ngbautoroad.ui.tutorial.TutorialContent.dashboardSteps,
+        prefsManager = prefsManager
+    )
+    } // Box
 }
 
 @Composable
@@ -1075,71 +1058,217 @@ fun ShiftDashboardCard(
 }
 
 // ============================================================================
-// v6.1.1: Seletor rápido de perfil na Dashboard
+// v6.3.0: Card de Perfis com janela flutuante e favoritos (até 3)
 // ============================================================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileQuickSelector(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineScope) {
     val profilesJson by prefsManager.profilesJsonFlow.collectAsState(initial = "[]")
     val activeProfileId by prefsManager.activeProfileIdFlow.collectAsState(initial = 0)
+    val favoritesJson by prefsManager.favoriteProfilesFlow.collectAsState(initial = "[]")
+    var showDialog by remember { mutableStateOf(false) }
 
-    data class QuickProfile(val id: Int, val name: String)
+    data class QuickProfile(val id: Int, val name: String, val isFavorite: Boolean)
 
-    val profiles = remember(profilesJson) {
+    val favoriteIds = remember(favoritesJson) {
+        try {
+            kotlinx.serialization.json.Json.decodeFromString<List<Int>>(favoritesJson)
+        } catch (_: Exception) { emptyList() }
+    }
+
+    val allProfiles = remember(profilesJson, favoriteIds) {
         try {
             val parsed = kotlinx.serialization.json.Json.decodeFromString<List<kotlinx.serialization.json.JsonObject>>(profilesJson)
             parsed.mapIndexed { idx, obj ->
                 QuickProfile(
                     id = idx + 1,
-                    name = obj["name"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content } ?: "Perfil ${idx + 1}"
+                    name = obj["name"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content } ?: "Perfil ${idx + 1}",
+                    isFavorite = (idx + 1) in favoriteIds
                 )
             }
         } catch (_: Exception) { emptyList() }
     }
 
-    if (profiles.isNotEmpty()) {
+    val favoriteProfiles = allProfiles.filter { it.isFavorite }.take(3)
+    val activeProfile = allProfiles.find { it.id == activeProfileId }
+
+    if (allProfiles.isNotEmpty()) {
         Card(
+            onClick = { showDialog = true },
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    "Perfil Ativo",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    profiles.forEach { profile ->
-                        FilterChip(
-                            selected = activeProfileId == profile.id,
-                            onClick = {
-                                scope.launch {
-                                    prefsManager.saveActiveProfileId(profile.id)
-                                    // Aplicar perfil: ler JSON e setar pesos/thresholds
-                                    try {
-                                        val parsed = kotlinx.serialization.json.Json.decodeFromString<List<kotlinx.serialization.json.JsonObject>>(profilesJson)
-                                        val profileObj = parsed.getOrNull(profile.id - 1)
-                                        if (profileObj != null) {
-                                            val mode = profileObj["autoPilotMode"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content } ?: "OFF"
-                                            val minScore = profileObj["minAcceptScore"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() } ?: 75
-                                            val maxRefuse = profileObj["maxRefuseScore"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() } ?: 40
-                                            prefsManager.saveAutoPilotMode(mode)
-                                            prefsManager.saveAutoPilotMinScore(minScore)
-                                            prefsManager.saveAutoPilotMaxRefuseScore(maxRefuse)
-                                        }
-                                    } catch (_: Exception) {}
-                                }
-                            },
-                            label = { Text(profile.name, fontSize = 12.sp) }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                "Perfil Ativo",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                activeProfile?.name ?: "Nenhum selecionado",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    Icon(
+                        Icons.Default.UnfoldMore,
+                        contentDescription = "Selecionar perfil",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Favoritos (até 3) como chips rápidos
+                if (favoriteProfiles.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        favoriteProfiles.forEach { profile ->
+                            FilterChip(
+                                selected = activeProfileId == profile.id,
+                                onClick = {
+                                    scope.launch {
+                                        applyProfile(prefsManager, profilesJson, profile.id)
+                                    }
+                                },
+                                label = { Text(profile.name, fontSize = 11.sp) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Star,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
+
+        // Dialog flutuante com lista completa de perfis
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Selecionar Perfil", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        allProfiles.forEach { profile ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (activeProfileId == profile.id)
+                                            MaterialTheme.colorScheme.primaryContainer
+                                        else
+                                            Color.Transparent
+                                    )
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            scope.launch {
+                                                applyProfile(prefsManager, profilesJson, profile.id)
+                                            }
+                                            showDialog = false
+                                        }
+                                ) {
+                                    if (activeProfileId == profile.id) {
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    } else {
+                                        Icon(
+                                            Icons.Default.RadioButtonUnchecked,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        profile.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = if (activeProfileId == profile.id) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                }
+
+                                // Botão favoritar
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            val currentFavs = favoriteIds.toMutableList()
+                                            if (profile.id in currentFavs) {
+                                                currentFavs.remove(profile.id)
+                                            } else if (currentFavs.size < 3) {
+                                                currentFavs.add(profile.id)
+                                            }
+                                            prefsManager.saveFavoriteProfiles(
+                                                "[" + currentFavs.joinToString(",") + "]"
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        if (profile.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                                        contentDescription = "Favoritar",
+                                        tint = if (profile.isFavorite) ScoreYellow else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("Fechar")
+                    }
+                }
+            )
+        }
     }
+}
+
+private suspend fun applyProfile(prefsManager: PrefsManager, profilesJson: String, profileId: Int) {
+    prefsManager.saveActiveProfileId(profileId)
+    try {
+        val parsed = kotlinx.serialization.json.Json.decodeFromString<List<kotlinx.serialization.json.JsonObject>>(profilesJson)
+        val profileObj = parsed.getOrNull(profileId - 1)
+        if (profileObj != null) {
+            val mode = profileObj["autoPilotMode"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content } ?: "OFF"
+            val minScore = profileObj["minAcceptScore"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() } ?: 75
+            val maxRefuse = profileObj["maxRefuseScore"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() } ?: 40
+            prefsManager.saveAutoPilotMode(mode)
+            prefsManager.saveAutoPilotMinScore(minScore)
+            prefsManager.saveAutoPilotMaxRefuseScore(maxRefuse)
+        }
+    } catch (_: Exception) {}
 }

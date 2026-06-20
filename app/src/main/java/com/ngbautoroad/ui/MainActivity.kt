@@ -4,14 +4,16 @@ package com.ngbautoroad.ui
 // ARQUIVO: MainActivity.kt
 // LOCALIZAÇÃO: ui/MainActivity.kt
 // RESPONSABILIDADE: Activity principal com navegação por abas (Bottom Navigation)
-// ABAS:
-//   - Dashboard: Resumo geral
-//   - Critérios: Configuração de pesos
-//   - Cards: Gerenciamento de cards visuais
-//   - Histórico: Lista de corridas avaliadas
-//   - Configurações: Toggles de serviço e overlay
+// v6.3.0 REDESIGN:
+//   - Nova ordem: CRITÉRIOS | CARDS | INICIO | FINANCEIRO | CONFIG
+//   - App sempre inicia na aba INICIO (centro, índice 2)
+//   - Ícones de mercado com significado imediato
+//   - Rótulos em português
+//   - Removido: aba Histórico (movido para Config > Adicionais)
+//   - Adicionado: aba Financeiro (antes era botão no Dashboard)
 // DEPENDÊNCIAS:
-//   - Todas as *Tab.kt (DashboardTab, CriteriaTab, CardTab, HistoryTab, SettingsTab)
+//   - Todas as *Tab.kt (DashboardTab, CriteriaTab, CardTab, SettingsTab)
+//   - ui/finance/FinanceActivity.kt (agora inline como FinanceTab)
 //   - data/prefs/PrefsManager.kt
 //   - data/db/AppDatabase.kt
 // ============================================================================
@@ -38,7 +40,7 @@ import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.ui.card.CardTab
 import com.ngbautoroad.ui.criteria.CriteriaTab
 import com.ngbautoroad.ui.dashboard.DashboardTab
-import com.ngbautoroad.ui.history.HistoryTab
+import com.ngbautoroad.ui.finance.FinanceTab
 import com.ngbautoroad.ui.settings.SettingsTab
 import androidx.compose.foundation.isSystemInDarkTheme
 import com.ngbautoroad.ui.theme.NGBAutoRoadTheme
@@ -126,18 +128,21 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// v6.3.0: Nova ordem de abas com ícones de mercado
+// CRITÉRIOS | CARDS | INICIO | FINANCEIRO | CONFIG
 enum class TabItem(val title: String, val icon: ImageVector) {
-    DASHBOARD("", Icons.Default.Dashboard),
     CRITERIA("Critérios", Icons.Default.Tune),
-    CARD("Cards", Icons.Default.CreditCard),
-    HISTORY("Histórico", Icons.Default.History),
+    CARD("Cards", Icons.Default.Style),
+    HOME("Início", Icons.Default.Home),
+    FINANCE("Financeiro", Icons.Default.AccountBalanceWallet),
     SETTINGS("Config", Icons.Default.Settings)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
-    var selectedTab by remember { mutableStateOf(0) }
+    // v6.3.0: App sempre inicia na aba INICIO (índice 2 = centro)
+    var selectedTab by remember { mutableStateOf(2) }
     val tabs = TabItem.entries.toTypedArray()
 
     Scaffold(
@@ -160,7 +165,7 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
                 tabs.forEachIndexed { index, tab ->
                     NavigationBarItem(
                         icon = { Icon(tab.icon, contentDescription = tab.title) },
-                        label = if (tab.title.isNotEmpty()) { { Text(tab.title) } } else null,
+                        label = { Text(tab.title) },
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
                         colors = NavigationBarItemDefaults.colors(
@@ -181,11 +186,11 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
                 .padding(paddingValues)
         ) {
             when (selectedTab) {
-                0 -> DashboardTab(prefsManager = prefsManager, database = database)
-                1 -> CriteriaTab(prefsManager = prefsManager)
-                2 -> CardTab(prefsManager = prefsManager)
-                3 -> HistoryTab(prefsManager = prefsManager, database = database)
-                4 -> SettingsTab(prefsManager = prefsManager)
+                0 -> CriteriaTab(prefsManager = prefsManager)
+                1 -> CardTab(prefsManager = prefsManager)
+                2 -> DashboardTab(prefsManager = prefsManager, database = database)
+                3 -> FinanceTab(prefsManager = prefsManager, database = database)
+                4 -> SettingsTab(prefsManager = prefsManager, database = database)
             }
         }
     }

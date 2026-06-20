@@ -294,7 +294,25 @@ class OverlayService : Service(),
             .map { (name, penalty) -> BlockedNeighborhood(name, NeighborhoodType.PICKUP, penalty) }
         val blockedDropoff = prefsManager.blockedDropoffFlow.first()
             .map { (name, penalty) -> BlockedNeighborhood(name, NeighborhoodType.DROPOFF, penalty) }
-        val blockedNeighborhoods = blockedPickup + blockedDropoff
+
+        // v6.3.0: Integrar zonas desenhadas no mapa (ZoneMapData)
+        // Cada zona nomeada é tratada como bairro bloqueado adicional com penalidade fixa de 25pts
+        val zoneMapJson = prefsManager.zoneMapDataFlow.first()
+        val zoneNeighborhoods = if (zoneMapJson.isNotBlank()) {
+            try {
+                val mapData = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                    .decodeFromString<com.ngbautoroad.ui.map.ZoneMapData>(zoneMapJson)
+                mapData.zones.filter { it.isEnabled }.map { zone ->
+                    BlockedNeighborhood(
+                        name = zone.name,
+                        type = if (zone.type == "PICKUP") NeighborhoodType.PICKUP else NeighborhoodType.DROPOFF,
+                        penaltyWeight = 25
+                    )
+                }
+            } catch (_: Exception) { emptyList() }
+        } else emptyList()
+
+        val blockedNeighborhoods = blockedPickup + blockedDropoff + zoneNeighborhoods
 
         // Calcular score com critérios reais + bairros bloqueados
         val scorer = RideScorer(
