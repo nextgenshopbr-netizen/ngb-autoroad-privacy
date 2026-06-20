@@ -1,6 +1,6 @@
 // ============================================================================
 // ARQUIVO: NGBAutoRoadApp.kt
-// VERSÃO: v6.0.0
+// VERSÃO: v6.2.0
 // LOCALIZAÇÃO: NGBAutoRoadApp.kt
 // RESPONSABILIDADE: Application class principal
 //   - Cria canais de notificação (overlay, OCR, ghost mode)
@@ -15,6 +15,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import com.ngbautoroad.service.MemoryMonitor
 
 class NGBAutoRoadApp : Application() {
 
@@ -23,11 +24,18 @@ class NGBAutoRoadApp : Application() {
         const val CHANNEL_OCR = "ocr_channel"
         const val CHANNEL_GHOST = "ghost_channel" // v6.0.0: Alertas durante Ghost Mode
         const val CHANNEL_LIFECYCLE = "lifecycle_channel" // v6.1.0: Confirmação de corrida UNCERTAIN
+
+        // v6.2.0: Monitor de memória global (Android 17 memory limits)
+        lateinit var memoryMonitor: MemoryMonitor
+            private set
     }
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannels()
+        // v6.2.0: Iniciar monitoramento de memória para Android 17
+        memoryMonitor = MemoryMonitor(this)
+        memoryMonitor.start()
     }
 
     private fun createNotificationChannels() {

@@ -124,8 +124,9 @@ class OverlayService : Service(),
         var onRideDetected: ((RideData) -> Unit)? = null
         var onStealthModeChanged: ((Boolean) -> Unit)? = null
 
-        // Referência ao serviço ativo para resize ao vivo
-        private var instance: OverlayService? = null
+        // Referência ao serviço ativo para resize ao vivo e MemoryMonitor
+        var instance: OverlayService? = null
+            private set
 
         fun start(context: Context) {
             val intent = Intent(context, OverlayService::class.java)
@@ -224,6 +225,18 @@ class OverlayService : Service(),
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /**
+     * v6.2.0: Override do onLowMemory do sistema + chamado pelo MemoryMonitor.
+     * Libera recursos não essenciais do overlay para evitar kill por OOM (Android 17).
+     */
+    override fun onLowMemory() {
+        super.onLowMemory()
+        // Se não há overlay ativo, não há nada a liberar
+        if (currentRide == null) return
+        // Forçar GC hint
+        System.gc()
+    }
 
     private suspend fun showOverlay(ride: RideData) {
         currentRide = ride

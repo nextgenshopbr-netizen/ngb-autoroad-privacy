@@ -2,13 +2,18 @@ package com.ngbautoroad.service
 
 // ============================================================================
 // ARQUIVO: RideNotificationListener.kt
-// VERSÃO: v6.0.0 — NOVO (Camada 3 do Triple Engine)
+// VERSÃO: v6.2.0 — PROMOVIDO A CANAL PRIMÁRIO (Plano B para AAPM Android 17)
 // LOCALIZAÇÃO: service/RideNotificationListener.kt
-// DATA: 19/06/2026
+// DATA: 20/06/2026
 // ============================================================================
 // RESPONSABILIDADE:
-//   Capturar notificações de apps de corrida (Uber, 99, inDrive, Cabify)
-//   como BACKUP durante Ghost Mode bancário.
+//   v6.2.0: Canal PRIMÁRIO de detecção quando AccessibilityService está
+//   bloqueado pelo Advanced Protection Mode (AAPM) do Android 16/17.
+//
+//   Hierarquia de canais:
+//   1. AccessibilityService (primário quando AAPM inativo)
+//   2. NotificationListenerService (primário quando AAPM ativo ou AS bloqueado)
+//   3. Ambos ativos simultaneamente = cobertura máxima
 //
 //   Quando o Ghost Mode está ativo (motorista no banco), o AccessibilityService
 //   está hibernado e não pode ler a tela. Este serviço captura notificações
@@ -19,11 +24,12 @@ package com.ngbautoroad.service
 //   - Funciona em background sem overlay
 //   - Permissão concedida uma vez nas configurações (sem ADB)
 //   - Captura notificações mesmo com tela bloqueada
+//   - NÃO é bloqueado pelo AAPM (não é AccessibilityService)
 // ============================================================================
 // LIMITAÇÕES:
 //   - Depende do app de corrida enviar notificação (nem sempre envia)
 //   - Dados da notificação são limitados (geralmente só valor + endereço)
-//   - Não substitui AccessibilityService — é COMPLEMENTAR
+//   - Parsing menos rico que AccessibilityService (sem coordenadas exatas)
 // ============================================================================
 // BLOCOS:
 //   - onNotificationPosted (L~60): Recebe notificação e filtra por package
@@ -82,6 +88,17 @@ class RideNotificationListener : NotificationListenerService() {
         private var lastNotifRideHash = 0
         private var lastNotifRideTime = 0L
         private const val DEDUP_WINDOW_MS = 15_000L // 15s
+
+        /**
+         * v6.2.0: Flag que indica se o NotificationListener deve atuar como
+         * canal PRIMÁRIO de detecção (quando AccessibilityService está bloqueado
+         * pelo AAPM do Android 16/17 ou indisponível por qualquer motivo).
+         *
+         * Quando true: processa corridas MESMO com Ghost Mode inativo.
+         * Quando false: comportamento legado (só atua durante Ghost Mode).
+         */
+        @Volatile
+        var isPrimaryChannel: Boolean = false
     }
 
     // =========================================================================
@@ -160,12 +177,31 @@ class RideNotificationListener : NotificationListenerService() {
             Log.i(TAG, "│  Valor: R$ ${String.format("%.2f", rideData.rideValue)}")
             Log.i(TAG, "│  Ghost Mode ativo: ${RideAccessibilityService.stealthModeActive}")
 
-            if (RideAccessibilityService.stealthModeActive) {
-                // Ghost Mode ativo — alertar motorista discretamente
-                alertDriverDuringGhostMode(rideData)
-            } else {
-                // Ghost Mode inativo — enviar normalmente para overlay
-                OverlayService.onRideDetected?.invoke(rideData)
+            val accessibilityAvailable = RideAccessibilityService.instance != null &&
+                !RideAccessibilityService.stealthModeActive
+
+            when {
+                RideAccessibilityService.stealthModeActive -> {
+                    // Ghost Mode ativo — alertar motorista discretamente
+                    Log.d(TAG, "├─ Modo Ghost ativo: alertando discretamente")
+                    alertDriverDuringGhostMode(rideData)
+                }
+                isPrimaryChannel && !accessibilityAvailable -> {
+                    // v6.2.0: Canal primário ativo e AccessibilityService indisponível
+                    // (bloqueado pelo AAPM ou não concedido)
+                    Log.i(TAG, "├─ ★ CANAL PRIMÁRIO: AccessibilityService indisponível, processando via NotificationListener")
+                    OverlayService.onRideDetected?.invoke(rideData)
+                }
+                isPrimaryChannel -> {
+                    // v6.2.0: Canal primário ativo mas AccessibilityService também está ativo
+                    // Deixar AccessibilityService processar para evitar duplicata
+                    // (ele tem dados mais ricos: coordenadas, tipo de corrida, etc.)
+                    Log.d(TAG, "├─ Canal primário ativo mas AS também disponível: ignorando (AS tem prioridade)")
+                }
+                else -> {
+                    // Ghost Mode inativo e canal secundário — enviar normalmente para overlay
+                    OverlayService.onRideDetected?.invoke(rideData)
+                }
             }
 
             Log.d(TAG, "└─ Processado com sucesso")

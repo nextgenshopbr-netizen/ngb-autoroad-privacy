@@ -93,9 +93,11 @@
             android:foregroundServiceType="specialUse" />
 
         <!-- Accessibility Service (v6.0.0 Triple Engine) -->
+        <!-- v6.2.0: isAccessibilityTool=true protege contra bloqueio pelo AAPM no Android 16/17 -->
         <service
             android:name=".service.RideAccessibilityService"
             android:exported="true"
+            android:isAccessibilityTool="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />

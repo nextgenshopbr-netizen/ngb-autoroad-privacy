@@ -247,11 +247,14 @@ class RideAccessibilityService : AccessibilityService() {
         originalFlags = serviceInfo.flags
 
         Log.i(TAG_ENGINE, "═══════════════════════════════════════════════════")
-        Log.i(TAG_ENGINE, "║ RideAccessibilityService v6.0.0 CONECTADO      ║")
+        Log.i(TAG_ENGINE, "║ RideAccessibilityService v6.2.0 CONECTADO      ║")
         Log.i(TAG_ENGINE, "║ Triple Engine: Árvore + OCR + Notificação      ║")
         Log.i(TAG_ENGINE, "║ Ghost Mode: Automático (${BANK_PACKAGES.size} bancos)    ║")
         Log.i(TAG_ENGINE, "║ Screenshot OCR: ${if (Build.VERSION.SDK_INT >= 30) "DISPONÍVEL" else "INDISPONÍVEL (API < 30)"}  ║")
-        Log.i(TAG_ENGINE, "═══════════════════════════════════════════════════")
+        Log.i(TAG_ENGINE, "═════════════════════════════════════════════════")
+
+        // v6.2.0: AS conectou com sucesso — NotificationListener volta ao papel secundário
+        RideNotificationListener.isPrimaryChannel = false
     }
 
     // =========================================================================
@@ -1241,6 +1244,22 @@ class RideAccessibilityService : AccessibilityService() {
         Log.w(TAG_ENGINE, "AccessibilityService INTERROMPIDO")
     }
 
+    /**
+     * v6.2.0: Override do onLowMemory do sistema + chamado pelo MemoryMonitor.
+     * Libera recursos não essenciais para evitar kill por OOM (Android 17).
+     */
+    override fun onLowMemory() {
+        super.onLowMemory()
+        Log.w(TAG_ENGINE, "onLowMemory: liberando cache do AccessibilityService")
+        // Resetar estado de screenshot pendente para liberar referências
+        pendingScreenshotForPackage = null
+        // Cancelar handlers pendentes não essenciais
+        screenshotHandler.removeCallbacksAndMessages(null)
+        // Forçar GC hint
+        System.gc()
+        Log.d(TAG_ENGINE, "onLowMemory: cache liberado")
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         instance = null
@@ -1252,7 +1271,10 @@ class RideAccessibilityService : AccessibilityService() {
         lifecycleManager = null
         autoPilotEngine?.destroy()
         autoPilotEngine = null
-        Log.i(TAG_ENGINE, "AccessibilityService DESTRUÍDO")
+        // v6.2.0: AS foi destruído — promover NotificationListener a canal primário
+        // Garante que corridas continuem sendo detectadas mesmo sem AccessibilityService
+        RideNotificationListener.isPrimaryChannel = true
+        Log.i(TAG_ENGINE, "AccessibilityService DESTRUÍDO — NotificationListener promovido a canal primário")
     }
 
     private fun isBankApp(packageName: String): Boolean {
