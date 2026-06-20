@@ -2,18 +2,23 @@ package com.ngbautoroad.domain
 
 // ============================================================================
 // ARQUIVO: LocalLearningEngine.kt
-// VERSÃO: v5.0.0 — Persistência em SharedPreferences (não perde dados ao fechar)
+// VERSÃO: v6.3.1 — Alimentado com dados reais do RideHistoryDao
 // RESPONSABILIDADE: IA local — padrões estatísticos, sugestões sem nuvem/IA paga
-// CORREÇÕES v5.0.0:
-//   - Padrões persistidos em SharedPreferences (JSON compacto)
-//   - Retorna sugestão "Colete mais dados" quando <20 padrões
-//   - Construtor aceita Context? para modo preview (sem persistência)
+// CORREÇÕES v6.3.1:
+//   - seedFromDatabase(): carrega histórico real do banco ao inicializar
+//   - Sugestão de bloqueio automático de bairros com alta taxa de recusa
+//   - Padrões ainda persistidos em SharedPreferences como cache
 // ============================================================================
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.ngbautoroad.data.db.AppDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Calendar
 
 enum class SuggestionType(val label: String, val icon: String) {
     BEST_HOURS("Melhores Horários", "🕐"),
@@ -68,6 +73,47 @@ class LocalLearningEngine(context: Context? = null) {
     }
 
     fun getPatternCount(): Int = patterns.size
+
+    /**
+     * v6.3.1: Carrega histórico real do banco e converte em RidePatterns.
+     * Chamado uma vez na inicialização do serviço para alimentar o engine com dados reais.
+     * Não duplica padrões já existentes no cache do SharedPreferences.
+     */
+    fun seedFromDatabase(context: Context, scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
+        scope.launch {
+            try {
+                val dao = AppDatabase.getInstance(context).rideHistoryDao()
+                // Buscar últimas 500 corridas COMPLETED ou ACCEPTED do banco
+                val rides = dao.getAll().filter {
+                    it.status == "COMPLETED" || it.status == "ACCEPTED" || it.status == "REFUSED"
+                }.takeLast(500)
+
+                if (rides.isEmpty()) return@launch
+
+                // Evitar duplicar se já temos padrões suficientes no cache
+                if (patterns.size >= rides.size) return@launch
+
+                val cal = Calendar.getInstance()
+                val newPatterns = rides.map { ride ->
+                    cal.timeInMillis = ride.timestamp
+                    RidePattern(
+                        hour = cal.get(Calendar.HOUR_OF_DAY),
+                        dayOfWeek = cal.get(Calendar.DAY_OF_WEEK),
+                        neighborhood = ride.pickupNeighborhood.ifBlank { ride.dropoffNeighborhood },
+                        valuePerKm = ride.valuePerKm,
+                        accepted = ride.status == "COMPLETED" || ride.status == "ACCEPTED"
+                    )
+                }
+
+                // Inserir no início (mais antigos primeiro) sem ultrapassar MAX_PATTERNS
+                synchronized(patterns) {
+                    patterns.addAll(0, newPatterns)
+                    while (patterns.size > MAX_PATTERNS) patterns.removeAt(0)
+                }
+                persistPatterns()
+            } catch (_: Exception) {}
+        }
+    }
 
     private fun persistPatterns() {
         prefs ?: return
@@ -145,6 +191,22 @@ class LocalLearningEngine(context: Context? = null) {
                     accepted.size
                 ))
             }
+        }
+
+        // v6.3.1: Sugestão de bloqueio de bairros com alta taxa de recusa
+        val allByHood = patterns.groupBy { it.neighborhood }.filter { it.key.isNotBlank() && it.value.size >= 5 }
+        val highRefusalHoods = allByHood.filter { (_, rides) ->
+            val refused = rides.count { !it.accepted }
+            refused.toDouble() / rides.size >= 0.70 // 70%+ de recusa
+        }.keys.take(3)
+        if (highRefusalHoods.isNotEmpty()) {
+            suggestions.add(LearningSuggestion(
+                SuggestionType.AVOID_AREA,
+                "Considere bloquear: ${highRefusalHoods.joinToString(", ")}",
+                "Você recusa 70% ou mais das corridas nesses bairros. Bloqueie-os para evitar interrupções.",
+                0.80,
+                patterns.size
+            ))
         }
 
         return suggestions

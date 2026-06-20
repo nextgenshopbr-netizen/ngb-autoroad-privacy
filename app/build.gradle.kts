@@ -13,8 +13,8 @@ android {
         applicationId = "com.ngbautoroad"
         minSdk = 26
         targetSdk = 34
-        versionCode = 47
-        versionName = "6.3.0"
+        versionCode = 14
+        versionName = "6.3.1"
     }
 
     signingConfigs {

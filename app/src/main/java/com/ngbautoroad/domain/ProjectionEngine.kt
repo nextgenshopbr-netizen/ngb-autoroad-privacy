@@ -13,6 +13,10 @@ package com.ngbautoroad.domain
 //   - data/db/FinanceDatabase.kt → EarningDao, ExpenseDao
 //   - data/db/FinanceExtensions.kt → VehicleProfileDao, IndividualExpenseDao
 //   - data/db/RideHistoryEntity.kt → histórico de corridas
+// CORREÇÕES v6.3.1:
+//   - Filtra apenas COMPLETED (não ACCEPTED) para projeções precisas
+//   - Remove coerceAtLeast(1) em avgDailyRides (não infla corridas)
+//   - simulateWhatIf usa apenas corridas COMPLETED
 // ============================================================================
 
 import com.ngbautoroad.data.db.*
@@ -58,7 +62,8 @@ class ProjectionEngine(
         } else 1.0
         val avgDailyEarnings = totalEarnings30 / daysWithData
         val avgDailyKm = totalDistance30 / daysWithData
-        val avgDailyRides = (totalRides30.toDouble() / daysWithData).toInt().coerceAtLeast(1)
+        // v6.3.1: Removido coerceAtLeast(1) — se não há dados, projeção deve ser 0
+        val avgDailyRides = (totalRides30.toDouble() / daysWithData).toInt()
         val avgDailyHours = (totalDuration30 / 60.0) / daysWithData
 
         // Multiplicador por período
@@ -145,7 +150,9 @@ class ProjectionEngine(
         cal.add(Calendar.DAY_OF_YEAR, -30)
         val startDate = cal.timeInMillis
 
-        val allRides = rideHistoryDao.getRidesByPeriodSync(startDate, endDate)
+        // v6.3.1: Filtrar apenas COMPLETED para cenários realistas
+        val allRidesRaw = rideHistoryDao.getRidesByPeriodSync(startDate, endDate)
+        val allRides = allRidesRaw.filter { it.status == "COMPLETED" }
         if (allRides.isEmpty()) return@withContext emptyList()
 
         // Classificar corridas por qualidade (score)
@@ -153,7 +160,7 @@ class ProjectionEngine(
         val avgRides = allRides.filter { it.score in 30.0..69.9 }
         val badRides = allRides.filter { it.score < 30 }
 
-        // Total real (o que realmente aconteceu)
+        // Total real (o que realmente aconteceu — apenas COMPLETED)
         val actualEarnings = allRides.sumOf { it.rideValue }
         val actualKm = allRides.sumOf { it.dropoffDistance }
         val actualHours = allRides.sumOf { it.rideDuration } / 60.0

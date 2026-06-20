@@ -23,7 +23,6 @@ import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.FinanceDatabase
 import com.ngbautoroad.data.db.RideHistoryEntity
 import com.ngbautoroad.domain.LocalLearningEngine
-import com.ngbautoroad.domain.RidePattern
 import com.ngbautoroad.domain.LearningSuggestion
 import com.ngbautoroad.domain.SuggestionType
 import com.ngbautoroad.domain.ReportGenerator
@@ -246,29 +245,10 @@ fun LearningTab() {
             val allRides = db.rideHistoryDao().getAll()
             rideCount = allRides.size
                     val engine = LocalLearningEngine(context)
-
-            // Alimentar engine com dados reais
-            allRides.filter { (it.status == "COMPLETED" || it.status == "ACCEPTED") && it.dropoffNeighborhood.isNotBlank() }.forEach { ride ->
-                val cal = Calendar.getInstance().apply { timeInMillis = ride.timestamp }
-                engine.addPattern(RidePattern(
-                    hour = cal.get(Calendar.HOUR_OF_DAY),
-                    dayOfWeek = cal.get(Calendar.DAY_OF_WEEK),
-                    neighborhood = ride.dropoffNeighborhood,
-                    valuePerKm = if (ride.dropoffDistance > 0) ride.rideValue / ride.dropoffDistance else 0.0,
-                    accepted = ride.status == "COMPLETED" || ride.status == "ACCEPTED"
-                ))
-            }
-            // Alimentar com recusadas também
-            allRides.filter { it.status == "REFUSED" }.forEach { ride ->
-                val cal = Calendar.getInstance().apply { timeInMillis = ride.timestamp }
-                engine.addPattern(RidePattern(
-                    hour = cal.get(Calendar.HOUR_OF_DAY),
-                    dayOfWeek = cal.get(Calendar.DAY_OF_WEEK),
-                    neighborhood = ride.dropoffNeighborhood,
-                    valuePerKm = if (ride.dropoffDistance > 0) ride.rideValue / ride.dropoffDistance else 0.0,
-                    accepted = false
-                ))
-            }
+            // v6.3.1: seedFromDatabase carrega todos os dados reais (COMPLETED, ACCEPTED, REFUSED)
+            engine.seedFromDatabase(context)
+            // Pequena espera para o seed async completar antes de gerar sugestões
+            kotlinx.coroutines.delay(500)
             suggestions = engine.generateSuggestions()
             isLoading = false
         }
