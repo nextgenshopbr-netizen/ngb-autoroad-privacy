@@ -115,7 +115,33 @@ Estes itens não representam risco imediato, mas impactam diretamente a qualidad
 
 Estes itens não são urgentes, mas representam o maior potencial de diferenciação do NGB AutoRoad em relação a todos os concorrentes.
 
-### O1. AppFunctions — Controle por Voz via Gemini
+### O1. Redesign Completo — Nova Interface e Arquitetura de Menus
+**Janela:** Outubro–Dezembro de 2026 — v7.0.0
+**Versão alvo:** v7.0.0
+**Contexto:** A v7.0.0 marca a maior evolução do app desde o lançamento, com integração ao Gemini e recursos do Android 17. Uma interface redesenhada é essencial para que o motorista entenda e aproveite os novos recursos sem atrito. O redesign acontece em paralelo com a implementação técnica do Android 17, garantindo que a nova UI e os novos recursos sejam lançados juntos como uma experiência coesa.
+
+**Escopo do redesign:**
+
+| Área | Situação Atual | Após Redesign |
+|---|---|---|
+| Navegação principal | 5 abas na barra inferior | Reorganização por contexto de uso (Dirigindo / Financeiro / Configurações) |
+| Dashboard | Cards empilhados verticalmente | Layout modular com blocos priorizados pelo motorista |
+| Critérios | Lista longa com perfis no topo | Fluxo guiado com visualização do score em tempo real |
+| AutoPilot | Seção dentro de Critérios | Acesso rápido dedicado — é o recurso mais usado |
+| Menus de Configurações | Lista plana de cards | Agrupamento por categoria com ícones e descrições |
+| Card de corrida (overlay) | Design atual | Redesenhado para exibir score visual (gauge/barra) e ação do Gemini |
+| Identidade visual | Tema atual | Novo sistema de cores, tipografia e espaçamento consistente |
+| Acessibilidade | Básica | Suporte completo a tamanhos de fonte do sistema e alto contraste |
+
+**Princípios do redesign:**
+O motorista usa o app enquanto dirige, muitas vezes com uma mão. Cada tela deve ser operável com um único toque, sem rolagem excessiva. Os recursos mais usados (AutoPilot, Turno, Perfis) devem estar a no máximo 1 toque de distância. O design deve comunicar confiança e profissionalismo — reforçando o posicionamento premium do plano vitalício de R$ 249,90.
+
+**Integração com Android 17:**
+O redesign incorpora nativamente os novos padrões visuais do Android 17 (Material You dinâmico, App Bubbles, notificações interativas do Gemini) para que o app pareça parte do sistema operacional, não um app de terceiro.
+
+---
+
+### O2. AppFunctions — Controle por Voz via Gemini
 **Janela:** Outubro–Dezembro de 2026 — v7.0.0
 **Versão alvo:** v7.0.0
 **Contexto:** O Android 17 introduziu o AppFunctions, que permite que apps exponham funcionalidades como "tools" para agentes de IA como o Gemini. A integração com o Gemini está em private preview (junho 2026) e deve abrir para todos os desenvolvedores no segundo semestre de 2026. **Nenhum concorrente de app para motoristas implementou isso ainda.**
@@ -140,7 +166,7 @@ Estes itens não são urgentes, mas representam o maior potencial de diferencia�
 
 ---
 
-### O2. NPU On-Device — Inteligência Local Real
+### O3. NPU On-Device — Inteligência Local Real
 **Janela:** Janeiro–Março de 2027 — v7.1.0
 **Versão alvo:** v7.1.0
 **Contexto:** O Android 17 exige declaração de `android.hardware.npu` para apps que usam a Neural Processing Unit. Com o LiteRT (antigo TensorFlow Lite) e aceleração NPU, é possível rodar modelos de machine learning diretamente no celular, sem enviar dados para nuvem — alinhado com a filosofia "Privacy First" do app.
@@ -152,7 +178,7 @@ Estes itens não são urgentes, mas representam o maior potencial de diferencia�
 
 ---
 
-### O3. App Bubbles — Card Flutuante Nativo do Sistema
+### O4. App Bubbles — Card Flutuante Nativo do Sistema
 **Janela:** Março de 2027 — v7.2.0
 **Versão alvo:** v7.2.0
 **Contexto:** O Android 17 permite que qualquer app seja transformado em uma "bolha flutuante" nativa, sem necessidade da permissão `SYSTEM_ALERT_WINDOW`. Isso é exatamente o que o NGB AutoRoad já faz com o `OverlayService`, mas com uma solução customizada que depende de permissão especial.
@@ -161,7 +187,7 @@ Estes itens não são urgentes, mas representam o maior potencial de diferencia�
 
 ---
 
-### O4. Handoff Multi-Device
+### O5. Handoff Multi-Device
 **Janela:** Segundo semestre de 2027 — v8.0.0
 **Versão alvo:** v8.0.0
 **Contexto:** O Android 17 introduz o recurso "Continue On" que permite continuar uma tarefa em outro dispositivo. Para o motorista, isso significa verificar o Dashboard no tablet com tela maior enquanto o celular está no suporte do carro, ou configurar perfis e critérios no computador.
@@ -169,7 +195,7 @@ Estes itens não são urgentes, mas representam o maior potencial de diferencia�
 
 ---
 
-### O5. Complicação de Relógio (Wear OS)
+### O6. Complicação de Relógio (Wear OS)
 **Janela:** Segundo semestre de 2027 — v8.0.0
 **Versão alvo:** v8.0.0
 **Contexto:** O Android 17 introduz o `MetricStyle` template para Wear OS, suportando métricas de viagens e timers.
@@ -201,7 +227,7 @@ Estes itens não são urgentes, mas representam o maior potencial de diferencia�
 | **Julho 2026** | v6.2.0 | Tutorial, Central de Ajuda, Otimização de Memória |
 | **Agosto 2026** | v6.3.0 | Mapa de Zonas funcional, Ranking real, Rota alternativa AccessibilityService |
 | **Setembro 2026** | v6.3.0 | Learning Engine real, ProjectionEngine, Limpeza de código |
-| **Outubro–Dezembro 2026** | v7.0.0 | AppFunctions + Integração Gemini (controle por voz) |
+| **Outubro–Dezembro 2026** | v7.0.0 | **Redesign completo** + AppFunctions + Integração Gemini (controle por voz) |
 | **Janeiro–Março 2027** | v7.1.0 | NPU On-Device, Score adaptativo com ML local |
 | **Março 2027** | v7.2.0 | App Bubbles nativo (opcional) |
 | **Primeiro semestre 2027** | v8.0.0 | Handoff multi-device, Wear OS |
