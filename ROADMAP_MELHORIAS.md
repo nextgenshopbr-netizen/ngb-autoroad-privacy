@@ -47,33 +47,44 @@ Estes itens representam **riscos ativos** que afetam usuários hoje ou afetarão
 
 ---
 
-## Categoria 2 — Importantes: Próximas Versões (Julho–Setembro 2026)
+## Categoria 2 — Importantes: Próximas Versões (Julho 2026–Março 2027)
 
-Estes itens não representam risco imediato, mas impactam diretamente a qualidade e a confiança do motorista no app.
+Estes itens não representam risco imediato, mas impactam diretamente a qualidade e a confiança do motorista no app. O Redesign é o primeiro item desta categoria pois define a interface final — o Tutorial e a Central de Ajuda só fazem sentido após a nova UI estar pronta.
 
-### I1. Tutorial Guiado Interativo (Onboarding)
-**Janela:** Julho de 2026 — v6.3.0
+### I1. Redesign Completo — Nova Interface e Arquitetura de Menus
+**Janela:** Julho–Setembro de 2026 — v6.3.0
 **Versão alvo:** v6.3.0
+**Motivação:** O Redesign precisa vir primeiro. Criar o tutorial guiado sobre uma interface que ainda vai mudar seria retrabalho — o motorista aprenderia posições e ícones que serão alterados. A nova UI define o ponto de partida correto para o onboarding.
+
+> O conteúdo completo do Redesign está detalhado na seção O1 da Categoria 3 (mantida como referência de especificação). Esta entrada na Categoria 2 indica que a **implementação** foi antecipada para a v6.3.0.
+
+---
+
+### I2. Tutorial Guiado Interativo (Onboarding)
+**Janela:** Outubro de 2026 — v7.0.0
+**Versão alvo:** v7.0.0
+**Dependência:** Requer I1 (Redesign) concluído — o tutorial guia o motorista na interface final.
 **Motivação:** Novos motoristas ficam perdidos sem entender como distribuir os 100 pontos de critério, o que é a Zona Neutra do AutoPilot ou como o Ghost Mode funciona. Um tutorial interativo no primeiro acesso reduz o churn e aumenta a conversão para o plano pago.
 **Escopo:**
 - Tela de boas-vindas com os 3 pilares (Privacidade, AutoPilot, Controle Financeiro).
-- Tour interativo por cada aba com tooltips destacando os elementos principais.
+- Tour interativo por cada aba com tooltips destacando os elementos e posições da nova interface.
 - Flag `hasCompletedTutorial` no `PrefsManager` para exibir apenas uma vez.
 - Botão "Reprisar Tutorial" nas Configurações.
 
-### I2. Central de Ajuda Integrada
-**Janela:** Julho de 2026 — v6.3.0
-**Versão alvo:** v6.3.0
+### I3. Central de Ajuda Integrada
+**Janela:** Outubro de 2026 — v7.0.0
+**Versão alvo:** v7.0.0
+**Dependência:** Requer I1 (Redesign) concluído — os ícones `?` precisam estar nas posições corretas da nova UI.
 **Motivação:** Reduzir dúvidas recorrentes sem depender de suporte externo.
 **Escopo:** Ícone `?` no topo de cada aba que abre um bottom sheet explicativo. Seção de FAQ dinâmico nas Configurações.
 
-### I3. Mapa de Zonas Funcional
+### I4. Mapa de Zonas Funcional
 **Janela:** Agosto de 2026 — v6.3.0
 **Versão alvo:** v6.3.0
 **Motivação:** O motorista desenha áreas de risco no mapa, mas o app não usa esses desenhos no cálculo do score.
 **Ação:** Implementar algoritmo Point-in-Polygon (Ray-casting). Aplicar penalidade de -50 pontos no score para corridas com destino em zona de risco.
 
-### I4. Ranking e Relatórios Reais
+### I5. Ranking e Relatórios Reais
 **Janela:** Agosto de 2026 — v6.3.0
 **Versão alvo:** v6.3.0
 **Motivação:** A aba de Recursos Avançados exibe dados completamente fictícios (bairros inventados, valores falsos).
@@ -82,20 +93,20 @@ Estes itens não representam risco imediato, mas impactam diretamente a qualidad
 - `ExportTab`: Gerar CSV real a partir do `AppDatabase`.
 - `ReportTab`: Conectar gerador de PDF ao `FinanceDatabase`.
 
-### I5. Local Learning Engine com Dados Reais
+### I6. Local Learning Engine com Dados Reais
 **Janela:** Setembro de 2026 — v6.3.0
 **Versão alvo:** v6.3.0
 **Motivação:** O `LocalLearningEngine` injeta 50 corridas fictícias para treinar o modelo.
 **Ação:** Treinar o engine com dados do `RideHistoryDao`. Adicionar sugestão automática de bloqueio de bairros onde o motorista recusa corridas consistentemente.
 
-### I6. Refatoração da ProjectionEngine
+### I7. Refatoração da ProjectionEngine
 **Janela:** Setembro de 2026 — v6.3.0
 **Versão alvo:** v6.3.0
 **Ações:**
 - Filtrar `simulateWhatIf()` estritamente por `status == "COMPLETED"`.
 - Remover `coerceAtLeast(1)` que gera projeções infladas.
 
-### I7. Limpeza de Código Morto e Unificação de Deduplicação
+### I8. Limpeza de Código Morto e Unificação de Deduplicação
 **Janela:** Setembro de 2026 — v6.3.0
 **Versão alvo:** v6.3.0
 **Ações:**
@@ -106,11 +117,11 @@ Estes itens não representam risco imediato, mas impactam diretamente a qualidad
 
 ## Categoria 3 — Oportunidades: Diferencial Competitivo (Outubro 2026–Março 2027)
 
-Estes itens não são urgentes, mas representam o maior potencial de diferenciação do NGB AutoRoad em relação a todos os concorrentes.
+Estes itens representam o maior potencial de diferenciação do NGB AutoRoad em relação a todos os concorrentes.
 
-### O1. Redesign Completo — Nova Interface e Arquitetura de Menus
-**Janela:** Outubro–Dezembro de 2026 — v7.0.0
-**Versão alvo:** v7.0.0
+### O1. Especificação do Redesign — Referência Técnica
+**Implementação:** Antecipada para v6.3.0 (ver I1 na Categoria 2)
+**Esta seção serve como documento de especificação detalhada** para o time de desenvolvimento durante a implementação do redesign.
 **Contexto:** A v7.0.0 marca a maior evolução do app desde o lançamento, com integração ao Gemini e recursos do Android 17. O redesign acontece em paralelo com a implementação técnica do Android 17, garantindo que a nova UI e os novos recursos sejam lançados juntos como uma experiência coesa.
 
 ---
@@ -399,10 +410,10 @@ Recursos de suporte e extensão do app.
 | Período | Versão | Foco Principal |
 |---|---|---|
 | **Imediatamente (Jun 2026)** | v6.2.0 ✅ | Flag AAPM, MemoryMonitor, Canal Primário NotificationListener |
-| **Julho 2026** | v6.3.0 | Tutorial guiado, Central de Ajuda |
+| **Julho–Setembro 2026** | v6.3.0 | **Redesign completo** (nova UI, ícones, navegação, Critérios em abas) |
 | **Agosto 2026** | v6.3.0 | Mapa de Zonas funcional, Ranking real |
 | **Setembro 2026** | v6.3.0 | Learning Engine real, ProjectionEngine, Limpeza de código |
-| **Outubro–Dezembro 2026** | v7.0.0 | **Redesign completo** + AppFunctions + Integração Gemini |
+| **Outubro–Dezembro 2026** | v7.0.0 | Tutorial guiado + Central de Ajuda + AppFunctions + Gemini |
 | **Janeiro–Março 2027** | v7.1.0 | NPU On-Device, Score adaptativo com ML local |
 | **Março 2027** | v7.2.0 | App Bubbles nativo (opcional) |
 | **Primeiro semestre 2027** | v8.0.0 | Handoff multi-device, Wear OS |
