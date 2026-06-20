@@ -42,6 +42,7 @@ import com.ngbautoroad.ui.dashboard.DashboardTab
 import com.ngbautoroad.ui.finance.FinanceTab
 import com.ngbautoroad.ui.settings.SettingsTab
 import com.ngbautoroad.ui.features.FeaturesActivity
+import com.ngbautoroad.ui.ai.AiTab
 import androidx.compose.foundation.isSystemInDarkTheme
 import com.ngbautoroad.ui.theme.NGBAutoRoadTheme
 import androidx.compose.ui.platform.LocalContext
@@ -130,13 +131,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// v6.3.2: Nova ordem de abas — CRITÉRIOS | IA | INICIO | FINANCEIRO | CONFIG
-// Cards foi movido para Config > Cards
+// v6.3.3: Nova ordem de abas — CRITÉRIOS | IA | INICIO | FINANÇAS | CONFIG
+// Cards em Config > Cards | Projeção e Histórico em IA
 enum class TabItem(val title: String, val icon: ImageVector) {
     CRITERIA("Critérios", Icons.Default.Tune),
-    AI("IA", Icons.Default.SmartToy),
+    AI("IA", Icons.Default.AutoAwesome),
     HOME("Início", Icons.Default.Home),
-    FINANCE("Financeiro", Icons.Default.AccountBalanceWallet),
+    FINANCE("Finanças", Icons.Default.AccountBalanceWallet),
     SETTINGS("Config", Icons.Default.Settings)
 }
 
@@ -190,38 +191,7 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
             val ctx = LocalContext.current
             when (selectedTab) {
                 0 -> CriteriaTab(prefsManager = prefsManager)
-                1 -> {
-                    // v6.3.2: Aba IA abre FeaturesActivity diretamente
-                    LaunchedEffect(Unit) {
-                        ctx.startActivity(Intent(ctx, FeaturesActivity::class.java))
-                    }
-                    // Fallback visual enquanto a Activity abre
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = androidx.compose.ui.Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.SmartToy,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                "Recursos Avançados",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            OutlinedButton(onClick = {
-                                ctx.startActivity(Intent(ctx, FeaturesActivity::class.java))
-                            }) {
-                                Text("Abrir")
-                            }
-                        }
-                    }
-                }
+                1 -> AiTab(prefsManager = prefsManager, database = database)
                 2 -> DashboardTab(prefsManager = prefsManager, database = database)
                 3 -> FinanceTab(prefsManager = prefsManager, database = database)
                 4 -> SettingsTab(prefsManager = prefsManager, database = database)

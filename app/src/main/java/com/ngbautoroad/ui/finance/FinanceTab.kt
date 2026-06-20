@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.FinanceDatabase
 import com.ngbautoroad.data.prefs.PrefsManager
-import com.ngbautoroad.ui.finance.ProjectionTab
+import com.ngbautoroad.ui.finance.VehicleProfilesTab
 import kotlinx.coroutines.flow.map
 import java.text.NumberFormat
 import java.util.*
@@ -43,9 +43,9 @@ fun FinanceTab(prefsManager: PrefsManager, database: AppDatabase) {
     val totalExpenses = remember(allExpenses) { allExpenses.sumOf { it.amount } }
     val netProfit = totalEarnings - totalExpenses
 
-    // Abas internas: Resumo | Ganhos | Despesas | Veículo | Projeção
+    // Abas internas: Resumo | Ganhos | Despesas | Veículos
     var selectedInternalTab by remember { mutableIntStateOf(0) }
-    val internalTabs = listOf("Resumo", "Ganhos", "Despesas", "Veículo", "Projeção")
+    val internalTabs = listOf("Resumo", "Ganhos", "Despesas", "Veículos")
 
     Column(
         modifier = Modifier
@@ -97,16 +97,19 @@ fun FinanceTab(prefsManager: PrefsManager, database: AppDatabase) {
                 currencyFormat = currencyFormat,
                 financeDb = financeDb
             )
-            3 -> FinanceVeiculoContent(prefsManager = prefsManager)
-            4 -> {
-                // v6.3.2: Aba Projeção restaurada de FinanceExtTabs.kt
-                val rideHistoryDao = remember { database.rideHistoryDao() }
-                ProjectionTab(
-                    earningDao = financeDb.earningDao(),
-                    vehicleProfileDao = financeDb.vehicleProfileDao(),
-                    individualExpenseDao = financeDb.individualExpenseDao(),
-                    rideHistoryDao = rideHistoryDao
-                )
+            3 -> {
+                // v6.3.3: Aba Veículos com cadastro completo (VehicleProfilesTab)
+                val snackbarHostState = remember { SnackbarHostState() }
+                Box(modifier = Modifier.fillMaxSize()) {
+                    VehicleProfilesTab(
+                        vehicleProfileDao = financeDb.vehicleProfileDao(),
+                        snackbarHostState = snackbarHostState
+                    )
+                    SnackbarHost(
+                        hostState = snackbarHostState,
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
+                }
             }
         }
     }

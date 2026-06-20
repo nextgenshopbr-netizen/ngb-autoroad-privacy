@@ -492,3 +492,29 @@
 - versionCode: 15 | versionName: 6.3.2
 - Build: compilou com sucesso (R8 minificado, 41MB)
 - APK: ngb-autoroad-privacy-v6.3.2.apk
+
+---
+## v6.3.3 — Reestruturação da Aba IA + Correções de Layout (20/06/2026)
+
+### Arquivos criados:
+- `ui/ai/AiTab.kt` — Nova aba IA inline com dashboard de cards + sub-abas (Resumo|Projeção|Histórico|Relatório|Exportar)
+
+### Arquivos modificados:
+- `ui/MainActivity.kt` — Ícone IA trocado de SmartToy para AutoAwesome; "Financeiro" renomeado para "Finanças"; aba IA agora usa AiTab inline (não mais FeaturesActivity)
+- `ui/finance/FinanceTab.kt` — Removida aba "Projeção" (movida para IA); aba "Veículo" substituída por "Veículos" usando VehicleProfilesTab (cadastro completo)
+- `ui/finance/FinanceExtTabs.kt` — Filtro de período: adicionado maxLines=1 nos FilterChips (corrige texto "Anual" quebrado verticalmente)
+- `ui/settings/SettingsTab.kt` — Removido Histórico de Corridas da aba "Adicionais" (movido para IA); aba renomeada de "Adicionais" para "Mais"
+
+### Funcionalidades:
+1. **Ícone IA**: AutoAwesome (estrelas) em vez de SmartToy (robô)
+2. **Aba IA inline**: Dashboard com cards de resumo (corridas, aceitas/recusadas, sugestões IA) + abas Projeção, Histórico, Relatório, Exportar
+3. **Menu inferior**: "Finanças" em vez de "Financeiro" (texto mais curto, não corta)
+4. **Veículos**: Restaurado cadastro completo de veículos (VehicleProfilesTab) no Financeiro
+5. **Filtro Anual**: maxLines=1 nos FilterChips da Projeção (não quebra mais em várias linhas)
+6. **Histórico**: Movido de Config/Adicionais para IA > Histórico
+7. **Config sub-aba**: "Adicionais" renomeado para "Mais"
+
+### Técnico:
+- versionCode: 16 | versionName: 6.3.3
+- Build: compilou com sucesso (R8 minificado, 41MB)
+- APK: ngb-autoroad-privacy-v6.3.3.apk

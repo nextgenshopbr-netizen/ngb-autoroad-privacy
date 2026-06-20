@@ -46,7 +46,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.ngbautoroad.ui.theme.*
 import com.ngbautoroad.data.backup.BackupManager
-import com.ngbautoroad.ui.history.HistoryTab
 import com.ngbautoroad.ui.card.CardTab
 import kotlinx.coroutines.launch
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -60,9 +59,9 @@ import androidx.lifecycle.LifecycleEventObserver
 fun SettingsTab(prefsManager: PrefsManager, database: AppDatabase) {
     val context = LocalContext.current
 
-    // Sub-abas: APP | SISTEMA | CARDS | ADICIONAIS
+    // Sub-abas: APP | SISTEMA | CARDS | MAIS
     var selectedSubTab by remember { mutableIntStateOf(0) }
-    val subTabs = listOf("App", "Sistema", "Cards", "Adicionais")
+    val subTabs = listOf("App", "Sistema", "Cards", "Mais")
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -699,22 +698,6 @@ private fun SettingsAdicionaisContent(prefsManager: PrefsManager, database: AppD
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // === HISTORICO DE CORRIDAS (movido da barra de navegacao) ===
-        Text(
-            text = "Historico de Corridas",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-
-        // Reutilizar o HistoryTab existente inline
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-            HistoryTab(prefsManager = prefsManager, database = database)
-        }
-
         // === TUTORIAL ===
         OutlinedButton(
             onClick = { scope.launch { prefsManager.resetTutorial() } },
