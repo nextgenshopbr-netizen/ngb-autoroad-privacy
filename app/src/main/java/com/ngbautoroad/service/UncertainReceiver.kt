@@ -45,9 +45,9 @@ class UncertainReceiver : BroadcastReceiver() {
 
         Log.i(TAG, "├─ UncertainReceiver: action=$action, rideId=$rideId")
 
-        // Cancelar notificação
+        // v6.3.5: Cancelar notificação com ID correto (9001 = NOTIFICATION_ID_UNCERTAIN)
         val notifManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
-        notifManager?.cancel(9999) // ID da notificação UNCERTAIN
+        notifManager?.cancel(9001) // ID unificado com RideLifecycleManager
 
         // Obter instância do LifecycleManager via RideAccessibilityService
         val service = RideAccessibilityService.instance
@@ -71,24 +71,20 @@ class UncertainReceiver : BroadcastReceiver() {
         } else {
             // v6.1.1: Fallback — atualizar banco diretamente
             Log.w(TAG, "│  ⚠ LifecycleManager não disponível — usando fallback direto ao banco")
+            // v6.3.5: Fallback com query direta (sem getAll())
             if (rideId > 0L) {
                 val scope = CoroutineScope(Dispatchers.IO)
                 scope.launch {
                     try {
                         val db = AppDatabase.getInstance(context)
                         val dao = db.rideHistoryDao()
-                        val entity = dao.getAll().firstOrNull { it.id == rideId }
-                        if (entity != null) {
-                            val newStatus = when (action) {
-                                "ACTION_UNCERTAIN_YES" -> "COMPLETED"
-                                "ACTION_UNCERTAIN_NO" -> "CANCELLED"
-                                else -> return@launch
-                            }
-                            dao.update(entity.copy(status = newStatus))
-                            Log.i(TAG, "│  DB Fallback: rideId=$rideId → status=$newStatus")
-                        } else {
-                            Log.w(TAG, "│  ⚠ Ride não encontrada no banco: id=$rideId")
+                        val newStatus = when (action) {
+                            "ACTION_UNCERTAIN_YES" -> "COMPLETED"
+                            "ACTION_UNCERTAIN_NO" -> "CANCELLED"
+                            else -> return@launch
                         }
+                        dao.updateStatusById(rideId, newStatus)
+                        Log.i(TAG, "│  DB Fallback: rideId=$rideId → status=$newStatus")
                     } catch (e: Exception) {
                         Log.e(TAG, "│  ✖ Erro no fallback: ${e.message}")
                     }

@@ -527,3 +527,29 @@
 - versionCode: 19 | versionName: 6.3.4
 - Build: compilou com sucesso (R8 minificado, ~43MB)
 - APK: ngb-autoroad-privacy-v6.3.4.apk
+
+---
+
+## v6.3.5 — Auditoria de Lógica: Correções de Performance, Concorrência e Precisão (20/06/2026)
+
+### Arquivos modificados:
+- `data/db/RideHistoryEntity.kt` — Novas queries: getById, updateStatusById, updateStatusAndValueById; filtro de status em averageScoreSince, countSinceFlow, topPlatformSince
+- `service/RideLifecycleManager.kt` — Todos os 7 pontos de getAll().firstOrNull substituídos por updateStatusById (query direta)
+- `service/UncertainReceiver.kt` — ID de notificação corrigido (9999→9001); fallback usa updateStatusById
+- `service/OverlayService.kt` — Hash de deduplicação melhorado (inclui pickupDistance + pickupNeighborhood)
+- `domain/ShiftManager.kt` — Reescrito com synchronized(lock) em todas as operações; addRide faz load+save atômico; commit() síncrono
+- `ui/dashboard/DashboardTab.kt` — Médias de score, bestRide e averageValuePerKm filtram apenas COMPLETED/ACCEPTED
+
+### Correções aplicadas:
+1. **Performance crítica (RideLifecycleManager)**: Eliminado getAll() que carregava tabela inteira a cada transição de fase → substituído por queries SQL diretas por ID
+2. **Bug de notificação (UncertainReceiver)**: Notificação UNCERTAIN ficava presa na tela porque cancelava ID 9999 em vez de 9001
+3. **Precisão de métricas (Dashboard + DAO)**: Médias de score e contagens não incluem mais corridas REFUSED/EXPIRED/CANCELLED
+4. **Concorrência (ShiftManager)**: Lock sincronizado previne sobrescrita de totalEarned em corridas simultâneas
+5. **Falsos positivos (OverlayService)**: Hash de deduplicação agora diferencia corridas curtas com mesmo valor mas embarques diferentes
+6. **Integridade de dados (DAO)**: topPlatformSince filtra apenas corridas relevantes
+
+### Técnico:
+- versionCode: 20 | versionName: 6.3.5
+- Build: compilou com sucesso (R8 minificado, ~56MB debug)
+- APK: ngb-autoroad-privacy-v6.3.5.apk
+- 6 arquivos alterados, auditoria completa documentada em AUDITORIA_V6.3.4.md

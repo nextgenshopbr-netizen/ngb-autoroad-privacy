@@ -112,14 +112,27 @@ interface RideHistoryDao {
     @Query("SELECT COUNT(*) FROM ride_history WHERE timestamp >= :since")
     suspend fun countSince(since: Long): Int
 
-    // Flow reativo para dashboard (item 5.1)
-    @Query("SELECT COUNT(*) FROM ride_history WHERE timestamp >= :since")
+    // Flow reativo para dashboard (item 5.1) — v6.3.5: filtra status relevante
+    @Query("SELECT COUNT(*) FROM ride_history WHERE timestamp >= :since AND (status = 'COMPLETED' OR status = 'ACCEPTED' OR status = 'PENDING')")
     fun countSinceFlow(since: Long): Flow<Int>
 
     @Query("SELECT COUNT(*) FROM ride_history WHERE timestamp >= :since AND status = :status")
     suspend fun countSinceWithStatus(since: Long, status: String): Int
 
-    @Query("SELECT AVG(score) FROM ride_history WHERE timestamp >= :since")
+    // v6.3.5: Query direta por ID (evita getAll() no lifecycle)
+    @Query("SELECT * FROM ride_history WHERE id = :id")
+    suspend fun getById(id: Long): RideHistoryEntity?
+
+    // v6.3.5: Atualização direta de status por ID (performance)
+    @Query("UPDATE ride_history SET status = :status WHERE id = :id")
+    suspend fun updateStatusById(id: Long, status: String)
+
+    // v6.3.5: Atualização de status + valor por ID (para COMPLETED com valor real)
+    @Query("UPDATE ride_history SET status = :status, rideValue = :rideValue WHERE id = :id")
+    suspend fun updateStatusAndValueById(id: Long, status: String, rideValue: Double)
+
+    // v6.3.5: Filtro de status nas médias de score
+    @Query("SELECT AVG(score) FROM ride_history WHERE timestamp >= :since AND (status = 'COMPLETED' OR status = 'ACCEPTED')")
     suspend fun averageScoreSince(since: Long): Double?
 
     @Query("SELECT SUM(rideValue) FROM ride_history WHERE timestamp >= :since AND (status = 'COMPLETED' OR status = 'ACCEPTED')")
@@ -131,7 +144,8 @@ interface RideHistoryDao {
     @Query("SELECT AVG(rideValue / CASE WHEN dropoffDistance > 0 THEN dropoffDistance ELSE 1 END) FROM ride_history WHERE timestamp >= :since AND (status = 'COMPLETED' OR status = 'ACCEPTED')")
     suspend fun averageValuePerKmSince(since: Long): Double?
 
-    @Query("SELECT platform FROM ride_history WHERE timestamp >= :since GROUP BY platform ORDER BY COUNT(*) DESC LIMIT 1")
+    // v6.3.5: Filtrar apenas corridas relevantes
+    @Query("SELECT platform FROM ride_history WHERE timestamp >= :since AND (status = 'COMPLETED' OR status = 'ACCEPTED') GROUP BY platform ORDER BY COUNT(*) DESC LIMIT 1")
     suspend fun topPlatformSince(since: Long): String?
 
     @Query("SELECT COUNT(*) FROM ride_history")

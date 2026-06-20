@@ -234,15 +234,12 @@ class RideLifecycleManager(private val context: Context) {
 
         transitionTo(RidePhase.ACCEPTED)
 
-        // Atualizar status no banco
+        // v6.3.5: Atualizar status via query direta (sem carregar tabela inteira)
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
-                val entity = db.rideHistoryDao().getAll().firstOrNull { it.id == currentRideDbId }
-                if (entity != null) {
-                    db.rideHistoryDao().update(entity.copy(status = "ACCEPTED"))
-                    Log.d(TAG, "│  DB: Status atualizado para ACCEPTED (id=$currentRideDbId)")
-                }
+                db.rideHistoryDao().updateStatusById(currentRideDbId, "ACCEPTED")
+                Log.d(TAG, "│  DB: Status atualizado para ACCEPTED (id=$currentRideDbId)")
             } catch (e: Exception) {
                 Log.e(TAG, "│  ✖ Erro ao atualizar status ACCEPTED: ${e.message}")
             }
@@ -270,15 +267,12 @@ class RideLifecycleManager(private val context: Context) {
 
         transitionTo(RidePhase.REFUSED)
 
-        // Atualizar status no banco
+        // v6.3.5: Atualizar status via query direta (sem carregar tabela inteira)
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
-                val entity = db.rideHistoryDao().getAll().firstOrNull { it.id == currentRideDbId }
-                if (entity != null) {
-                    db.rideHistoryDao().update(entity.copy(status = "REFUSED"))
-                    Log.d(TAG, "│  DB: Status atualizado para REFUSED (id=$currentRideDbId)")
-                }
+                db.rideHistoryDao().updateStatusById(currentRideDbId, "REFUSED")
+                Log.d(TAG, "│  DB: Status atualizado para REFUSED (id=$currentRideDbId)")
             } catch (e: Exception) {
                 Log.e(TAG, "│  ✖ Erro ao atualizar status REFUSED: ${e.message}")
             }
@@ -302,18 +296,12 @@ class RideLifecycleManager(private val context: Context) {
         val ride = currentRide ?: return
         val actualValue = finalValue ?: ride.rideValue
 
-        // Atualizar status no banco E registrar ganho
+        // v6.3.5: Atualizar status + valor via query direta (sem carregar tabela inteira)
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
-                val entity = db.rideHistoryDao().getAll().firstOrNull { it.id == currentRideDbId }
-                if (entity != null) {
-                    db.rideHistoryDao().update(entity.copy(
-                        status = "COMPLETED",
-                        rideValue = actualValue // Atualizar com valor real se disponível
-                    ))
-                    Log.d(TAG, "│  DB: Status atualizado para COMPLETED (id=$currentRideDbId, valor=R$$actualValue)")
-                }
+                db.rideHistoryDao().updateStatusAndValueById(currentRideDbId, "COMPLETED", actualValue)
+                Log.d(TAG, "│  DB: Status atualizado para COMPLETED (id=$currentRideDbId, valor=R$$actualValue)")
 
                 // ═══ REGISTRAR GANHO — SÓ AQUI! ═══
                 // v6.1.1: Respeitar toggle de auto-import
@@ -353,15 +341,12 @@ class RideLifecycleManager(private val context: Context) {
 
         transitionTo(RidePhase.CANCELLED)
 
-        // Atualizar status no banco
+        // v6.3.5: Atualizar status via query direta (sem carregar tabela inteira)
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
-                val entity = db.rideHistoryDao().getAll().firstOrNull { it.id == currentRideDbId }
-                if (entity != null) {
-                    db.rideHistoryDao().update(entity.copy(status = "CANCELLED"))
-                    Log.d(TAG, "│  DB: Status atualizado para CANCELLED (id=$currentRideDbId)")
-                }
+                db.rideHistoryDao().updateStatusById(currentRideDbId, "CANCELLED")
+                Log.d(TAG, "│  DB: Status atualizado para CANCELLED (id=$currentRideDbId)")
 
                 // Se já havia ganho registrado (caso raro), reverter
                 val financeDb = FinanceDatabase.getInstance(context)
@@ -392,10 +377,7 @@ class RideLifecycleManager(private val context: Context) {
             scope.launch {
                 try {
                     val db = AppDatabase.getInstance(context)
-                    val entity = db.rideHistoryDao().getAll().firstOrNull { it.id == currentRideDbId }
-                    if (entity != null) {
-                        db.rideHistoryDao().update(entity.copy(status = "CANCELLED"))
-                    }
+                    db.rideHistoryDao().updateStatusById(currentRideDbId, "CANCELLED")
                 } catch (e: Exception) {
                     Log.e(TAG, "│  ✖ Erro ao confirmar UNCERTAIN: ${e.message}")
                 }
@@ -416,13 +398,11 @@ class RideLifecycleManager(private val context: Context) {
             Log.d(TAG, "├─ Overlay fechado em PENDING — marcando como EXPIRED")
             transitionTo(RidePhase.EXPIRED)
 
+            // v6.3.5: Query direta
             scope.launch {
                 try {
                     val db = AppDatabase.getInstance(context)
-                    val entity = db.rideHistoryDao().getAll().firstOrNull { it.id == currentRideDbId }
-                    if (entity != null) {
-                        db.rideHistoryDao().update(entity.copy(status = "EXPIRED"))
-                    }
+                    db.rideHistoryDao().updateStatusById(currentRideDbId, "EXPIRED")
                 } catch (e: Exception) {
                     Log.e(TAG, "│  ✖ Erro ao marcar EXPIRED: ${e.message}")
                 }
@@ -576,15 +556,12 @@ class RideLifecycleManager(private val context: Context) {
         if (currentPhase != RidePhase.IDLE) {
             Log.w(TAG, "│  ⚠ Cancelando lifecycle anterior (fase: ${currentPhase.name})")
             cancelTimeout()
-            // Se estava PENDING, marcar como EXPIRED
+            // v6.3.5: Se estava PENDING, marcar como EXPIRED via query direta
             if (currentPhase == RidePhase.PENDING) {
                 scope.launch {
                     try {
                         val db = AppDatabase.getInstance(context)
-                        val entity = db.rideHistoryDao().getAll().firstOrNull { it.id == currentRideDbId }
-                        if (entity != null) {
-                            db.rideHistoryDao().update(entity.copy(status = "EXPIRED"))
-                        }
+                        db.rideHistoryDao().updateStatusById(currentRideDbId, "EXPIRED")
                     } catch (_: Exception) {}
                 }
             }

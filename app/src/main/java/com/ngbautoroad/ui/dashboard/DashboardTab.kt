@@ -91,13 +91,15 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
                 acceptedToday = todayRides.count { it.status == "ACCEPTED" || it.status == "COMPLETED" },
                 refusedToday = todayRides.count { it.status == "REFUSED" },
                 cancelledToday = todayRides.count { it.status == "CANCELLED" },
-                averageScoreToday = todayRides.map { it.score }.let { if (it.isEmpty()) 0.0 else it.average() },
-                averageScoreWeek = weekRides.map { it.score }.let { if (it.isEmpty()) 0.0 else it.average() },
+                // v6.3.5: Filtrar apenas COMPLETED/ACCEPTED para médias de score
+                averageScoreToday = todayRides.filter { it.status == "ACCEPTED" || it.status == "COMPLETED" }.map { it.score }.let { if (it.isEmpty()) 0.0 else it.average() },
+                averageScoreWeek = weekRides.filter { it.status == "ACCEPTED" || it.status == "COMPLETED" }.map { it.score }.let { if (it.isEmpty()) 0.0 else it.average() },
                 totalEarningsToday = todayRides.filter { it.status == "ACCEPTED" || it.status == "COMPLETED" }.sumOf { it.rideValue },
                 totalEarningsWeek = weekRides.filter { it.status == "ACCEPTED" || it.status == "COMPLETED" }.sumOf { it.rideValue },
                 totalEarningsMonth = monthRides.filter { it.status == "ACCEPTED" || it.status == "COMPLETED" }.sumOf { it.rideValue },
-                bestRideToday = todayRides.maxOfOrNull { it.rideValue } ?: 0.0,
-                averageValuePerKm = todayRides.filter { it.dropoffDistance > 0 }.map { it.valuePerKm }.let { if (it.isEmpty()) 0.0 else it.average() },
+                // v6.3.5: Filtrar apenas corridas relevantes para métricas financeiras
+                bestRideToday = todayRides.filter { it.status == "ACCEPTED" || it.status == "COMPLETED" }.maxOfOrNull { it.rideValue } ?: 0.0,
+                averageValuePerKm = todayRides.filter { it.dropoffDistance > 0 && (it.status == "ACCEPTED" || it.status == "COMPLETED") }.map { it.valuePerKm }.let { if (it.isEmpty()) 0.0 else it.average() },
                 topPlatform = todayRides.groupBy { it.platform }.maxByOrNull { it.value.size }?.key ?: "-",
                 serviceActive = false,
                 protectionActive = false
