@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.FinanceDatabase
 import com.ngbautoroad.data.prefs.PrefsManager
+import com.ngbautoroad.ui.finance.ProjectionTab
 import kotlinx.coroutines.flow.map
 import java.text.NumberFormat
 import java.util.*
@@ -42,9 +43,9 @@ fun FinanceTab(prefsManager: PrefsManager, database: AppDatabase) {
     val totalExpenses = remember(allExpenses) { allExpenses.sumOf { it.amount } }
     val netProfit = totalEarnings - totalExpenses
 
-    // Abas internas: Resumo | Ganhos | Despesas | Veículo
+    // Abas internas: Resumo | Ganhos | Despesas | Veículo | Projeção
     var selectedInternalTab by remember { mutableIntStateOf(0) }
-    val internalTabs = listOf("Resumo", "Ganhos", "Despesas", "Veículo")
+    val internalTabs = listOf("Resumo", "Ganhos", "Despesas", "Veículo", "Projeção")
 
     Column(
         modifier = Modifier
@@ -60,16 +61,17 @@ fun FinanceTab(prefsManager: PrefsManager, database: AppDatabase) {
         )
 
         // Abas internas
-        TabRow(
+        ScrollableTabRow(
             selectedTabIndex = selectedInternalTab,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary
+            contentColor = MaterialTheme.colorScheme.primary,
+            edgePadding = 0.dp
         ) {
             internalTabs.forEachIndexed { index, title ->
                 Tab(
                     selected = selectedInternalTab == index,
                     onClick = { selectedInternalTab = index },
-                    text = { Text(title, fontSize = 12.sp) }
+                    text = { Text(title, fontSize = 12.sp, maxLines = 1) }
                 )
             }
         }
@@ -96,6 +98,16 @@ fun FinanceTab(prefsManager: PrefsManager, database: AppDatabase) {
                 financeDb = financeDb
             )
             3 -> FinanceVeiculoContent(prefsManager = prefsManager)
+            4 -> {
+                // v6.3.2: Aba Projeção restaurada de FinanceExtTabs.kt
+                val rideHistoryDao = remember { database.rideHistoryDao() }
+                ProjectionTab(
+                    earningDao = financeDb.earningDao(),
+                    vehicleProfileDao = financeDb.vehicleProfileDao(),
+                    individualExpenseDao = financeDb.individualExpenseDao(),
+                    rideHistoryDao = rideHistoryDao
+                )
+            }
         }
     }
 }

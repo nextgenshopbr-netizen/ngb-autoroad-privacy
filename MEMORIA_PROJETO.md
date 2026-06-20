@@ -469,3 +469,26 @@
 - Categoria 1 (Críticos): ✅ 5/5 concluídos
 - Categoria 2 (Importantes): ✅ 8/8 concluídos
 - Próxima: Categoria 3 — AppFunctions + Gemini (v7.0.0, Out 2026)
+
+---
+## v6.3.2 — Correções de Layout e Restauração de Recursos (20/06/2026)
+
+### Arquivos modificados:
+- `ui/MainActivity.kt` — Aba "Cards" substituída por "IA" na barra de navegação inferior; aba IA abre FeaturesActivity via Intent
+- `ui/dashboard/DashboardTab.kt` — Restaurado card de acesso rápido "Recursos Avançados" (IA) com ícone SmartToy e seta
+- `ui/finance/FinanceTab.kt` — Adicionada aba "Projeção" (5ª aba) usando ProjectionTab de FinanceExtTabs.kt; TabRow → ScrollableTabRow com maxLines=1
+- `ui/criteria/CriteriaTab.kt` — Botão "Salvar Configuração Atual como Perfil" renomeado para "Novo Perfil"; adicionado botão "Salvar" para atualizar perfil ativo
+- `ui/settings/SettingsTab.kt` — Adicionada sub-aba "Cards" (3ª posição) com CardTab; abas agora são App|Sistema|Cards|Adicionais
+
+### Correções aplicadas:
+1. **Barra de navegação**: Critérios | IA | Início | Financeiro | Config (Cards movido para Config)
+2. **Botão IA na Home**: Card clicável com ícone SmartToy que abre FeaturesActivity
+3. **Aba Projeção no Financeiro**: Restaurada usando ProjectionTab existente em FinanceExtTabs.kt
+4. **Botões de perfil**: "Salvar" (atualiza perfil ativo) + "Novo Perfil" (cria novo) lado a lado
+5. **Textos quebrados**: maxLines=1 nas abas internas, ScrollableTabRow no Financeiro
+6. **Cards em Config**: CardTab disponível como sub-aba em Configurações > Cards
+
+### Técnico:
+- versionCode: 15 | versionName: 6.3.2
+- Build: compilou com sucesso (R8 minificado, 41MB)
+- APK: ngb-autoroad-privacy-v6.3.2.apk

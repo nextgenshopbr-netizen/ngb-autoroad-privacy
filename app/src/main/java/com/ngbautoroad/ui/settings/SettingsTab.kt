@@ -47,6 +47,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import com.ngbautoroad.ui.theme.*
 import com.ngbautoroad.data.backup.BackupManager
 import com.ngbautoroad.ui.history.HistoryTab
+import com.ngbautoroad.ui.card.CardTab
 import kotlinx.coroutines.launch
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -59,9 +60,9 @@ import androidx.lifecycle.LifecycleEventObserver
 fun SettingsTab(prefsManager: PrefsManager, database: AppDatabase) {
     val context = LocalContext.current
 
-    // Sub-abas: APP | SISTEMA | ADICIONAIS
+    // Sub-abas: APP | SISTEMA | CARDS | ADICIONAIS
     var selectedSubTab by remember { mutableIntStateOf(0) }
-    val subTabs = listOf("App", "Sistema", "Adicionais")
+    val subTabs = listOf("App", "Sistema", "Cards", "Adicionais")
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -89,7 +90,7 @@ fun SettingsTab(prefsManager: PrefsManager, database: AppDatabase) {
                 Tab(
                     selected = selectedSubTab == index,
                     onClick = { selectedSubTab = index },
-                    text = { Text(title, fontSize = 13.sp, fontWeight = FontWeight.Medium) }
+                    text = { Text(title, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1) }
                 )
             }
         }
@@ -98,7 +99,8 @@ fun SettingsTab(prefsManager: PrefsManager, database: AppDatabase) {
         when (selectedSubTab) {
             0 -> SettingsAppContent(prefsManager = prefsManager)
             1 -> SettingsSystemContent(prefsManager = prefsManager)
-            2 -> SettingsAdicionaisContent(prefsManager = prefsManager, database = database)
+            2 -> CardTab(prefsManager = prefsManager)
+            3 -> SettingsAdicionaisContent(prefsManager = prefsManager, database = database)
         }
     }
     // v6.3.0: Tutorial guiado no primeiro acesso

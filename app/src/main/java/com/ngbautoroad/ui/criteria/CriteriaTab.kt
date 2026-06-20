@@ -1042,6 +1042,10 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
     val activeProfileId by prefsManager.activeProfileIdFlow.collectAsState(initial = 0)
     val weights by prefsManager.criteriaWeightsFlow.collectAsState(initial = CriteriaWeights())
     val thresholds by prefsManager.driverThresholdsFlow.collectAsState(initial = DriverThresholds())
+    // v6.3.2: Flows para o botão Salvar perfil ativo
+    val currentAutoPilotForSave by prefsManager.autoPilotModeFlow.collectAsState(initial = "OFF")
+    val currentMinForSave by prefsManager.autoPilotMinScoreFlow.collectAsState(initial = 75)
+    val currentMaxForSave by prefsManager.autoPilotMaxRefuseScoreFlow.collectAsState(initial = 40)
 
     var showSaveDialog by remember { mutableStateOf(false) }
     var newProfileName by remember { mutableStateOf("") }
@@ -1140,15 +1144,54 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
 
     Spacer(modifier = Modifier.height(8.dp))
 
-    Button(
-        onClick = { showSaveDialog = true },
+    // v6.3.2: Botões de perfil — Salvar (perfil ativo) + Novo Perfil
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        enabled = profiles.size < 5,
-        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(Icons.Default.Add, contentDescription = null)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Salvar Configuração Atual como Perfil")
+        // Botão Salvar: atualiza o perfil atualmente selecionado
+        OutlinedButton(
+            onClick = {
+                if (activeProfileId > 0) {
+                    scope.launch {
+                        val updated = profiles.map { p ->
+                            if (p.id == activeProfileId) {
+                                p.copy(
+                                    weights = weights,
+                                    thresholds = thresholds,
+                                    autoPilotMode = currentAutoPilotForSave,
+                                    minAcceptScore = currentMinForSave,
+                                    maxRefuseScore = currentMaxForSave
+                                )
+                            } else p
+                        }
+                        val json = kotlinx.serialization.json.Json.encodeToString(
+                            kotlinx.serialization.builtins.ListSerializer(SavedProfile.serializer()),
+                            updated
+                        )
+                        prefsManager.saveProfilesJson(json)
+                    }
+                }
+            },
+            modifier = Modifier.weight(1f),
+            enabled = activeProfileId > 0
+        ) {
+            Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("Salvar", maxLines = 1)
+        }
+
+        // Botão Novo Perfil: cria um novo perfil
+        Button(
+            onClick = { showSaveDialog = true },
+            modifier = Modifier.weight(1f),
+            enabled = profiles.size < 5,
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("Novo Perfil", maxLines = 1)
+        }
     }
 
     if (profiles.size >= 5) {

@@ -37,13 +37,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.prefs.PrefsManager
-import com.ngbautoroad.ui.card.CardTab
 import com.ngbautoroad.ui.criteria.CriteriaTab
 import com.ngbautoroad.ui.dashboard.DashboardTab
 import com.ngbautoroad.ui.finance.FinanceTab
 import com.ngbautoroad.ui.settings.SettingsTab
+import com.ngbautoroad.ui.features.FeaturesActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import com.ngbautoroad.ui.theme.NGBAutoRoadTheme
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
 
@@ -128,11 +130,11 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// v6.3.0: Nova ordem de abas com ícones de mercado
-// CRITÉRIOS | CARDS | INICIO | FINANCEIRO | CONFIG
+// v6.3.2: Nova ordem de abas — CRITÉRIOS | IA | INICIO | FINANCEIRO | CONFIG
+// Cards foi movido para Config > Cards
 enum class TabItem(val title: String, val icon: ImageVector) {
     CRITERIA("Critérios", Icons.Default.Tune),
-    CARD("Cards", Icons.Default.Style),
+    AI("IA", Icons.Default.SmartToy),
     HOME("Início", Icons.Default.Home),
     FINANCE("Financeiro", Icons.Default.AccountBalanceWallet),
     SETTINGS("Config", Icons.Default.Settings)
@@ -185,9 +187,41 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            val ctx = LocalContext.current
             when (selectedTab) {
                 0 -> CriteriaTab(prefsManager = prefsManager)
-                1 -> CardTab(prefsManager = prefsManager)
+                1 -> {
+                    // v6.3.2: Aba IA abre FeaturesActivity diretamente
+                    LaunchedEffect(Unit) {
+                        ctx.startActivity(Intent(ctx, FeaturesActivity::class.java))
+                    }
+                    // Fallback visual enquanto a Activity abre
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.SmartToy,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                "Recursos Avançados",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            OutlinedButton(onClick = {
+                                ctx.startActivity(Intent(ctx, FeaturesActivity::class.java))
+                            }) {
+                                Text("Abrir")
+                            }
+                        }
+                    }
+                }
                 2 -> DashboardTab(prefsManager = prefsManager, database = database)
                 3 -> FinanceTab(prefsManager = prefsManager, database = database)
                 4 -> SettingsTab(prefsManager = prefsManager, database = database)
