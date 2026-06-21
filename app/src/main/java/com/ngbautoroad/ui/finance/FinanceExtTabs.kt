@@ -480,6 +480,7 @@ fun AddIndividualExpenseDialog(
     var totalAmount by rememberSaveable { mutableStateOf("") }
     var installments by rememberSaveable { mutableStateOf("12") }
     var frequency by rememberSaveable { mutableStateOf("MENSAL") }
+    var dueDay by rememberSaveable { mutableStateOf("10") }  // Dia do mês para vencimento
     var includeInCalc by rememberSaveable { mutableStateOf(true) }
     var expanded by remember { mutableStateOf(false) }
     var selectedVehicleId by rememberSaveable { mutableStateOf(0L) }
@@ -537,7 +538,7 @@ fun AddIndividualExpenseDialog(
                 }
 
                 // Frequência/Recorrência
-                Text("Frequência:", fontSize = 12.sp, color = Color.Gray)
+                Text("Frequência / Recorrência:", fontSize = 12.sp, color = Color.Gray)
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     listOf("UNICA" to "Única", "MENSAL" to "Mensal", "ANUAL" to "Anual").forEach { (key, label) ->
                         FilterChip(
@@ -546,6 +547,19 @@ fun AddIndividualExpenseDialog(
                             label = { Text(label, fontSize = 10.sp) }
                         )
                     }
+                }
+                // Dia de vencimento para despesas mensais/anuais (ex: seguro vence dia 10)
+                if (frequency == "MENSAL" || frequency == "ANUAL") {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedTextField(
+                        value = dueDay,
+                        onValueChange = { v -> if (v.length <= 2) dueDay = v.filter { it.isDigit() } },
+                        label = { Text("Dia do vencimento (1-31)") },
+                        supportingText = { Text("Ex: 10 = vence todo dia 10 do mês") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true
+                    )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -588,6 +602,7 @@ fun AddIndividualExpenseDialog(
                     installments = inst,
                     monthlyAmount = monthly,
                     frequency = frequency,
+                    dueDay = dueDay.toIntOrNull()?.coerceIn(1, 31) ?: 1,
                     isIncludedInCalc = includeInCalc,
                     isRecurringAnnual = isAnnual,
                     vehicleId = selectedVehicleId

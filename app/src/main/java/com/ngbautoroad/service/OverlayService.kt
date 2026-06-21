@@ -445,10 +445,22 @@ class OverlayService : Service(),
     private fun startAutoDismissTimer() {
         autoDismissJob?.cancel()
         autoDismissJob = serviceScope.launch {
-            val dismissMs = prefsManager.autoDismissSecondsFlow.first() * 1000L
-            if (dismissMs > 0) { // 0 = nunca auto-dismiss
-                delay(dismissMs)
-                hideOverlay()
+            try {
+                // v6.9.6: Usar withTimeoutOrNull para garantir que first() não trave indefinidamente
+                val dismissSeconds = kotlinx.coroutines.withTimeoutOrNull(3000L) {
+                    prefsManager.autoDismissSecondsFlow.first()
+                } ?: 30 // Fallback: 30s se DataStore não responder em 3s
+                val dismissMs = dismissSeconds * 1000L
+                android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Timer iniciado: ${dismissSeconds}s")
+                if (dismissMs > 0) { // 0 = nunca auto-dismiss
+                    delay(dismissMs)
+                    android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Fechando overlay após ${dismissSeconds}s")
+                    hideOverlay()
+                } else {
+                    android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Desativado (0s configurado)")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("NGB_OVERLAY", "[AutoDismiss] Erro no timer: ${e.message}")
             }
         }
     }

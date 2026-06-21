@@ -1774,12 +1774,15 @@ private fun MaintenanceAdvisorCard(context: android.content.Context) {
     val scope = rememberCoroutineScope()
     var suggestion by remember { mutableStateOf<com.ngbautoroad.domain.ReserveAdjustmentSuggestion?>(null) }
 
+    var vehicleCostPerKm by remember { mutableStateOf(0.0) }
+
     LaunchedEffect(Unit) {
         scope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
                 val db = FinanceDatabase.getInstance(context)
                 val active = db.vehicleProfileDao().getActiveVehicleSync()
                 if (active != null) {
+                    vehicleCostPerKm = active.costPerKm
                     val advisor = com.ngbautoroad.domain.MaintenanceReserveAdvisor(context)
                     val odometer = active.currentOdometer
                     val reserve = active.costPerKm * odometer * 0.03 // Reserva estimada: 3% do custo/km
@@ -1812,16 +1815,32 @@ private fun MaintenanceAdvisorCard(context: android.content.Context) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        if (data.isUrgent) "Reserva insuficiente!" else "Sugestão de reserva",
+                        if (data.isUrgent) "Reserva de manutenção insuficiente" else "Sugestão de reserva para manutenção",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
+                // Aviso se custo/km não configurado (usando valor padrão R$0,03)
+                if (vehicleCostPerKm <= 0.0) {
+                    Text(
+                        "⚠ Custo/km do veículo não configurado. Usando estimativa padrão (R\$ 0,03/km). Configure em Finanças → Veículos para cálculos precisos.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                }
                 Text(
                     data.message,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // Explicação do que é a reserva de manutenção
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    "A reserva de manutenção é um valor separado por km rodado para cobrir revisões, pneus e peças. Ajuste em Finanças → Veículos.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
             }
         }
