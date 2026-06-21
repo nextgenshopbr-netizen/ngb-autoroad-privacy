@@ -584,3 +584,36 @@
 - Assinado: CN=NGB AutoRoad, O=NextGenShop BR
 - 16KB aligned: Verificado com build-tools 35.0.0
 - GitHub Release: https://github.com/nextgenshopbr-netizen/ngb-autoroad-privacy/releases/tag/v6.4.0
+
+---
+
+## v6.4.1 — 21/06/2026 03:30
+
+### Proteção por Avaliação do Passageiro (Multiplicador de Penalidade)
+
+**Problema identificado:** Corrida ID=8 do backup com passageiro rating 4.23 recebia score 88 (aceitar), representando risco à segurança do motorista. A penalidade fixa de 9 pts (peso × 0.6) era insuficiente.
+
+**Solução implementada:**
+
+1. **Nova normalizeRating() com duas zonas:**
+   - Zona A (4.7-5.0): linear suave → 75 a 100
+   - Zona B (< 4.7): curva cúbica agressiva → derruba rapidamente
+
+2. **Multiplicador de penalidade por faixa de rating:**
+   - 4.9-5.0: sem penalidade
+   - 4.7-4.9: 1.0× (peso × 1.0)
+   - 4.5-4.7: 2.5× (peso × 2.5)
+   - 4.3-4.5: 3.5× (peso × 3.5)
+   - < 4.3: 4.0× (peso × 4.0)
+
+3. **UI: Ícone info na tela de Pesos**
+   - Ícone ℹ️ ao lado do slider de "Avaliação do Passageiro"
+   - Ao clicar, abre dialog com tabela de multiplicadores
+   - Valores calculados em tempo real baseados no peso configurado
+
+**Resultado:** Corrida ID=8 (rating 4.23) → Score cai de 88 para 32 (❌ RECUSAR)
+
+**Arquivos modificados:**
+- `domain/RideScorer.kt` — normalizeRating(), getRatingPenaltyMultiplier(), cálculo de penalidade
+- `ui/criteria/CriteriaTab.kt` — Row com ícone info + AlertDialog com tabela
+- `app/build.gradle.kts` — versionName 6.4.1
