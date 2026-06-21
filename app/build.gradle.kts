@@ -60,6 +60,9 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+        jniLibs {
+            useLegacyPackaging = false
+        }
     }
 
     lint {
@@ -91,7 +94,7 @@ dependencies {
     ksp("androidx.room:room-compiler:2.6.1")
 
     // ML Kit Text Recognition (OCR)
-    implementation("com.google.mlkit:text-recognition:16.0.0")
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 
     // DataStore Preferences
     implementation("androidx.datastore:datastore-preferences:1.0.0")
