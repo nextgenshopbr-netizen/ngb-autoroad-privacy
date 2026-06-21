@@ -316,9 +316,10 @@ data class PlatformSummary(
         VehicleConfigEntity::class,
         FinancialGoalEntity::class,
         VehicleProfileEntity::class,
-        IndividualExpenseEntity::class
+        IndividualExpenseEntity::class,
+        OdometerHistoryEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class FinanceDatabase : RoomDatabase() {
@@ -329,6 +330,7 @@ abstract class FinanceDatabase : RoomDatabase() {
     abstract fun financialGoalDao(): FinancialGoalDao
     abstract fun vehicleProfileDao(): VehicleProfileDao
     abstract fun individualExpenseDao(): IndividualExpenseDao
+    abstract fun odometerHistoryDao(): OdometerHistoryDao
 
     companion object {
         @Volatile
@@ -354,6 +356,29 @@ abstract class FinanceDatabase : RoomDatabase() {
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE earnings ADD COLUMN score REAL NOT NULL DEFAULT 0.0")
+            }
+        }
+
+        // Migração v6 → v7: Odômetro inteligente (v6.5.0)
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Novos campos em vehicle_profiles
+                database.execSQL("ALTER TABLE vehicle_profiles ADD COLUMN lastOdometerUpdate INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE vehicle_profiles ADD COLUMN odometerCorrectionFactor REAL NOT NULL DEFAULT 1.3")
+                database.execSQL("ALTER TABLE vehicle_profiles ADD COLUMN odometerAlertDays INTEGER NOT NULL DEFAULT 14")
+                // Nova tabela: histórico de odômetro
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS odometer_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        vehicleId INTEGER NOT NULL DEFAULT 0,
+                        odometerValue INTEGER NOT NULL DEFAULT 0,
+                        estimatedAtMoment INTEGER NOT NULL DEFAULT 0,
+                        kmTrackedSinceLast REAL NOT NULL DEFAULT 0.0,
+                        calibrationFactor REAL NOT NULL DEFAULT 1.0,
+                        source TEXT NOT NULL DEFAULT 'MANUAL',
+                        timestamp INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
             }
         }
 
@@ -418,7 +443,7 @@ abstract class FinanceDatabase : RoomDatabase() {
                     FinanceDatabase::class.java,
                     "ngb_finance_db"
                 )
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 // Fallback apenas para migração de versão 1 (primeira instalação antiga)
                 .fallbackToDestructiveMigrationFrom(1)
                 // Removido allowMainThreadQueries — todas as queries são suspend/Flow (item 6.2)

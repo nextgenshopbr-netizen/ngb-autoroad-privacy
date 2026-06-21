@@ -31,7 +31,8 @@ enum class SuggestionType(val label: String, val icon: String) {
     AVOID_AREA("Evitar Área", "⚠️"),
     EARNING_PATTERN("Padrão de Ganho", "📈"),
     FATIGUE_WARNING("Alerta Fadiga", "😴"),
-    BEST_DAY("Melhor Dia", "📅")
+    BEST_DAY("Melhor Dia", "📅"),
+    MAINTENANCE_ALERT("Manutenção", "🔧") // v6.5.0: Alerta de proximidade de manutenção
 }
 
 data class LearningSuggestion(
@@ -331,6 +332,13 @@ class LocalLearningEngine(context: Context? = null) {
                 patterns.size
             ))
         }
+
+        // ═══════════════════════════════════════════════════════════════
+        // v6.5.0: SUGESTÃO: Proximidade de Manutenção (via OdometerEngine)
+        // ═══════════════════════════════════════════════════════════════
+        // Nota: A sugestão de manutenção é gerada externamente pelo OdometerEngine
+        // e injetada via addMaintenanceSuggestions() após generateSuggestions().
+        // Isso evita acoplamento direto com o banco de dados financeiro aqui.
 
         return suggestions
     }

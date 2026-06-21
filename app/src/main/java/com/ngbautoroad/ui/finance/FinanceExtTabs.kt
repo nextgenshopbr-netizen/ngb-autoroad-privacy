@@ -153,6 +153,23 @@ fun VehicleProfileCard(
                 Text("R$ ${String.format("%.2f", vehicle.fuelPrice)}/L", fontSize = 11.sp)
                 Text("R$ ${String.format("%.2f", vehicle.costPerKm)}/km", fontSize = 11.sp, color = ScoreOrange)
             }
+            // v6.5.0: Exibir odômetro e fator de correção
+            if (vehicle.currentOdometer > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("🚨 ${String.format("%,d", vehicle.currentOdometer)} km", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                    val daysSince = if (vehicle.lastOdometerUpdate > 0) {
+                        ((System.currentTimeMillis() - vehicle.lastOdometerUpdate) / (1000 * 60 * 60 * 24)).toInt()
+                    } else -1
+                    if (daysSince >= 0) {
+                        Text("(há ${daysSince}d)", fontSize = 10.sp, color = Color.Gray)
+                    }
+                    Text("Fator: ${String.format("%.1f", vehicle.odometerCorrectionFactor)}×", fontSize = 10.sp, color = Color.Gray)
+                }
+            } else {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("⚠️ Odômetro não informado", fontSize = 10.sp, color = ScoreOrange)
+            }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (!vehicle.isActive) {
@@ -187,6 +204,7 @@ fun AddVehicleProfileDialog(
     var consumption by rememberSaveable { mutableStateOf(existing?.averageConsumption?.toString() ?: "") }
     var fuelPrice by rememberSaveable { mutableStateOf(existing?.fuelPrice?.toString() ?: "") }
     var purchaseValue by rememberSaveable { mutableStateOf(existing?.purchaseValue?.toString() ?: "") }
+    var currentOdometer by rememberSaveable { mutableStateOf(if (existing?.currentOdometer != null && existing.currentOdometer > 0) existing.currentOdometer.toString() else "") }
     var tireLifeKm by rememberSaveable { mutableStateOf(existing?.tireLifeKm?.toString() ?: "40000") }
     var tireCost by rememberSaveable { mutableStateOf(existing?.tireCost?.toString() ?: "") }
     var brakepadLifeKm by rememberSaveable { mutableStateOf(existing?.brakepadLifeKm?.toString() ?: "30000") }
@@ -245,6 +263,17 @@ fun AddVehicleProfileDialog(
                 Spacer(modifier = Modifier.height(4.dp))
                 OutlinedTextField(value = purchaseValue, onValueChange = { purchaseValue = it }, label = { Text("Valor de compra (R$)") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
                 Spacer(modifier = Modifier.height(8.dp))
+                Text("Odômetro", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                OutlinedTextField(
+                    value = currentOdometer,
+                    onValueChange = { currentOdometer = it },
+                    label = { Text("Km atual do veículo") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    placeholder = { Text("Ex: 15000") }
+                )
+                Text("Informe a quilometragem atual do painel. Mantenha atualizado para cálculos precisos de manutenção.", fontSize = 10.sp, color = Color.Gray)
+                Spacer(modifier = Modifier.height(8.dp))
                 Text("Desgaste", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = tireLifeKm, onValueChange = { tireLifeKm = it }, label = { Text("Pneu (km)") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
@@ -286,6 +315,8 @@ fun AddVehicleProfileDialog(
                     fuelPrice = fp,
                     costPerKm = cpk,
                     purchaseValue = purchaseValue.toDoubleLocaleOrNull() ?: 0.0,
+                    currentOdometer = currentOdometer.toIntOrNull() ?: 0,
+                    lastOdometerUpdate = if ((currentOdometer.toIntOrNull() ?: 0) > 0) System.currentTimeMillis() else (existing?.lastOdometerUpdate ?: 0),
                     tireLifeKm = tireLifeKm.toIntOrNull() ?: 40000,
                     tireCost = tireCost.toDoubleLocaleOrNull() ?: 0.0,
                     brakepadLifeKm = brakepadLifeKm.toIntOrNull() ?: 30000,

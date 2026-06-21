@@ -109,12 +109,17 @@ class FinanceDREEngine(
 
         // Receita Bruta
         val receitaBruta = earningDao.getTotalEarningsSync(startDate, endDate) ?: 0.0
-        val totalKm = earningDao.getTotalDistanceSync(startDate, endDate) ?: 0.0
+        val totalKmTracked = earningDao.getTotalDistanceSync(startDate, endDate) ?: 0.0
         val totalRides = earningDao.getTotalRidesSync(startDate, endDate) ?: 0
         val totalDurationMin = earningDao.getTotalDurationSync(startDate, endDate) ?: 0
         val totalHours = totalDurationMin / 60.0
 
-        // Custos Variáveis (combustível + desgaste por km)
+        // v6.5.0: Aplicar fator de correção do odômetro para KM real
+        // O KM rastreado é apenas corridas; o KM real inclui uso pessoal
+        val correctionFactor = vehicle?.odometerCorrectionFactor ?: 1.3
+        val totalKm = totalKmTracked * correctionFactor
+
+        // Custos Variáveis (combustível + desgaste por km REAL)
         val combustivelCost = totalKm * costPerKm
         val desgastePorKm = calculateDesgastePorKm(vehicle)
         val desgasteCost = totalKm * desgastePorKm

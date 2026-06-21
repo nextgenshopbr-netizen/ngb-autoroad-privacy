@@ -3,9 +3,11 @@ package com.ngbautoroad.data.db
 // ============================================================================
 // ARQUIVO: FinanceExtensions.kt
 // LOCALIZAÇÃO: data/db/FinanceExtensions.kt
-// RESPONSABILIDADE: Extensões financeiras v4.3.0
+// RESPONSABILIDADE: Extensões financeiras v6.5.0
 //   - VehicleProfileEntity: Múltiplos veículos com campo "ativo"
 //   - IndividualExpenseEntity: Despesas individuais com rateio temporal
+//   - OdometerHistoryEntity: Histórico de atualizações do odômetro
+//   - OdometerEngine: Odômetro estimado + auto-calibração EWMA
 //   - ProjectionEngine: Algoritmo de projeção inteligente
 //   - WhatIfSimulator: Simulação "E se?" com cenários
 // ============================================================================
@@ -33,7 +35,10 @@ data class VehicleProfileEntity(
     val isOwned: Boolean = true,             // Próprio ou alugado
     val rentalCost: Double = 0.0,            // Custo mensal do aluguel (se não for próprio)
     val purchaseValue: Double = 0.0,         // Valor de compra (para depreciação)
-    val currentOdometer: Int = 0,            // Odômetro atual
+    val currentOdometer: Int = 0,            // Odômetro atual (informado pelo motorista)
+    val lastOdometerUpdate: Long = 0,        // v6.5.0: Timestamp da última atualização do odômetro
+    val odometerCorrectionFactor: Double = 1.3, // v6.5.0: Fator de correção (uso pessoal) — auto-calibrável
+    val odometerAlertDays: Int = 14,         // v6.5.0: Intervalo em dias para alertar atualização
     // Dados de desgaste (para projeção)
     val tireLifeKm: Int = 40000,             // Vida útil dos pneus em km
     val tireCost: Double = 0.0,              // Custo de 4 pneus
@@ -105,6 +110,50 @@ interface VehicleProfileDao {
         deactivateAll()
         setActive(vehicleId)
     }
+
+    @Query("UPDATE vehicle_profiles SET currentOdometer = :odometer, lastOdometerUpdate = :timestamp WHERE id = :vehicleId")
+    suspend fun updateOdometer(vehicleId: Long, odometer: Int, timestamp: Long)
+
+    @Query("UPDATE vehicle_profiles SET odometerCorrectionFactor = :factor WHERE id = :vehicleId")
+    suspend fun updateCorrectionFactor(vehicleId: Long, factor: Double)
+}
+
+// ============================================================================
+// ENTITY: OdometerHistoryEntity — Histórico de atualizações do odômetro (v6.5.0)
+// ============================================================================
+
+@Entity(tableName = "odometer_history")
+data class OdometerHistoryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val vehicleId: Long = 0,                 // Veículo associado
+    val odometerValue: Int = 0,              // Valor informado pelo motorista
+    val estimatedAtMoment: Int = 0,          // Valor que o sistema estimava naquele momento
+    val kmTrackedSinceLast: Double = 0.0,    // KM rastreado pelo app desde última atualização
+    val calibrationFactor: Double = 1.0,     // Fator calculado: (real - anterior) / kmTracked
+    val source: String = "MANUAL",           // MANUAL, INITIAL (primeiro cadastro)
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+// ============================================================================
+// DAO: OdometerHistoryDao
+// ============================================================================
+
+@Dao
+interface OdometerHistoryDao {
+    @Insert
+    suspend fun insert(entry: OdometerHistoryEntity): Long
+
+    @Query("SELECT * FROM odometer_history WHERE vehicleId = :vehicleId ORDER BY timestamp DESC")
+    fun getByVehicle(vehicleId: Long): Flow<List<OdometerHistoryEntity>>
+
+    @Query("SELECT * FROM odometer_history WHERE vehicleId = :vehicleId ORDER BY timestamp DESC LIMIT 1")
+    suspend fun getLastEntry(vehicleId: Long): OdometerHistoryEntity?
+
+    @Query("SELECT * FROM odometer_history WHERE vehicleId = :vehicleId ORDER BY timestamp DESC LIMIT 5")
+    suspend fun getLastEntries(vehicleId: Long): List<OdometerHistoryEntity>
+
+    @Query("SELECT COUNT(*) FROM odometer_history WHERE vehicleId = :vehicleId")
+    suspend fun countEntries(vehicleId: Long): Int
 }
 
 // ============================================================================

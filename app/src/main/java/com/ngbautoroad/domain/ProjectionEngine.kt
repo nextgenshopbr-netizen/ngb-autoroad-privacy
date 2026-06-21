@@ -80,11 +80,16 @@ class ProjectionEngine(
         val projRides = (avgDailyRides * multiplier).toInt()
         val projHours = avgDailyHours * multiplier
 
-        // Custos de combustível
-        val projFuelCost = projKm * costPerKm
+        // v6.5.0: Aplicar fator de correção do odômetro para KM real
+        // projKm é baseado apenas em earnings (corridas). O KM real inclui uso pessoal.
+        val correctionFactor = vehicle?.odometerCorrectionFactor ?: 1.3
+        val projKmReal = projKm * correctionFactor
 
-        // Custos de manutenção/desgaste baseados no veículo
-        val projMaintenanceCost = calculateWearCost(vehicle, projKm)
+        // Custos de combustível (baseados no KM real, não apenas corridas)
+        val projFuelCost = projKmReal * costPerKm
+
+        // Custos de manutenção/desgaste baseados no KM real do veículo
+        val projMaintenanceCost = calculateWearCost(vehicle, projKmReal)
 
         // Custos fixos (despesas individuais rateadas)
         val monthlyFixed = individualExpenseDao.getTotalMonthlyRatedSync() ?: 0.0
@@ -99,11 +104,11 @@ class ProjectionEngine(
         val projTotalCosts = projFuelCost + projMaintenanceCost + projFixedCosts
         val projGrossProfit = projEarnings - projFuelCost
         val projNetProfit = projEarnings - projTotalCosts
-        // Lucro real = líquido - depreciação do veículo
+        // Lucro real = líquido - depreciação do veículo (usando KM real)
         val depreciationPerKm = if (vehicle != null && vehicle.purchaseValue > 0) {
             vehicle.purchaseValue / 200000.0 // Depreciação em 200.000 km
         } else 0.0
-        val projRealProfit = projNetProfit - (projKm * depreciationPerKm)
+        val projRealProfit = projNetProfit - (projKmReal * depreciationPerKm)
 
         // Nível de confiança baseado na quantidade de dados
         val confidence = when {

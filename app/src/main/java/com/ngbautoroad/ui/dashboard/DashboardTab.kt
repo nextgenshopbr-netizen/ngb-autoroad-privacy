@@ -40,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.FinanceDatabase
+import com.ngbautoroad.data.db.VehicleProfileEntity
+import com.ngbautoroad.data.db.OdometerHistoryEntity
 import com.ngbautoroad.data.model.DashboardData
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.ui.features.FeaturesActivity
@@ -325,6 +327,10 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
                 Spacer(modifier = Modifier.height(12.dp))
         // Resumo financeiro e metas
         FinancialSummarySection(database)
+
+        Spacer(modifier = Modifier.height(12.dp))
+        // v6.5.0: Card de alerta de odômetro com dialog inline
+        OdometerAlertCard()
     }
     // v6.3.0: Tutorial guiado no primeiro acesso
     com.ngbautoroad.ui.tutorial.TutorialOverlay(
@@ -1332,4 +1338,203 @@ private suspend fun applyProfile(prefsManager: PrefsManager, profilesJson: Strin
             prefsManager.saveAutoPilotMaxRefuseScore(maxRefuse)
         }
     } catch (_: Exception) {}
+}
+
+// ============================================================================
+// v6.5.0: Card de Alerta de Odômetro com Dialog Inline
+// ============================================================================
+
+@Composable
+fun OdometerAlertCard() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val financeDb = remember { FinanceDatabase.getInstance(context) }
+    val vehicleProfileDao = remember { financeDb.vehicleProfileDao() }
+    val odometerHistoryDao = remember { financeDb.odometerHistoryDao() }
+
+    val activeVehicle by vehicleProfileDao.getActiveVehicle().collectAsState(initial = null)
+
+    // Estado do dialog inline
+    var showOdometerDialog by remember { mutableStateOf(false) }
+    var odometerInput by remember { mutableStateOf("") }
+
+    val vehicle = activeVehicle ?: return // Sem veículo ativo, não mostra nada
+
+    // Verificar se precisa alertar
+    val daysSinceUpdate = if (vehicle.lastOdometerUpdate > 0) {
+        ((System.currentTimeMillis() - vehicle.lastOdometerUpdate) / (1000 * 60 * 60 * 24)).toInt()
+    } else {
+        -1 // Nunca atualizado
+    }
+
+    val shouldAlert = vehicle.currentOdometer == 0 || daysSinceUpdate < 0 || daysSinceUpdate >= vehicle.odometerAlertDays
+
+    if (!shouldAlert) return // Odômetro atualizado recentemente, não mostra
+
+    // Determinar mensagem e cor
+    val (alertMessage, alertColor) = when {
+        vehicle.currentOdometer == 0 -> Pair(
+            "Informe o odômetro do seu ${vehicle.brand} ${vehicle.model} para cálculos precisos de manutenção.",
+            MaterialTheme.colorScheme.error
+        )
+        daysSinceUpdate >= vehicle.odometerAlertDays * 2 -> Pair(
+            "Odômetro desatualizado há ${daysSinceUpdate} dias. Atualize para manter a precisão.",
+            MaterialTheme.colorScheme.error
+        )
+        else -> Pair(
+            "Última atualização há ${daysSinceUpdate} dias. Toque para atualizar o odômetro.",
+            ScoreOrange
+        )
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { 
+                odometerInput = if (vehicle.currentOdometer > 0) vehicle.currentOdometer.toString() else ""
+                showOdometerDialog = true 
+            },
+        colors = CardDefaults.cardColors(
+            containerColor = alertColor.copy(alpha = 0.1f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.Speed,
+                contentDescription = "Odômetro",
+                tint = alertColor,
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Atualizar Odômetro",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = alertColor
+                )
+                Text(
+                    alertMessage,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                if (vehicle.currentOdometer > 0) {
+                    Text(
+                        "Atual: ${String.format("%,d", vehicle.currentOdometer)} km",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                }
+            }
+            Icon(
+                Icons.Default.Edit,
+                contentDescription = "Editar",
+                tint = alertColor,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+
+    // Dialog inline para atualizar odômetro
+    if (showOdometerDialog) {
+        AlertDialog(
+            onDismissRequest = { showOdometerDialog = false },
+            icon = { Icon(Icons.Default.Speed, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            title = { Text("Atualizar Odômetro") },
+            text = {
+                Column {
+                    Text(
+                        "${vehicle.brand} ${vehicle.model} ${vehicle.year}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    if (vehicle.currentOdometer > 0) {
+                        Text(
+                            "Último registro: ${String.format("%,d", vehicle.currentOdometer)} km",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = odometerInput,
+                        onValueChange = { odometerInput = it.filter { c -> c.isDigit() } },
+                        label = { Text("Quilometragem atual (km)") },
+                        placeholder = { Text("Ex: 15000") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Consulte o painel do veículo e informe o valor exato.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val newOdometer = odometerInput.toIntOrNull() ?: 0
+                        if (newOdometer > 0) {
+                            scope.launch {
+                                val now = System.currentTimeMillis()
+                                // Salvar no histórico
+                                val lastEntry = odometerHistoryDao.getLastEntry(vehicle.id)
+                                val kmTracked = 0.0 // TODO: calcular KM rastreado desde última atualização
+                                val calibFactor = if (lastEntry != null && kmTracked > 0) {
+                                    (newOdometer - lastEntry.odometerValue).toDouble() / kmTracked
+                                } else 1.0
+
+                                odometerHistoryDao.insert(
+                                    OdometerHistoryEntity(
+                                        vehicleId = vehicle.id,
+                                        odometerValue = newOdometer,
+                                        estimatedAtMoment = vehicle.currentOdometer,
+                                        kmTrackedSinceLast = kmTracked,
+                                        calibrationFactor = calibFactor,
+                                        source = if (vehicle.currentOdometer == 0) "INITIAL" else "MANUAL",
+                                        timestamp = now
+                                    )
+                                )
+                                // Atualizar veículo
+                                vehicleProfileDao.updateOdometer(vehicle.id, newOdometer, now)
+
+                                // Auto-calibração: se temos dados suficientes, atualizar fator
+                                if (lastEntry != null && kmTracked > 100) {
+                                    val entries = odometerHistoryDao.getLastEntries(vehicle.id)
+                                    if (entries.size >= 2) {
+                                        // EWMA com alpha=0.3 (mais peso nos dados recentes)
+                                        val alpha = 0.3
+                                        var ewmaFactor = entries.last().calibrationFactor
+                                        entries.reversed().forEach { entry ->
+                                            if (entry.calibrationFactor > 0) {
+                                                ewmaFactor = alpha * entry.calibrationFactor + (1 - alpha) * ewmaFactor
+                                            }
+                                        }
+                                        // Limitar entre 1.0 e 3.0
+                                        val clampedFactor = ewmaFactor.coerceIn(1.0, 3.0)
+                                        vehicleProfileDao.updateCorrectionFactor(vehicle.id, clampedFactor)
+                                    }
+                                }
+                            }
+                            showOdometerDialog = false
+                        }
+                    },
+                    enabled = (odometerInput.toIntOrNull() ?: 0) > 0 && 
+                              (odometerInput.toIntOrNull() ?: 0) >= vehicle.currentOdometer
+                ) { Text("Salvar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showOdometerDialog = false }) { Text("Depois") }
+            }
+        )
+    }
 }
