@@ -743,3 +743,12 @@ Simulação avançada de 1 ano com dados aleatórios (365 dias, ~4.500 corridas,
 - Corridas de risco aceitas: 0 (antes 53)
 - DRE retroativo: eliminado
 - Cold start: impossível (onboarding obrigatório)
+
+### 21/06/2026 - Implementação v6.8.0 e v6.9.0 (Inteligência Proativa e Automação GPS)
+- **Setup Wizard e Permissões (v6.8.0)**: Implementado SetupWizardDialog com opções de backup, configuração limpa ou pular. Criado PermissionManager centralizando 9 permissões, incluindo Activity Recognition e GPS Background.
+- **ActivityStateDetector (v6.9.0)**: Implementada detecção automática de atividade (Dirigindo, Parado, Caminhando, Correndo) usando Activity Recognition API. O GPS agora alterna automaticamente entre os modos Ativo, Economia e Pausado sem interação do motorista.
+- **FatigueInsightEngine (v6.9.0)**: Criado motor de IA que analisa histórico de turnos e gera comparativos reais de ganho/hora (turnos longos vs curtos), horários ótimos e ponto de retorno decrescente. Zero alertas intrusivos; exibe apenas cards informativos no dashboard.
+- **MaintenanceReserveAdvisor (v6.9.0)**: Adicionada sugestão automática de taxa de reserva. O sistema detecta se a reserva atual cobrirá a próxima manutenção e sugere ajustes em centavos (R$/km) para evitar déficits.
+- **EWMA Cold Start (v6.9.0)**: Ajustado o OdometerEngine para usar alpha=0.5 nos primeiros 30 dias, permitindo que o sistema aprenda o padrão de uso pessoal do motorista 1 a 2 atualizações mais rápido.
+- **Simulações de Validação**: Script `sim_v690_validation.py` executado para 1m, 3m, 6m, 1a e 2a. Comprovou acurácia do GPS (>90%), economia de bateria (130h/ano) e zero alertas intrusivos.
+- **Release**: APK compilado, alinhado em 16KB, assinado e publicado como release `v6.9.0` no GitHub.
