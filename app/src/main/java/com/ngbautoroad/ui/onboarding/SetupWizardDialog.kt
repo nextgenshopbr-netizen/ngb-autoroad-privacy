@@ -458,16 +458,22 @@ private fun VehicleStep(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var vehicleName by remember { mutableStateOf("") }
     var odometer by remember { mutableStateOf("") }
-    var fuelType by remember { mutableStateOf("Elétrico") }
-    val fuelOptions = listOf("Elétrico", "Gasolina", "Etanol", "Flex", "Diesel", "Híbrido")
+    // Tipo de veículo: ELECTRIC, HYBRID, COMBUSTION
+    var vehicleType by remember { mutableStateOf("COMBUSTION") }
+    // Tipo de combustível interno (chave do banco)
+    var fuelTypeKey by remember { mutableStateOf("FLEX") }
+    var isSaving by remember { mutableStateOf(false) }
+    var showError by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .padding(horizontal = 24.dp, vertical = 16.dp)
     ) {
+        // Header fixo
         Text(
             "Veículo e Odômetro",
             style = MaterialTheme.typography.titleLarge,
@@ -479,95 +485,187 @@ private fun VehicleStep(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(
-            value = vehicleName,
-            onValueChange = { vehicleName = it },
-            label = { Text("Nome do veículo (ex: BYD Dolphin GS)") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+        // Conteúdo com scroll para não sumir com teclado aberto
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedTextField(
+                value = vehicleName,
+                onValueChange = { vehicleName = it; showError = false },
+                label = { Text("Nome do veículo (ex: BYD Dolphin GS)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                isError = showError && vehicleName.isBlank(),
+                supportingText = if (showError && vehicleName.isBlank()) {{ Text("Informe o nome do veículo", color = MaterialTheme.colorScheme.error) }} else null
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = odometer,
+                onValueChange = { odometer = it.filter { c -> c.isDigit() }; showError = false },
+                label = { Text("Odômetro atual (km)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                isError = showError && odometer.isBlank(),
+                supportingText = if (showError && odometer.isBlank()) {
+                    { Text("Informe o odômetro atual", color = MaterialTheme.colorScheme.error) }
+                } else {
+                    { Text("Olhe no painel do carro e informe o valor exato") }
+                }
+            )
 
-        OutlinedTextField(
-            value = odometer,
-            onValueChange = { odometer = it.filter { c -> c.isDigit() } },
-            label = { Text("Odômetro atual (km)") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            supportingText = { Text("Olhe no painel do carro e informe o valor exato") }
-        )
+            // Tipo de veículo
+            Text("Tipo de veículo:", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf(
+                    "COMBUSTION" to "Combustão",
+                    "HYBRID" to "Híbrido",
+                    "ELECTRIC" to "Elétrico"
+                ).forEach { (key, label) ->
+                    FilterChip(
+                        selected = vehicleType == key,
+                        onClick = {
+                            vehicleType = key
+                            if (key == "ELECTRIC") fuelTypeKey = "ELECTRIC"
+                            else if (fuelTypeKey == "ELECTRIC") fuelTypeKey = "FLEX"
+                        },
+                        label = { Text(label, style = MaterialTheme.typography.bodySmall) },
+                        modifier = Modifier.weight(1f),
+                        leadingIcon = if (vehicleType == key) {{
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp))
+                        }} else null
+                    )
+                }
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text("Tipo de combustível:", style = MaterialTheme.typography.bodyMedium)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            fuelOptions.chunked(3).forEach { row ->
+            // Combustível (apenas para não-elétrico)
+            if (vehicleType != "ELECTRIC") {
+                Text("Combustível:", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    row.forEach { option ->
+                    listOf(
+                        "FLEX" to "Flex",
+                        "GASOLINE" to "Gasolina",
+                        "ETHANOL" to "Etanol",
+                        "DIESEL" to "Diesel"
+                    ).forEach { (key, label) ->
                         FilterChip(
-                            selected = fuelType == option,
-                            onClick = { fuelType = option },
-                            label = { Text(option, style = MaterialTheme.typography.bodySmall) },
-                            modifier = Modifier.weight(1f)
+                            selected = fuelTypeKey == key,
+                            onClick = { fuelTypeKey = key },
+                            label = { Text(label, style = MaterialTheme.typography.bodySmall) },
+                            modifier = Modifier.weight(1f),
+                            leadingIcon = if (fuelTypeKey == key) {{
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }} else null
                         )
                     }
-                    // Fill remaining space if row has less than 3 items
-                    repeat(3 - row.size) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
+                }
+            }
+
+            // Info card
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "O odômetro é essencial para cálculos de manutenção e custo/km. " +
+                        "Você pode editar mais detalhes do veículo em Finanças → Veículos.",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Info card
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-        ) {
-            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "O odômetro é essencial para cálculos de manutenção e custo/km. A IA aprenderá seu padrão de uso com o tempo.",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
+        // Botões SEMPRE visíveis (fora do scroll)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            TextButton(onClick = onBack) { Text("Voltar") }
+            TextButton(onClick = onBack, enabled = !isSaving) { Text("Voltar") }
             Button(
                 onClick = {
-                    if (odometer.isNotBlank() && vehicleName.isNotBlank()) {
-                        // Save to prefs for later DB insertion
-                        val prefs = context.getSharedPreferences("ngb_autoroad_prefs", Context.MODE_PRIVATE)
-                        prefs.edit()
-                            .putString("setup_vehicle_name", vehicleName)
-                            .putLong("setup_odometer", odometer.toLongOrNull() ?: 0L)
-                            .putString("setup_fuel_type", fuelType)
-                            .putBoolean("odometer_onboarding_done", true)
-                            .apply()
-                        onNext()
-                    } else {
-                        Toast.makeText(context, "Preencha o nome e o odômetro", Toast.LENGTH_SHORT).show()
+                    if (vehicleName.isBlank() || odometer.isBlank()) {
+                        showError = true
+                        return@Button
+                    }
+                    isSaving = true
+                    scope.launch {
+                        try {
+                            val financeDb = com.ngbautoroad.data.db.FinanceDatabase.getInstance(context)
+                            val prefsManager = PrefsManager(context)
+                            val odometerValue = odometer.toIntOrNull() ?: 0
+
+                            // Verificar se já existe veículo ativo
+                            val existing = financeDb.vehicleProfileDao().getActiveVehicleSync()
+                            if (existing != null) {
+                                // Atualizar odômetro do veículo existente
+                                financeDb.vehicleProfileDao().updateOdometer(
+                                    existing.id,
+                                    odometerValue,
+                                    System.currentTimeMillis()
+                                )
+                            } else {
+                                // Criar novo veículo com dados básicos do wizard
+                                val parts = vehicleName.trim().split(" ", limit = 2)
+                                val brand = parts.getOrElse(0) { vehicleName }
+                                val model = parts.getOrElse(1) { "" }
+                                val newVehicle = com.ngbautoroad.data.db.VehicleProfileEntity(
+                                    brand = brand,
+                                    model = model,
+                                    vehicleType = vehicleType,
+                                    fuelType = fuelTypeKey,
+                                    currentOdometer = odometerValue,
+                                    lastOdometerUpdate = if (odometerValue > 0) System.currentTimeMillis() else 0L,
+                                    isActive = false, // será ativado logo abaixo
+                                    createdAt = System.currentTimeMillis()
+                                )
+                                val newId = financeDb.vehicleProfileDao().insert(newVehicle)
+                                // Ativar o novo veículo (desativa outros se existirem)
+                                financeDb.vehicleProfileDao().switchActiveVehicle(newId)
+                            }
+
+                            // Marcar onboarding de odômetro como concluído via DataStore
+                            prefsManager.setOdometerOnboardingDone(true)
+
+                            onNext()
+                        } catch (e: Exception) {
+                            android.util.Log.e("SetupWizard", "Erro ao salvar veículo: ${e.message}", e)
+                            Toast.makeText(context, "Erro ao salvar: ${e.message}", Toast.LENGTH_LONG).show()
+                        } finally {
+                            isSaving = false
+                        }
                     }
                 },
-                enabled = vehicleName.isNotBlank() && odometer.isNotBlank()
+                enabled = vehicleName.isNotBlank() && odometer.isNotBlank() && !isSaving
             ) {
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
                 Text("Próximo")
             }
         }
