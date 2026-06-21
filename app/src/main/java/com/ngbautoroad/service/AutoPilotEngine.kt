@@ -147,15 +147,21 @@ class AutoPilotEngine(
                     return@launch
                 }
 
-                val minAcceptScore = prefsManager.autoPilotMinScoreFlow.first()
+                val minAcceptScoreRaw = prefsManager.autoPilotMinScoreFlow.first()
                 val maxRefuseScore = prefsManager.autoPilotMaxRefuseScoreFlow.first()
                 val geoFiltersEnabled = prefsManager.autoPilotGeoFiltersEnabledFlow.first()
+
+                // v6.3.9: Ajuste financeiro — Break-Even Aware
+                val profitAware = com.ngbautoroad.domain.ProfitAwareAutoPilot(context)
+                val financialCtx = profitAware.getFinancialContext()
+                val minAcceptScore = profitAware.adjustMinScore(minAcceptScoreRaw, financialCtx)
 
                 Log.i(TAG, "╔══════════════════════════════════════════════════╗")
                 Log.i(TAG, "║  🤖 AUTOPILOT AVALIANDO CORRIDA                  ║")
                 Log.i(TAG, "║  Mode: $mode | Score: ${String.format("%.1f", score)}")
-                Log.i(TAG, "║  Accept ≥ $minAcceptScore | Refuse ≤ $maxRefuseScore")
-                Log.i(TAG, "║  GeoFilters: ${if (geoFiltersEnabled) "ON" else "OFF"}")
+                Log.i(TAG, "║  Accept ≥ $minAcceptScore (base=$minAcceptScoreRaw, adj=${financialCtx.scoreAdjustment})")
+                Log.i(TAG, "║  Refuse ≤ $maxRefuseScore | GeoFilters: ${if (geoFiltersEnabled) "ON" else "OFF"}")
+                Log.i(TAG, "║  💰 ${financialCtx.reason}")
                 Log.i(TAG, "╚══════════════════════════════════════════════════╝")
 
                 // ── Decisão (v6.1.1: suporta modos combinados) ──

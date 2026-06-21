@@ -56,8 +56,14 @@ data class RidePattern(
  */
 class LocalLearningEngine(context: Context? = null) {
     private val prefs: SharedPreferences? = context?.getSharedPreferences("learning_engine", Context.MODE_PRIVATE)
+    private val appContext: Context? = context
     private val patterns = mutableListOf<RidePattern>()
     private val MAX_PATTERNS = 5000
+
+    // v6.3.9: Custo/km do veículo para sugestões de lucro líquido
+    private var vehicleCostPerKm: Double = 0.0
+
+    fun setCostPerKm(cost: Double) { vehicleCostPerKm = cost }
 
     // v6.3.7: Constante de decaimento temporal
     // k = 0.03 → corrida de 7 dias atrás pesa ~81%, 30 dias ~41%, 90 dias ~7%
@@ -220,10 +226,15 @@ class LocalLearningEngine(context: Context? = null) {
             }
         val bestHoods = weightedByHood.entries.sortedByDescending { it.value }.take(3)
         if (bestHoods.size >= 2) {
+            // v6.3.9: Se custo/km disponível, mostrar lucro líquido por bairro
+            val profitInfo = if (vehicleCostPerKm > 0) {
+                val bestProfit = bestHoods.first().value - vehicleCostPerKm
+                " (lucro líq. ~R\$${String.format("%.2f", bestProfit)}/km)"
+            } else ""
             suggestions.add(LearningSuggestion(
                 SuggestionType.BEST_NEIGHBORHOODS,
                 "Bairros mais rentáveis: ${bestHoods.joinToString(", ") { it.key }}",
-                "Posicione-se próximo a esses bairros para maximizar ganhos (tendência recente).",
+                "Posicione-se próximo a esses bairros para maximizar ganhos$profitInfo.",
                 0.65 + (patterns.size / 2000.0).coerceAtMost(0.25),
                 patterns.size
             ))

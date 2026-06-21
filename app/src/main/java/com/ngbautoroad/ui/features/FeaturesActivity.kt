@@ -245,6 +245,12 @@ fun LearningTab() {
             val allRides = db.rideHistoryDao().getAll()
             rideCount = allRides.size
                     val engine = LocalLearningEngine(context)
+            // v6.3.9: Carregar custo/km do veículo para sugestões de lucro líquido
+            try {
+                val finDb = com.ngbautoroad.data.db.FinanceDatabase.getInstance(context)
+                val vehicle = finDb.vehicleProfileDao().getActiveVehicleSync()
+                if (vehicle != null) engine.setCostPerKm(vehicle.costPerKm)
+            } catch (_: Exception) {}
             // v6.3.1: seedFromDatabase carrega todos os dados reais (COMPLETED, ACCEPTED, REFUSED)
             engine.seedFromDatabase(context)
             // Pequena espera para o seed async completar antes de gerar sugestões
@@ -346,13 +352,15 @@ fun ReportTab() {
                         val appDb = AppDatabase.getInstance(context)
 
                         val totalEarnings = finDb.earningDao().getTotalEarningsSync(startDate, endDate) ?: 0.0
-                        val totalExpenses = finDb.expenseDao().let { dao ->
-                            // Calcular despesas no período
-                            var total = 0.0
-                            val expenses = dao.getExpensesByPeriod(startDate, endDate)
-                            // Usar query síncrona se disponível
-                            total
+                        // v6.3.9: Calcular despesas reais no período (variáveis + fixas rateadas)
+                        val variableExpenses = finDb.expenseDao().getTotalExpensesSyncByPeriod(startDate, endDate) ?: 0.0
+                        val monthlyFixed = finDb.individualExpenseDao().getTotalMonthlyRatedSync() ?: 0.0
+                        val periodMonths = when (selectedPeriod) {
+                            "weekly" -> 7.0 / 30.0
+                            "yearly" -> 12.0
+                            else -> 1.0
                         }
+                        val totalExpenses = variableExpenses + (monthlyFixed * periodMonths)
                         val totalRides = appDb.rideHistoryDao().countSince(startDate)
                         val avgPerKm = appDb.rideHistoryDao().averageValuePerKmSince(startDate) ?: 0.0
                         val topNeighborhoods = appDb.rideHistoryDao().topDropoffNeighborhoods()

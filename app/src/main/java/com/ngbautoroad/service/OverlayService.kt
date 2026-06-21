@@ -320,12 +320,19 @@ class OverlayService : Service(),
         val adaptiveEngine = AdaptiveScoringEngine(this)
         val adaptiveThresholds = adaptiveEngine.getAdaptiveThresholds()
 
-        // Calcular score com critérios reais + bairros bloqueados + thresholds adaptativos
+        // v6.3.9: Buscar custo/km do veículo ativo para score de lucro líquido
+        val vehicleCostPerKm = try {
+            val finDb = com.ngbautoroad.data.db.FinanceDatabase.getInstance(this)
+            finDb.vehicleProfileDao().getActiveVehicleSync()?.costPerKm ?: 0.0
+        } catch (_: Exception) { 0.0 }
+
+        // Calcular score com critérios reais + bairros bloqueados + thresholds adaptativos + custo/km
         val scorer = RideScorer(
             weights = weights,
             driverThresholds = thresholds,
             blockedNeighborhoods = blockedNeighborhoods,
-            thresholds = adaptiveThresholds
+            thresholds = adaptiveThresholds,
+            costPerKm = vehicleCostPerKm
         )
         currentScore = scorer.calculateScore(ride)
 
@@ -363,7 +370,7 @@ class OverlayService : Service(),
                     // O LifecycleManager rastreará aceitação/conclusão/cancelamento
                     // e só registrará ganho quando COMPLETED
                     val lifecycleManager = RideAccessibilityService.instance?.lifecycleManager
-                    lifecycleManager?.onRideDetected(ride, rideId)
+                    lifecycleManager?.onRideDetected(ride, rideId, scoreResult.totalScore)
 
                     // v6.1.0: Notificar AutoPilot para avaliar auto-aceitar/recusar
                     val autoPilot = RideAccessibilityService.instance?.autoPilotEngine

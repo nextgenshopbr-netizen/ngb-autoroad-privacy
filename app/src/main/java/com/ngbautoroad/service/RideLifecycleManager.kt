@@ -109,6 +109,7 @@ class RideLifecycleManager(private val context: Context) {
     // ── Estado atual ──
     private var currentRide: RideData? = null
     private var currentRideDbId: Long = 0L
+    private var currentRideScore: Double = 0.0
     private var currentPhase: RidePhase = RidePhase.IDLE
     private var phaseStartTime: Long = 0L
 
@@ -148,7 +149,7 @@ class RideLifecycleManager(private val context: Context) {
      * @param ride Dados da corrida detectada
      * @param dbId ID da corrida no banco (já inserida pelo OverlayService como PENDING)
      */
-    fun onRideDetected(ride: RideData, dbId: Long) {
+    fun onRideDetected(ride: RideData, dbId: Long, score: Double = 0.0) {
         Log.i(TAG, "╔══════════════════════════════════════════════════╗")
         Log.i(TAG, "║  🆕 CORRIDA DETECTADA — Iniciando Lifecycle      ║")
         Log.i(TAG, "║  ID: $dbId | R$ ${String.format("%.2f", ride.rideValue)}")
@@ -160,6 +161,7 @@ class RideLifecycleManager(private val context: Context) {
 
         currentRide = ride
         currentRideDbId = dbId
+        currentRideScore = score
         transitionTo(RidePhase.PENDING)
 
         // Iniciar timeout de aceitação
@@ -427,7 +429,7 @@ class RideLifecycleManager(private val context: Context) {
             // Verificar se já foi importado (evitar duplicata)
             val alreadyImported = financeDb.earningDao().countAutoImportedByRideId(currentRideDbId)
             if (alreadyImported > 0) {
-                Log.d(TAG, "│  ⊘ Ganho já registrado para id=$currentRideDbId — ignorando duplicata")
+                Log.d(TAG, "│  ⊊ Ganho já registrado para id=$currentRideDbId — ignorando duplicata")
                 return
             }
 
@@ -440,7 +442,8 @@ class RideLifecycleManager(private val context: Context) {
                 description = "Auto-import (lifecycle)",
                 period = "DIA",
                 isAutoImported = true,
-                rideHistoryId = currentRideDbId
+                rideHistoryId = currentRideDbId,
+                score = currentRideScore
             )
             financeDb.earningDao().insert(earning)
 

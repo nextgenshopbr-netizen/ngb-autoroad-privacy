@@ -43,7 +43,8 @@ class RideScorer(
     private val weights: CriteriaWeights,
     private val driverThresholds: DriverThresholds = DriverThresholds(),
     private val blockedNeighborhoods: List<BlockedNeighborhood> = emptyList(),
-    private val thresholds: ScoringThresholds = ScoringThresholds()
+    private val thresholds: ScoringThresholds = ScoringThresholds(),
+    private val costPerKm: Double = 0.0  // v6.3.9: Custo/km do veículo para score de lucro líquido
 ) {
 
     // ========================================================================
@@ -247,6 +248,35 @@ class RideScorer(
                     currentValue = ride.dropoffDistance,
                     minimumRequired = driverThresholds.minDropoffDistance,
                     penaltyApplied = penalty
+                ))
+            }
+        }
+
+        // --- CRITÉRIO 9: Lucro/KM (v6.3.9 — Integração IA↔Finanças) ---
+        // Só ativa se costPerKm > 0 (veículo configurado) E dropoffDistance > 0
+        // Fórmula: (rideValue / dropoffDistance) - costPerKm = lucro líquido por km
+        // Normalização: 0 = prejuízo, 100 = lucro >= 2x o custo
+        if (costPerKm > 0.0 && ride.dropoffDistance > 0) {
+            val profitPerKm = ride.valuePerKm - costPerKm
+            val maxProfit = costPerKm * 2.0 // Lucro excelente = 2x o custo
+            val normalized = ((profitPerKm / maxProfit) * 100.0).coerceIn(0.0, 100.0)
+            // Peso implícito: usa 10% do peso de valuePerKm (não altera soma de pesos do usuário)
+            val implicitWeight = (weights.valuePerKm * 0.10).coerceAtLeast(1.0).toInt()
+            criteriaScores["profitPerKm"] = CriteriaScore(
+                name = "Lucro/KM",
+                rawValue = profitPerKm,
+                normalizedScore = normalized,
+                weight = implicitWeight,
+                weightedScore = normalized * implicitWeight / 100.0,
+                level = getLevel(normalized)
+            )
+            // Penalidade se lucro negativo (corrida dá prejuízo)
+            if (profitPerKm < 0) {
+                violations.add(ThresholdViolation(
+                    criteriaName = "Lucro/KM",
+                    currentValue = profitPerKm,
+                    minimumRequired = 0.0,
+                    penaltyApplied = 5.0 // Penalidade fixa de 5 pontos por prejuízo
                 ))
             }
         }

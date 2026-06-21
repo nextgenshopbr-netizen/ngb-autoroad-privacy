@@ -64,7 +64,9 @@ data class EarningEntity(
     val period: String = "DIA",            // DIA, SEMANA, MES
     val isAutoImported: Boolean = false,   // Se foi importado automaticamente (item 3.2)
     // v3.0 — item 3.3: DRE / relatório
-    val rideHistoryId: Long = 0            // ID do histórico de corrida associado (se auto-importado)
+    val rideHistoryId: Long = 0,           // ID do histórico de corrida associado (se auto-importado)
+    // v6.3.9: Integração IA↔Finanças — score da corrida para correlação
+    val score: Double = 0.0                // Score da corrida (0-100) para análise de lucratividade
 )
 
 @Entity(tableName = "maintenance_reminders")
@@ -158,6 +160,10 @@ interface ExpenseDao {
     // Relatório DRE (item 3.3)
     @Query("SELECT category, SUM(amount) as total FROM expenses WHERE date >= :startDate AND date <= :endDate GROUP BY category ORDER BY total DESC")
     suspend fun getExpenseSummaryByCategory(startDate: Long, endDate: Long): List<CategorySummary>
+
+    // v6.3.9: Total de despesas no período (versão suspend para relatórios)
+    @Query("SELECT SUM(amount) FROM expenses WHERE date >= :startDate AND date <= :endDate")
+    suspend fun getTotalExpensesSyncByPeriod(startDate: Long, endDate: Long): Double?
 }
 
 @Dao
@@ -226,6 +232,14 @@ interface EarningDao {
     // v6.3.8: Contar dias distintos com ganhos (dias trabalhados) para projeção precisa
     @Query("SELECT COUNT(DISTINCT(date / 86400000)) FROM earnings WHERE date >= :startDate AND date <= :endDate")
     suspend fun countDistinctDaysSync(startDate: Long, endDate: Long): Int?
+
+    // v6.3.9: Média de valor por corrida (para estimar corridas restantes no break-even)
+    @Query("SELECT AVG(amount) FROM earnings WHERE date >= :startDate AND date <= :endDate AND isAutoImported = 1")
+    suspend fun getAverageAmountSync(startDate: String, endDate: String): Double?
+
+    // v6.3.9: Média de valor por corrida (versão Long para ProfitAwareAutoPilot)
+    @Query("SELECT AVG(amount) FROM earnings WHERE date >= :startMs AND date <= :endMs AND isAutoImported = 1")
+    suspend fun getAverageAmountSyncLong(startMs: Long, endMs: Long): Double?
 }
 
 @Dao
@@ -304,7 +318,7 @@ data class PlatformSummary(
         VehicleProfileEntity::class,
         IndividualExpenseEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class FinanceDatabase : RoomDatabase() {
@@ -333,6 +347,13 @@ abstract class FinanceDatabase : RoomDatabase() {
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE financial_goals ADD COLUMN goalType TEXT NOT NULL DEFAULT 'BRUTO'")
+            }
+        }
+
+        // Migração v5 → v6: Adicionar score no EarningEntity (integração IA↔Finanças)
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE earnings ADD COLUMN score REAL NOT NULL DEFAULT 0.0")
             }
         }
 
@@ -397,7 +418,7 @@ abstract class FinanceDatabase : RoomDatabase() {
                     FinanceDatabase::class.java,
                     "ngb_finance_db"
                 )
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 // Fallback apenas para migração de versão 1 (primeira instalação antiga)
                 .fallbackToDestructiveMigrationFrom(1)
                 // Removido allowMainThreadQueries — todas as queries são suspend/Flow (item 6.2)
