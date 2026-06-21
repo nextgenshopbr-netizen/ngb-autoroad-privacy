@@ -146,6 +146,71 @@ class GpsTrackingEngine(private val context: Context) : LocationListener, Sensor
         Log.i(TAG, "📍 GPS Tracking encerrado. Total: ${String.format("%.2f", state.totalDistanceKm)} km")
     }
 
+    // v6.9.0: Controle automático por ActivityStateDetector
+    private var isPaused = false
+    private var isEconomyMode = false
+    private val ECONOMY_TIME_MS = 30_000L  // 30s entre updates no modo economia
+    private val ECONOMY_DISTANCE_M = 50f   // 50m entre pontos no modo economia
+
+    /**
+     * v6.9.0: Pausa o GPS (motorista caminhando/correndo/exercício).
+     * Não conta KM mas mantém estado para retomar.
+     */
+    fun pauseTracking() {
+        if (isPaused) return
+        isPaused = true
+        locationManager?.removeUpdates(this)
+        Log.d(TAG, "⏸️ GPS pausado (motorista fora do veículo)")
+    }
+
+    /**
+     * v6.9.0: Retoma o GPS (motorista voltou a dirigir).
+     */
+    @Suppress("MissingPermission")
+    fun resumeTracking() {
+        if (!isPaused && !isEconomyMode) return
+        isPaused = false
+        isEconomyMode = false
+        try {
+            locationManager?.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                MIN_TIME_MS,
+                MIN_DISTANCE_METERS,
+                this,
+                Looper.getMainLooper()
+            )
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Sem permissão GPS ao resumir: ${e.message}")
+        }
+        Log.d(TAG, "▶️ GPS retomado (motorista dirigindo)")
+    }
+
+    /**
+     * v6.9.0: Modo economia (motorista parado, esperando corrida).
+     * GPS coleta a cada 30s/50m em vez de 3s/10m.
+     */
+    @Suppress("MissingPermission")
+    fun setEconomyMode(enabled: Boolean) {
+        if (enabled == isEconomyMode) return
+        isEconomyMode = enabled
+        isPaused = false
+        locationManager?.removeUpdates(this)
+        val timeMs = if (enabled) ECONOMY_TIME_MS else MIN_TIME_MS
+        val distM = if (enabled) ECONOMY_DISTANCE_M else MIN_DISTANCE_METERS
+        try {
+            locationManager?.requestLocationUpdates(
+                LocationManager.GPS_PROVIDER,
+                timeMs,
+                distM,
+                this,
+                Looper.getMainLooper()
+            )
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Sem permissão GPS ao mudar modo: ${e.message}")
+        }
+        Log.d(TAG, if (enabled) "🔋 GPS modo economia" else "📍 GPS modo ativo")
+    }
+
     /**
      * Marca início de uma corrida (para separar KM de corrida vs KM morto).
      */

@@ -205,8 +205,18 @@ class OdometerEngine(
      *   Famílias com uso pessoal alto podem ter fator real > 3.0
      */
     private fun calculateEWMA(entries: List<OdometerHistoryEntity>): Double {
-        val alpha = 0.3
-        val validEntries = entries.filter { it.calibrationFactor > 0 && it.kmTrackedSinceLast > 50 }
+        // v6.9.0: Cold Start - nos primeiros 30 dias, usar alpha mais alto
+        // para aprender rápido o padrão do motorista
+        val daysSinceFirst = if (entries.isNotEmpty()) {
+            val firstEntry = entries.minByOrNull { it.timestamp }?.timestamp ?: 0L
+            ((System.currentTimeMillis() - firstEntry) / 86_400_000L).toInt()
+        } else 0
+        val isColdStart = daysSinceFirst < 30
+        val alpha = if (isColdStart) 0.5 else 0.3  // Aprendizado acelerado no 1º mês
+
+        // v6.9.0: Cold Start - aceitar entries com menos KM no primeiro mês
+        val minKmThreshold = if (isColdStart) 20.0 else 50.0
+        val validEntries = entries.filter { it.calibrationFactor > 0 && it.kmTrackedSinceLast > minKmThreshold }
         if (validEntries.isEmpty()) return 1.3
 
         // Calcular média para detecção de outlier

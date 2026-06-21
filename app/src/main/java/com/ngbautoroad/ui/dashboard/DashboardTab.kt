@@ -330,6 +330,18 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
         FinancialSummarySection(database)
 
         Spacer(modifier = Modifier.height(12.dp))
+        // v6.9.0: Card de insight de fadiga (não intrusivo, apenas dados)
+        FatigueInsightCard(context)
+
+        Spacer(modifier = Modifier.height(12.dp))
+        // v6.9.0: Card de estado de atividade (dirigindo/parado/caminhando)
+        ActivityStateCard(context)
+
+        Spacer(modifier = Modifier.height(12.dp))
+        // v6.9.0: Card de sugestão de reserva de manutenção
+        MaintenanceAdvisorCard(context)
+
+        Spacer(modifier = Modifier.height(12.dp))
         // v6.5.0: Card de alerta de odômetro com dialog inline
         OdometerAlertCard()
     }
@@ -1515,5 +1527,188 @@ fun OdometerAlertCard() {
                 TextButton(onClick = { showOdometerDialog = false }) { Text("Depois") }
             }
         )
+    }
+}
+
+// ============================================================================
+// v6.9.0: Cards de IA para Dashboard (não intrusivos)
+// ============================================================================
+
+@Composable
+private fun FatigueInsightCard(context: android.content.Context) {
+    val scope = rememberCoroutineScope()
+    var insight by remember { mutableStateOf<com.ngbautoroad.domain.FatigueInsight?>(null) }
+    var expanded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val engine = com.ngbautoroad.domain.FatigueInsightEngine(context)
+            insight = engine.getQuickInsight()
+        }
+    }
+
+    insight?.let { data ->
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded },
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f)
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Lightbulb,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            data.title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    }
+                    Icon(
+                        if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+                if (expanded) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        data.message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                    data.dataComparison?.let { comp ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            comp.conclusion,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActivityStateCard(context: android.content.Context) {
+    val detector = remember { com.ngbautoroad.domain.ActivityStateDetector(context) }
+    val state = detector.currentState
+
+    // Só mostra se o turno está ativo e o estado é conhecido
+    if (state == com.ngbautoroad.domain.DriverActivityState.UNKNOWN) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = when (state) {
+                com.ngbautoroad.domain.DriverActivityState.DRIVING -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                com.ngbautoroad.domain.DriverActivityState.STILL -> MaterialTheme.colorScheme.surfaceVariant
+                else -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+            }
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                state.emoji,
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    state.label,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    when (state.gpsMode) {
+                        com.ngbautoroad.domain.GpsMode.ACTIVE -> "GPS ativo | Contando KM"
+                        com.ngbautoroad.domain.GpsMode.ECONOMY -> "GPS economia | Aguardando"
+                        com.ngbautoroad.domain.GpsMode.OFF -> "GPS pausado | KM não contado"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MaintenanceAdvisorCard(context: android.content.Context) {
+    val scope = rememberCoroutineScope()
+    var suggestion by remember { mutableStateOf<com.ngbautoroad.domain.ReserveAdjustmentSuggestion?>(null) }
+
+    LaunchedEffect(Unit) {
+        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val db = FinanceDatabase.getInstance(context)
+                val active = db.vehicleProfileDao().getActiveVehicleSync()
+                if (active != null) {
+                    val advisor = com.ngbautoroad.domain.MaintenanceReserveAdvisor(context)
+                    val odometer = active.currentOdometer
+                    val reserve = active.costPerKm * odometer * 0.03 // Reserva estimada: 3% do custo/km
+                    suggestion = advisor.analyze(active, odometer, reserve)
+                }
+            } catch (_: Exception) { }
+        }
+    }
+
+    suggestion?.let { data ->
+        if (!com.ngbautoroad.domain.MaintenanceReserveAdvisor(context).shouldShowSuggestion(data.nextMaintenanceName)) return
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = if (data.isUrgent)
+                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                else
+                    MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+            )
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Build,
+                        contentDescription = null,
+                        tint = if (data.isUrgent) MaterialTheme.colorScheme.error
+                               else MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        if (data.isUrgent) "Reserva insuficiente!" else "Sugestão de reserva",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    data.message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
