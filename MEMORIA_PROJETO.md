@@ -617,3 +617,41 @@
 - `domain/RideScorer.kt` — normalizeRating(), getRatingPenaltyMultiplier(), cálculo de penalidade
 - `ui/criteria/CriteriaTab.kt` — Row com ícone info + AlertDialog com tabela
 - `app/build.gradle.kts` — versionName 6.4.1
+
+---
+
+## v6.5.0 — Odômetro Inteligente + Proteção por Rating (21/06/2026)
+
+### Odômetro Inteligente (4 camadas)
+- **Camada 1**: Campo odômetro no cadastro de veículo (VehicleProfileEntity) + OdometerHistoryEntity + Migration v6→v7
+- **Camada 1**: Card na Dashboard com dialog inline para atualizar odômetro (sem navegar para outra tela)
+- **Camada 2**: OdometerEngine.kt — estimativa automática: `odômetroEstimado = base + (kmRastreado × fatorCorreção)`
+- **Camada 3**: Auto-calibração EWMA (alpha=0.3) — sistema aprende o padrão de uso pessoal
+- **Camada 4**: DRE e ProjectionEngine usam KM real (fator de correção) em vez de apenas KM de corridas
+- **Camada 4**: VehicleProfileCard exibe odômetro, dias desde atualização e fator de correção
+
+### Penalidade de Rating por Multiplicador (RideScorer.kt)
+- Zona suave 4.7–5.0: normalização linear 75→100
+- Zona rígida <4.7: curva cúbica agressiva
+- Multiplicadores de penalidade: 4.5–4.7=2.5×, 4.3–4.5=3.5×, <4.3=4.0×
+- Ícone info na CriteriaTab com tabela de multiplicadores
+- Caso real: passageiro 4.23★ em corrida excelente → Score 88→32 (RECUSAR)
+
+### Pontos de Ruptura Resolvidos
+1. Odômetro nunca atualizado → campo + alerta na Dashboard
+2. KM rastreado ≠ KM real → fator de correção (padrão 1.3×)
+3. Projeção subestimada → ProjectionEngine usa projKmReal
+4. DRE com custos subestimados → totalKm × correctionFactor
+5. Sem auto-calibração → EWMA com histórico de atualizações
+
+### Arquivos Modificados
+- `data/db/FinanceExtensions.kt` — VehicleProfileEntity (novos campos) + OdometerHistoryEntity + OdometerHistoryDao
+- `data/db/FinanceDatabase.kt` — Migration v6→v7, registro de OdometerHistoryEntity
+- `domain/OdometerEngine.kt` — NOVO: motor de cálculo do odômetro estimado
+- `domain/RideScorer.kt` — normalizeRating com duas zonas + getRatingPenaltyMultiplier
+- `domain/FinanceDRE.kt` — totalKm usa fator de correção
+- `domain/ProjectionEngine.kt` — projKmReal com fator de correção
+- `domain/LocalLearningEngine.kt` — SuggestionType.MAINTENANCE_ALERT
+- `ui/dashboard/DashboardTab.kt` — OdometerAlertCard com dialog inline
+- `ui/finance/FinanceExtTabs.kt` — Campo odômetro no AddVehicleProfileDialog + VehicleProfileCard
+- `ui/criteria/CriteriaTab.kt` — Ícone info com tabela de multiplicadores de rating
