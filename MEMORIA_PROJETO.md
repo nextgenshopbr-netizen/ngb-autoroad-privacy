@@ -655,3 +655,45 @@
 - `ui/dashboard/DashboardTab.kt` — OdometerAlertCard com dialog inline
 - `ui/finance/FinanceExtTabs.kt` — Campo odômetro no AddVehicleProfileDialog + VehicleProfileCard
 - `ui/criteria/CriteriaTab.kt` — Ícone info com tabela de multiplicadores de rating
+
+---
+
+## v6.6.0 — Inteligência Completa: GPS + Segurança + Manutenção (21/06/2026)
+
+### 12 Rupturas Corrigidas
+1. pickupDistance no EarningEntity + DRE (KM morto contabilizado)
+2. ReturnFactorEngine — fator de volta vazia por bairro
+3. Fadiga por tempo no ShiftManager (4h/6h/8h/10h com alertas)
+4. Taxa de cancelamento com alerta visual
+5. SafetyScoreModifier multi-fator (horário + bairro + rating cascata)
+6. Desgaste diferenciado para veículos elétricos (pneus +25%, freios -40%)
+7. MaintenanceReserveEngine — reserva financeira sugerida
+8. OdometerEngine integrado com GPS real
+9. SmartRoutingEngine — direção de casa no fim do turno
+10. ShiftHistoryEntity — histórico de turnos persistido com dados GPS
+11. Detecção de padrão da plataforma (teste de corridas ruins)
+12. Multi-plataforma awareness
+
+### Novos Engines
+- GpsTrackingEngine: odômetro real via GPS + acelerômetro + validação KM da Uber
+- GeoEnrichmentEngine: reverse geocoding + dados de trânsito via internet
+- SafetyScoreModifier: análise de segurança com efeito cascata multiplicativo
+- ReturnFactorEngine: aprendizado de volta vazia por bairro (org.json)
+- MaintenanceReserveEngine: cálculo de reserva R$/km para manutenção
+- SmartRoutingEngine: direção de casa + padrão plataforma + multi-plataforma
+- ShiftHistoryManager: persistência de turnos com dados GPS
+
+### Correções de UI
+- Headers redundantes removidos de todas as 5 abas (Início, Critérios, IA, Finanças, Config)
+
+### Banco de Dados
+- Migration v7→v8: shift_history (com GPS), pickupDistance no earnings
+
+### Arquivos Novos
+- domain/GpsTrackingEngine.kt
+- domain/GeoEnrichmentEngine.kt
+- domain/SafetyScoreModifier.kt
+- domain/ReturnFactorEngine.kt
+- domain/MaintenanceReserveEngine.kt
+- domain/SmartRoutingEngine.kt
+- domain/ShiftHistoryManager.kt
