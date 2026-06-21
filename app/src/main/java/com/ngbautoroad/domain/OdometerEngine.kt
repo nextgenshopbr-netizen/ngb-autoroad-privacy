@@ -245,6 +245,167 @@ class OdometerEngine(
 
         return alerts
     }
+
+    // ========================================================================
+    // v6.6.0: PREVISÃO DE USO FAMILIAR
+    // A IA aprende o padrão de uso da família e prevê KM mesmo quando
+    // o motorista esquece de atualizar o odômetro.
+    // ========================================================================
+
+    /**
+     * Calcula a previsão de uso familiar baseada no histórico de atualizações.
+     * Aprende: KM família/dia = (KM real - KM rastreado) / dias entre atualizações
+     *
+     * Com o tempo, a IA identifica:
+     * - Média diária de uso familiar
+     * - Padrão semanal (dias úteis vs fim de semana)
+     * - Tendência (aumentando ou diminuindo)
+     */
+    suspend fun predictFamilyUsage(vehicle: VehicleProfileEntity): FamilyUsagePrediction {
+        val entries = odometerHistoryDao.getLastEntries(vehicle.id)
+        if (entries.size < 2) {
+            // Sem dados suficientes — usar estimativa padrão
+            return FamilyUsagePrediction(
+                avgDailyFamilyKm = 15.0, // Padrão: 15 km/dia de uso familiar
+                confidence = 0.2,
+                dataPoints = 0,
+                trend = UsageTrend.STABLE,
+                weekdayAvg = 12.0,
+                weekendAvg = 25.0
+            )
+        }
+
+        // Calcular KM familiar para cada período entre atualizações
+        val familyKmPerDay = mutableListOf<Double>()
+
+        for (i in 0 until entries.size - 1) {
+            val newer = entries[i]   // Mais recente
+            val older = entries[i + 1] // Mais antigo
+
+            val daysBetween = ((newer.timestamp - older.timestamp) / (1000.0 * 60 * 60 * 24)).coerceAtLeast(1.0)
+            val realKm = (newer.odometerValue - older.odometerValue).toDouble()
+            val trackedKm = newer.kmTrackedSinceLast
+
+            if (realKm > 0 && trackedKm >= 0) {
+                val familyKm = (realKm - trackedKm).coerceAtLeast(0.0)
+                val dailyFamily = familyKm / daysBetween
+                familyKmPerDay.add(dailyFamily)
+            }
+        }
+
+        if (familyKmPerDay.isEmpty()) {
+            return FamilyUsagePrediction(
+                avgDailyFamilyKm = 15.0,
+                confidence = 0.3,
+                dataPoints = entries.size,
+                trend = UsageTrend.STABLE,
+                weekdayAvg = 12.0,
+                weekendAvg = 25.0
+            )
+        }
+
+        // Média ponderada (mais peso nos dados recentes)
+        var weightedSum = 0.0
+        var weightTotal = 0.0
+        familyKmPerDay.forEachIndexed { index, km ->
+            val weight = index + 1.0 // Mais recente = maior peso
+            weightedSum += km * weight
+            weightTotal += weight
+        }
+        val avgDaily = weightedSum / weightTotal
+
+        // Tendência: comparar primeira metade vs segunda metade
+        val trend = if (familyKmPerDay.size >= 4) {
+            val firstHalf = familyKmPerDay.takeLast(familyKmPerDay.size / 2).average()
+            val secondHalf = familyKmPerDay.take(familyKmPerDay.size / 2).average()
+            when {
+                secondHalf > firstHalf * 1.15 -> UsageTrend.INCREASING
+                secondHalf < firstHalf * 0.85 -> UsageTrend.DECREASING
+                else -> UsageTrend.STABLE
+            }
+        } else UsageTrend.STABLE
+
+        // Confiança baseada na quantidade de dados
+        val confidence = (familyKmPerDay.size.toDouble() / 10.0).coerceAtMost(1.0)
+
+        // Estimativa dia útil vs fim de semana (heurística: fim de semana = 2x)
+        val weekdayAvg = avgDaily * 0.8
+        val weekendAvg = avgDaily * 1.6
+
+        return FamilyUsagePrediction(
+            avgDailyFamilyKm = avgDaily,
+            confidence = confidence,
+            dataPoints = familyKmPerDay.size,
+            trend = trend,
+            weekdayAvg = weekdayAvg,
+            weekendAvg = weekendAvg
+        )
+    }
+
+    /**
+     * Calcula o odômetro previsto quando o motorista esquece de atualizar.
+     * Usa: KM GPS + previsão de uso familiar × dias sem atualização.
+     */
+    suspend fun getPredictedOdometerWithFamily(vehicle: VehicleProfileEntity): PredictedOdometer {
+        val (baseEstimate, isEstimated) = getEstimatedOdometer(vehicle)
+        if (!isEstimated || vehicle.currentOdometer == 0) {
+            return PredictedOdometer(
+                value = baseEstimate,
+                familyKmAdded = 0.0,
+                confidence = 1.0,
+                daysSinceUpdate = 0,
+                source = "real"
+            )
+        }
+
+        val now = System.currentTimeMillis()
+        val daysSinceUpdate = ((now - vehicle.lastOdometerUpdate) / (1000.0 * 60 * 60 * 24)).toInt()
+
+        val familyPrediction = predictFamilyUsage(vehicle)
+
+        // Adicionar KM familiar previsto ao odômetro estimado
+        val familyKmToAdd = familyPrediction.avgDailyFamilyKm * daysSinceUpdate
+        val predictedOdometer = baseEstimate + familyKmToAdd.toInt()
+
+        // Confiança diminui com o tempo sem atualização
+        val timeDecay = 1.0 / (1.0 + daysSinceUpdate * 0.05) // Decai ~5% por dia
+        val totalConfidence = familyPrediction.confidence * timeDecay
+
+        return PredictedOdometer(
+            value = predictedOdometer,
+            familyKmAdded = familyKmToAdd,
+            confidence = totalConfidence,
+            daysSinceUpdate = daysSinceUpdate,
+            source = if (totalConfidence > 0.6) "ia_previsto" else "estimativa_baixa_confiança"
+        )
+    }
+}
+
+// ============================================================================
+// DATA CLASSES
+// ============================================================================
+
+data class FamilyUsagePrediction(
+    val avgDailyFamilyKm: Double,     // Média diária de uso familiar (km)
+    val confidence: Double,            // 0.0 a 1.0 — quão confiável é a previsão
+    val dataPoints: Int,               // Quantas atualizações de odômetro foram usadas
+    val trend: UsageTrend,             // Tendência de uso
+    val weekdayAvg: Double,            // Média dia útil
+    val weekendAvg: Double             // Média fim de semana
+)
+
+data class PredictedOdometer(
+    val value: Int,                    // Odômetro previsto
+    val familyKmAdded: Double,         // KM familiar adicionado à previsão
+    val confidence: Double,            // Confiança na previsão (0-1)
+    val daysSinceUpdate: Int,          // Dias desde última atualização
+    val source: String                 // "real", "ia_previsto", "estimativa_baixa_confiança"
+)
+
+enum class UsageTrend {
+    INCREASING,  // Família está usando mais o carro
+    STABLE,      // Uso estável
+    DECREASING   // Família está usando menos
 }
 
 data class MaintenanceAlert(
