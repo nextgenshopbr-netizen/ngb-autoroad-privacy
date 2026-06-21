@@ -44,9 +44,11 @@ import com.ngbautoroad.data.db.VehicleProfileEntity
 import com.ngbautoroad.data.db.OdometerHistoryEntity
 import com.ngbautoroad.data.model.DashboardData
 import com.ngbautoroad.data.prefs.PrefsManager
+import com.ngbautoroad.ui.criteria.SavedProfile
 import com.ngbautoroad.ui.features.FeaturesActivity
 import com.ngbautoroad.ui.theme.*
 import com.ngbautoroad.domain.OdometerEngine
+import com.ngbautoroad.domain.PermissionManager
 import com.ngbautoroad.domain.ShiftManager
 import com.ngbautoroad.domain.ShiftState
 import com.ngbautoroad.service.OverlayService
@@ -120,6 +122,44 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
+        // v6.9.2: Banner compacto de permissões pendentes
+        val missingCount = remember { PermissionManager.getMissingRequiredCount(context) }
+        if (missingCount > 0) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        context.startActivity(
+                            Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = android.net.Uri.parse("package:${context.packageName}")
+                            }
+                        )
+                    },
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "$missingCount permiss${if (missingCount == 1) "ão crítica" else "ões críticas"} pendente${if (missingCount > 1) "s" else ""} — toque para resolver",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         // v6.1.1: Seletor rápido de perfil antes de iniciar turno
         ProfileQuickSelector(prefsManager, scope)
 
@@ -1143,20 +1183,14 @@ fun ProfileQuickSelector(prefsManager: PrefsManager, scope: kotlinx.coroutines.C
     val allProfiles = remember(profilesJson, favoriteIds) {
         try {
             val jsonParser = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
-            val parsed = jsonParser.decodeFromString<List<kotlinx.serialization.json.JsonObject>>(profilesJson)
-            parsed.mapIndexed { idx, obj ->
-                val profileId = obj["id"]?.let {
-                    val prim = it as? kotlinx.serialization.json.JsonPrimitive
-                    prim?.content?.toIntOrNull()
-                } ?: (idx + 1)
-                val profileName = obj["name"]?.let {
-                    val prim = it as? kotlinx.serialization.json.JsonPrimitive
-                    prim?.content?.takeIf { n -> n.isNotBlank() && n != "null" }
-                } ?: "Perfil $profileId"
+            // v6.9.2: Usar SavedProfile.serializer() para garantir que o nome personalizado
+            // seja lido corretamente (fix definitivo do bug de nome no Dashboard)
+            val savedProfiles = jsonParser.decodeFromString<List<SavedProfile>>(profilesJson)
+            savedProfiles.map { sp ->
                 QuickProfile(
-                    id = profileId,
-                    name = profileName,
-                    isFavorite = profileId in favoriteIds
+                    id = sp.id,
+                    name = sp.name.ifBlank { "Perfil ${sp.id}" },
+                    isFavorite = sp.id in favoriteIds
                 )
             }
         } catch (_: Exception) { emptyList() }

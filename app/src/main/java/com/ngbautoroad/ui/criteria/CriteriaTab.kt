@@ -1135,6 +1135,10 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
 
     var showSaveDialog by remember { mutableStateOf(false) }
     var newProfileName by remember { mutableStateOf("") }
+    // v6.9.2: Renomear perfil existente
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var renameTargetId by remember { mutableIntStateOf(-1) }
+    var renameText by remember { mutableStateOf("") }
 
     val profiles = remember(profilesJson) {
         try {
@@ -1193,6 +1197,20 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
                         )
                     }
                     Row {
+                        // Botão Renomear (lápis) - v6.9.2
+                        IconButton(onClick = {
+                            renameTargetId = profile.id
+                            renameText = profile.name
+                            showRenameDialog = true
+                        }) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Renomear perfil",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        // Botão Carregar / Ativo
                         IconButton(onClick = {
                             scope.launch {
                                 prefsManager.saveCriteriaWeights(profile.weights)
@@ -1211,6 +1229,7 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
                                 else MaterialTheme.colorScheme.primary
                             )
                         }
+                        // Botão Excluir
                         IconButton(onClick = {
                             scope.launch {
                                 val updated = profiles.filter { it.id != profile.id }
@@ -1286,6 +1305,48 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
 
     if (profiles.size >= 5) {
         Text("Máximo de 5 perfis atingido", fontSize = 11.sp, color = ScoreOrange)
+    }
+
+    // Dialog de Renomear Perfil - v6.9.2
+    if (showRenameDialog) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("Renomear Perfil") },
+            text = {
+                Column {
+                    Text("Novo nome para o perfil:", fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = renameText,
+                        onValueChange = { renameText = it },
+                        label = { Text("Nome do perfil") },
+                        placeholder = { Text("Ex: Noturno, Fim de semana") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (renameText.isNotBlank()) {
+                        scope.launch {
+                            val updated = profiles.map { p ->
+                                if (p.id == renameTargetId) p.copy(name = renameText.trim()) else p
+                            }
+                            val json = kotlinx.serialization.json.Json.encodeToString(
+                                kotlinx.serialization.builtins.ListSerializer(SavedProfile.serializer()),
+                                updated
+                            )
+                            prefsManager.saveProfilesJson(json)
+                        }
+                        showRenameDialog = false
+                    }
+                }) { Text("Salvar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) { Text("Cancelar") }
+            }
+        )
     }
 
     if (showSaveDialog) {

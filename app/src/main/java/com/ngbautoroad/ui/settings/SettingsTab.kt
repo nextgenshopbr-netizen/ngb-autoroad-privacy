@@ -242,6 +242,25 @@ private fun SettingsAppContent(prefsManager: PrefsManager) {
 
                 val lifecycleOwner = LocalLifecycleOwner.current
                 var permissionRefreshKey by remember { mutableIntStateOf(0) }
+
+                // v6.9.2: Launchers nativos para GPS Background e Activity Recognition
+                val backgroundLocationLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { _ -> permissionRefreshKey++ }
+
+                val fineLocationLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { granted ->
+                    permissionRefreshKey++
+                    if (granted && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                        // Após conceder localização precisa, pedir background
+                        backgroundLocationLauncher.launch(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                    }
+                }
+
+                val activityRecognitionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { _ -> permissionRefreshKey++ }
                 DisposableEffect(lifecycleOwner) {
                     val observer = LifecycleEventObserver { _, event ->
                         if (event == Lifecycle.Event.ON_RESUME) {
@@ -350,10 +369,17 @@ private fun SettingsAppContent(prefsManager: PrefsManager) {
                     icon = Icons.Default.MyLocation,
                     onClick = {
                         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = android.net.Uri.parse("package:${context.packageName}")
+                            // v6.9.2: Verificar se já tem localização precisa primeiro
+                            val hasFine = androidx.core.content.ContextCompat.checkSelfPermission(
+                                context, android.Manifest.permission.ACCESS_FINE_LOCATION
+                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (!hasFine) {
+                                // Pedir localização precisa primeiro, depois background automaticamente
+                                fineLocationLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                            } else {
+                                // Já tem fine, pedir background direto
+                                backgroundLocationLauncher.launch(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
                             }
-                            context.startActivity(intent)
                         }
                     }
                 )
@@ -374,10 +400,10 @@ private fun SettingsAppContent(prefsManager: PrefsManager) {
                     isGranted = isActivityRecognitionGranted,
                     icon = Icons.Default.DirectionsCar,
                     onClick = {
-                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = android.net.Uri.parse("package:${context.packageName}")
+                        // v6.9.2: Usar dialog nativo em vez de redirecionar para Settings
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                            activityRecognitionLauncher.launch(android.Manifest.permission.ACTIVITY_RECOGNITION)
                         }
-                        context.startActivity(intent)
                     }
                 )
 
