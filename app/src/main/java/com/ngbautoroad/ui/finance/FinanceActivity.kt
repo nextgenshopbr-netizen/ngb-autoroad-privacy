@@ -148,7 +148,7 @@ fun FinanceScreen(
                 3 -> VehicleProfilesTab(vehicleProfileDao, snackbarHostState)
                 4 -> IndividualExpensesTab(individualExpenseDao, vehicleProfileDao, snackbarHostState)
                 5 -> ProjectionTab(earningDao, vehicleProfileDao, individualExpenseDao, rideHistoryDao)
-                6 -> GoalsTab(earningDao, expenseDao, financialGoalDao, snackbarHostState)
+                6 -> GoalsTab(earningDao, expenseDao, financialGoalDao, individualExpenseDao, snackbarHostState)
             }
         }
     }
@@ -157,7 +157,7 @@ fun FinanceScreen(
 // === ABA RESUMO ===
 
 @Composable
-fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialGoalDao: FinancialGoalDao) {
+fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialGoalDao: FinancialGoalDao, individualExpenseDao: IndividualExpenseDao? = null) {
     var period by remember { mutableStateOf(FinancePeriod.TODAY) }
 
     val (startDate, endDate) = remember(period) { getPeriodRange(period) }
@@ -168,6 +168,8 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
     val totalDuration by earningDao.getTotalDuration(startDate, endDate).collectAsState(initial = 0)
     val totalRides by earningDao.getTotalRides(startDate, endDate).collectAsState(initial = 0)
     val activeGoals by financialGoalDao.getActiveGoals().collectAsState(initial = emptyList())
+    // Despesas fixas rateadas (IPVA, seguro, parcela) — mensal
+    val monthlyFixedCosts by (individualExpenseDao?.getTotalMonthlyRated() ?: kotlinx.coroutines.flow.flowOf(0.0)).collectAsState(initial = 0.0)
 
     // Calcular ganhos por período para metas (igual ao GoalsTab)
     val (todayStart, todayEnd) = remember { getPeriodRange(FinancePeriod.TODAY) }
@@ -179,7 +181,15 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
 
     val earnings = totalEarnings ?: 0.0
     val expenses = totalExpenses ?: 0.0
-    val netProfit = earnings - expenses
+    // Ratear custos fixos mensais proporcionalmente ao período selecionado
+    val fixedCostsForPeriod = (monthlyFixedCosts ?: 0.0) * when (period) {
+        FinancePeriod.TODAY -> 1.0 / 30.0
+        FinancePeriod.WEEK -> 7.0 / 30.0
+        FinancePeriod.MONTH -> 1.0
+        FinancePeriod.YEAR -> 12.0
+        FinancePeriod.ALL -> 12.0 // Aproximação
+    }
+    val netProfit = earnings - expenses - fixedCostsForPeriod
     val distance = totalDistance ?: 0.0
     val duration = totalDuration ?: 0
     val rides = totalRides ?: 0
@@ -304,6 +314,54 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("${(progress * 100).toInt()}%", fontSize = 12.sp, color = progressColor, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        // === DRE SIMPLIFICADO ===
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("DRE - Demonstração de Resultado", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text("Visão real do seu negócio", fontSize = 11.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                // DRE inline usando dados já disponíveis
+                val combustivelEstimado = distance * 0.30 // Estimativa se não tiver veículo
+                val desgasteEstimado = distance * 0.05
+                val custosVariaveis = combustivelEstimado + desgasteEstimado
+                val margemContrib = earnings - custosVariaveis
+                val lucroOp = margemContrib - fixedCostsForPeriod
+                val margemPct = if (earnings > 0) (margemContrib / earnings * 100) else 0.0
+                val lucroPct = if (earnings > 0) (lucroOp / earnings * 100) else 0.0
+
+                DRERow("(+) Receita Bruta", earnings, Color.Unspecified)
+                DRERow("(-) Combustível", -combustivelEstimado, ScoreRed)
+                DRERow("(-) Desgaste", -desgasteEstimado, ScoreRed)
+                DRERow("(=) Margem Contribuição", margemContrib, if (margemContrib >= 0) ScoreGreen else ScoreRed, bold = true, pct = margemPct)
+                DRERow("(-) Custos Fixos", -fixedCostsForPeriod, ScoreOrange)
+                DRERow("(=) Lucro Operacional", lucroOp, if (lucroOp >= 0) ScoreGreen else ScoreRed, bold = true, pct = lucroPct)
+            }
+        }
+
+        // === BREAK-EVEN ===
+        if (fixedCostsForPeriod > 0 && rides > 0) {
+            Spacer(modifier = Modifier.height(12.dp))
+            val avgPerRide = if (rides > 0) earnings / rides else 0.0
+            val avgCostPerRide = if (rides > 0) (distance * 0.35) / rides else 0.0
+            val contribPerRide = avgPerRide - avgCostPerRide
+            val breakEvenRides = if (contribPerRide > 0) ((monthlyFixedCosts ?: 0.0) / contribPerRide).toInt() + 1 else 0
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f))
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("Ponto de Equilíbrio (Break-Even)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Corridas para cobrir custos fixos: $breakEvenRides/mês", fontSize = 12.sp)
+                    Text("Margem por corrida: R$ %.2f".format(contribPerRide), fontSize = 12.sp, color = Color.Gray)
                 }
             }
         }
@@ -1146,7 +1204,7 @@ fun VehicleTab(vehicleConfigDao: VehicleConfigDao, snackbarHostState: SnackbarHo
 // === ABA METAS ===
 
 @Composable
-fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao, financialGoalDao: FinancialGoalDao, snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }) {
+fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao, financialGoalDao: FinancialGoalDao, individualExpenseDao: IndividualExpenseDao? = null, snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }) {
     val scope = rememberCoroutineScope()
     val activeGoals by financialGoalDao.getActiveGoals().collectAsState(initial = emptyList())
     var showAddGoal by remember { mutableStateOf(false) }
@@ -1158,6 +1216,13 @@ fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao, financialGoalDao: F
     val todayEarnings by earningDao.getTotalEarnings(todayStart, todayEnd).collectAsState(initial = 0.0)
     val weekEarnings by earningDao.getTotalEarnings(weekStart, weekEnd).collectAsState(initial = 0.0)
     val monthEarnings by earningDao.getTotalEarnings(monthStart, monthEnd).collectAsState(initial = 0.0)
+
+    // Despesas por período (para metas tipo LÍQUIDO)
+    val todayExpenses by expenseDao.getTotalExpenses(todayStart, todayEnd).collectAsState(initial = 0.0)
+    val weekExpenses by expenseDao.getTotalExpenses(weekStart, weekEnd).collectAsState(initial = 0.0)
+    val monthExpenses by expenseDao.getTotalExpenses(monthStart, monthEnd).collectAsState(initial = 0.0)
+    // Despesas fixas rateadas
+    val monthlyFixedCosts by (individualExpenseDao?.getTotalMonthlyRated() ?: kotlinx.coroutines.flow.flowOf(0.0)).collectAsState(initial = 0.0)
 
     Column(
         modifier = Modifier
@@ -1171,7 +1236,7 @@ fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao, financialGoalDao: F
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Metas de Ganho", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text("Metas Financeiras", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             IconButton(onClick = { showAddGoal = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar meta")
             }
@@ -1183,11 +1248,23 @@ fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao, financialGoalDao: F
         }
 
         activeGoals.forEach { goal ->
-            val current = when (goal.period) {
-                "DIA" -> todayEarnings ?: 0.0
-                "SEMANA" -> weekEarnings ?: 0.0
-                "MES" -> monthEarnings ?: 0.0
-                else -> 0.0
+            val fixedMonthly = monthlyFixedCosts ?: 0.0
+            val current = if (goal.goalType == "LIQUIDO") {
+                // Lucro líquido = ganhos - despesas variáveis - fixos rateados
+                when (goal.period) {
+                    "DIA" -> (todayEarnings ?: 0.0) - (todayExpenses ?: 0.0) - (fixedMonthly / 30.0)
+                    "SEMANA" -> (weekEarnings ?: 0.0) - (weekExpenses ?: 0.0) - (fixedMonthly * 7.0 / 30.0)
+                    "MES" -> (monthEarnings ?: 0.0) - (monthExpenses ?: 0.0) - fixedMonthly
+                    else -> 0.0
+                }
+            } else {
+                // Ganho bruto
+                when (goal.period) {
+                    "DIA" -> todayEarnings ?: 0.0
+                    "SEMANA" -> weekEarnings ?: 0.0
+                    "MES" -> monthEarnings ?: 0.0
+                    else -> 0.0
+                }
             }
             val progress = if (goal.targetAmount > 0) (current / goal.targetAmount).coerceIn(0.0, 1.5) else 0.0
             val progressColor = when {
@@ -1206,7 +1283,8 @@ fun GoalsTab(earningDao: EarningDao, expenseDao: ExpenseDao, financialGoalDao: F
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(goal.title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text("Meta: R$ %.2f (${goal.period})".format(goal.targetAmount), fontSize = 11.sp, color = Color.Gray)
+                            val typeLabel = if (goal.goalType == "LIQUIDO") "Líquido" else "Bruto"
+                            Text("Meta: R$ %.2f (${goal.period}) • $typeLabel".format(goal.targetAmount), fontSize = 11.sp, color = Color.Gray)
                         }
                         Text(
                             "${(progress * 100).toInt().coerceAtMost(100)}%",
@@ -1253,6 +1331,7 @@ fun AddGoalDialog(onDismiss: () -> Unit, onConfirm: (FinancialGoalEntity) -> Uni
     var title by remember { mutableStateOf("") }
     var targetAmount by remember { mutableStateOf("") }
     var period by remember { mutableStateOf("MES") }
+    var goalType by remember { mutableStateOf("BRUTO") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1280,6 +1359,22 @@ fun AddGoalDialog(onDismiss: () -> Unit, onConfirm: (FinancialGoalEntity) -> Uni
                         )
                     }
                 }
+                Text("Tipo de Meta", fontSize = 12.sp, color = Color.Gray)
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FilterChip(
+                        selected = goalType == "BRUTO",
+                        onClick = { goalType = "BRUTO" },
+                        label = { Text("Ganho Bruto", fontSize = 11.sp) }
+                    )
+                    FilterChip(
+                        selected = goalType == "LIQUIDO",
+                        onClick = { goalType = "LIQUIDO" },
+                        label = { Text("Lucro Líquido", fontSize = 11.sp) }
+                    )
+                }
+                if (goalType == "LIQUIDO") {
+                    Text("Desconta despesas variáveis + custos fixos rateados", fontSize = 10.sp, color = Color.Gray)
+                }
             }
         },
         confirmButton = {
@@ -1290,7 +1385,8 @@ fun AddGoalDialog(onDismiss: () -> Unit, onConfirm: (FinancialGoalEntity) -> Uni
                         onConfirm(FinancialGoalEntity(
                             title = title.trim(),
                             targetAmount = parsedTarget,
-                            period = period
+                            period = period,
+                            goalType = goalType
                         ))
                     }
                 },
@@ -1335,10 +1431,16 @@ fun getPeriodRange(period: FinancePeriod): Pair<Long, Long> {
             cal.set(Calendar.MILLISECOND, 0)
         }
         FinancePeriod.WEEK -> {
-            cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
+            // Sempre começar na segunda-feira (padrão brasileiro)
+            cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+            // Se hoje for domingo e Monday ficou no futuro, voltar 7 dias
+            if (cal.timeInMillis > end) {
+                cal.add(Calendar.DAY_OF_YEAR, -7)
+            }
             cal.set(Calendar.HOUR_OF_DAY, 0)
             cal.set(Calendar.MINUTE, 0)
             cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
         }
         FinancePeriod.MONTH -> {
             cal.set(Calendar.DAY_OF_MONTH, 1)
@@ -1363,4 +1465,36 @@ fun getPeriodRange(period: FinancePeriod): Pair<Long, Long> {
 @Composable
 fun EditExpenseDialog(expense: ExpenseEntity, onDismiss: () -> Unit, onConfirm: (ExpenseEntity) -> Unit) {
     AddExpenseDialog(onDismiss = onDismiss, onConfirm = onConfirm, existingExpense = expense)
+}
+
+
+@Composable
+fun DRERow(label: String, value: Double, color: Color, bold: Boolean = false, pct: Double = -1.0) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            label,
+            fontSize = 12.sp,
+            fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.weight(1f)
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "R$ %.2f".format(value),
+                fontSize = 12.sp,
+                fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+                color = if (color != Color.Unspecified) color else Color.Unspecified
+            )
+            if (pct >= 0) {
+                Text(
+                    " (%.0f%%)".format(pct),
+                    fontSize = 10.sp,
+                    color = Color.Gray
+                )
+            }
+        }
+    }
 }

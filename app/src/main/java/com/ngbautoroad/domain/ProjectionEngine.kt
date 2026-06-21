@@ -55,10 +55,10 @@ class ProjectionEngine(
         val totalDuration30 = earningDao.getTotalDurationSync(startDate30, endDate) ?: 0
 
         // Calcular médias diárias
-        // v5.0.0: Usar dias reais com dados (não fixo 30) para projeção mais precisa
+        // v6.3.8: Usar DIAS TRABALHADOS (com pelo menos 1 corrida) em vez de dias corridos
         val daysWithData = if (totalRides30 > 0) {
-            val daysSinceFirst = ((endDate - startDate30) / 86_400_000.0).coerceAtLeast(1.0)
-            daysSinceFirst
+            val distinctDaysWorked = earningDao.countDistinctDaysSync(startDate30, endDate) ?: 1
+            distinctDaysWorked.toDouble().coerceAtLeast(1.0)
         } else 1.0
         val avgDailyEarnings = totalEarnings30 / daysWithData
         val avgDailyKm = totalDistance30 / daysWithData

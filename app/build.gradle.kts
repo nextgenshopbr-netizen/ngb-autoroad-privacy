@@ -13,8 +13,8 @@ android {
         applicationId = "com.ngbautoroad"
         minSdk = 26
         targetSdk = 34
-        versionCode = 21
-        versionName = "6.3.7"
+        versionCode = 22
+        versionName = "6.3.8"
     }
 
     signingConfigs {
@@ -107,6 +107,9 @@ dependencies {
 
     // Location
     implementation("com.google.android.gms:play-services-location:21.1.0")
+
+    // WorkManager (tarefas periódicas: recorrência de despesas)
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")

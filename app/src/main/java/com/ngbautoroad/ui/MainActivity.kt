@@ -57,6 +57,9 @@ class MainActivity : ComponentActivity() {
         prefsManager = PrefsManager(applicationContext)
         database = AppDatabase.getInstance(applicationContext)
 
+        // Agendar worker de despesas recorrentes (1x/dia)
+        com.ngbautoroad.service.RecurringExpenseWorker.schedule(applicationContext)
+
         // Check overlay permission
         if (!Settings.canDrawOverlays(this)) {
             val intent = Intent(

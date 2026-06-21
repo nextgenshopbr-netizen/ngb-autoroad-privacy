@@ -103,6 +103,7 @@ data class FinancialGoalEntity(
     val targetAmount: Double = 0.0,
     val currentAmount: Double = 0.0,
     val period: String = "MES",            // DIA, SEMANA, MES
+    val goalType: String = "BRUTO",        // BRUTO = ganho bruto, LIQUIDO = lucro líquido
     val isActive: Boolean = true,
     val createdAt: Long = System.currentTimeMillis()
 )
@@ -137,6 +138,9 @@ interface ExpenseDao {
 
     @Query("SELECT SUM(amount) FROM expenses WHERE category = :category AND date >= :startDate AND date <= :endDate")
     fun getTotalByCategory(category: String, startDate: Long, endDate: Long): Flow<Double?>
+
+    @Query("SELECT SUM(amount) FROM expenses WHERE category = :category AND date >= :startDate AND date <= :endDate")
+    suspend fun getTotalByCategorySync(category: String, startDate: Long, endDate: Long): Double?
 
     @Query("SELECT * FROM expenses WHERE isRecurring = 1 AND isGenerated = 0")
     fun getRecurringExpenses(): Flow<List<ExpenseEntity>>
@@ -218,6 +222,10 @@ interface EarningDao {
     // v6.1.0: Deletar ganho por rideHistoryId (reversão de corrida cancelada)
     @Query("DELETE FROM earnings WHERE rideHistoryId = :rideId AND isAutoImported = 1")
     suspend fun deleteByRideHistoryId(rideId: Long)
+
+    // v6.3.8: Contar dias distintos com ganhos (dias trabalhados) para projeção precisa
+    @Query("SELECT COUNT(DISTINCT(date / 86400000)) FROM earnings WHERE date >= :startDate AND date <= :endDate")
+    suspend fun countDistinctDaysSync(startDate: Long, endDate: Long): Int?
 }
 
 @Dao
@@ -296,7 +304,7 @@ data class PlatformSummary(
         VehicleProfileEntity::class,
         IndividualExpenseEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class FinanceDatabase : RoomDatabase() {
@@ -318,6 +326,13 @@ abstract class FinanceDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE expenses ADD COLUMN parentExpenseId INTEGER NOT NULL DEFAULT 0")
                 database.execSQL("ALTER TABLE expenses ADD COLUMN isGenerated INTEGER NOT NULL DEFAULT 0")
                 database.execSQL("ALTER TABLE earnings ADD COLUMN rideHistoryId INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        // Migração v4 → v5: Adicionar goalType na tabela financial_goals (v6.3.8)
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE financial_goals ADD COLUMN goalType TEXT NOT NULL DEFAULT 'BRUTO'")
             }
         }
 
@@ -382,7 +397,7 @@ abstract class FinanceDatabase : RoomDatabase() {
                     FinanceDatabase::class.java,
                     "ngb_finance_db"
                 )
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 // Fallback apenas para migração de versão 1 (primeira instalação antiga)
                 .fallbackToDestructiveMigrationFrom(1)
                 // Removido allowMainThreadQueries — todas as queries são suspend/Flow (item 6.2)

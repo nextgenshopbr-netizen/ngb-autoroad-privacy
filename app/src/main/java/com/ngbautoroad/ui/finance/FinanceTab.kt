@@ -73,7 +73,8 @@ fun FinanceTab(prefsManager: PrefsManager, database: AppDatabase) {
             0 -> FinanceSummaryTab(
                 expenseDao = financeDb.expenseDao(),
                 earningDao = financeDb.earningDao(),
-                financialGoalDao = financeDb.financialGoalDao()
+                financialGoalDao = financeDb.financialGoalDao(),
+                individualExpenseDao = financeDb.individualExpenseDao()
             )
             1 -> EarningsTab(
                 earningDao = financeDb.earningDao(),
@@ -97,6 +98,7 @@ fun FinanceTab(prefsManager: PrefsManager, database: AppDatabase) {
                 earningDao = financeDb.earningDao(),
                 expenseDao = financeDb.expenseDao(),
                 financialGoalDao = financeDb.financialGoalDao(),
+                individualExpenseDao = financeDb.individualExpenseDao(),
                 snackbarHostState = snackbarHostState
             )
         }
