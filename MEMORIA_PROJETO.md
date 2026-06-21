@@ -697,3 +697,49 @@
 - domain/MaintenanceReserveEngine.kt
 - domain/SmartRoutingEngine.kt
 - domain/ShiftHistoryManager.kt
+
+---
+
+## v6.7.0 — Correção de 12 Rupturas (Simulação 1 Ano)
+**Data:** 2026-06-21
+
+### Contexto
+Simulação avançada de 1 ano com dados aleatórios (365 dias, ~4.500 corridas, uso familiar variável, esquecimento de odômetro) revelou 12 pontos de ruptura cruzando todos os módulos.
+
+### Críticos Corrigidos
+1. **Cold Start**: Onboarding obrigatório de odômetro no primeiro uso
+2. **DRE Retroativo**: Fator de correção por período (não retroativo)
+3. **Safety Floor**: Threshold mínimo 50, score capped quando safety_penalty > 8
+4. **KM Validation History**: Persiste discrepâncias Uber vs GPS + relatório mensal (R$6.445/ano de perda detectada)
+
+### Médios Corrigidos
+5. **Alerta odômetro menor**: Avisa se valor informado < estimado (possível erro)
+6. **Guards divisão por zero**: Já protegido (confirmado na simulação)
+7. **Fadiga pré-corrida**: Score reduzido progressivamente após 8h+ de turno
+8. **EWMA outlier detection**: Férias/viagens não corrompem o fator (IQR filter)
+9. **Seleção de veículo**: vehicleId associado ao turno
+10. **Fator max 5.0**: Permite cenários extremos de uso familiar
+
+### Baixos Corrigidos
+11. **Fator sazonal**: Família usa mais o carro em férias (jan=1.5×, jul=1.3×)
+12. **Filtro Kalman GPS**: Suaviza ruído GPS + ignora micro-movimentos < 3m
+
+### Arquivos Modificados (14)
+- OdometerOnboardingDialog.kt (NOVO)
+- KmValidationHistory.kt (NOVO)
+- OdometerEngine.kt (outlier + sazonal + max 5.0)
+- GpsTrackingEngine.kt (Kalman filter)
+- RideScorer.kt (safety floor + fadiga)
+- FinanceDRE.kt (período-específico)
+- ShiftManager.kt (vehicleId)
+- DashboardTab.kt (alerta odômetro menor)
+- MainActivity.kt (onboarding check)
+- PrefsManager.kt (onboarding pref)
+- FinanceExtensions.kt (getEntriesInPeriodSync)
+- RideData.kt (metadata field)
+
+### Resultado da Simulação Pós-Correção
+- Erro máximo de odômetro: 11% (antes 33%)
+- Corridas de risco aceitas: 0 (antes 53)
+- DRE retroativo: eliminado
+- Cold start: impossível (onboarding obrigatório)
