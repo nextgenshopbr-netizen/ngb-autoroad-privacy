@@ -35,6 +35,8 @@ import com.ngbautoroad.data.db.EarningEntity
 import com.ngbautoroad.data.model.RideData
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.domain.ShiftManager
+import com.ngbautoroad.domain.GpsTrackingEngine
+import com.ngbautoroad.domain.SmartRoutingEngine
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 
@@ -236,6 +238,20 @@ class RideLifecycleManager(private val context: Context) {
 
         transitionTo(RidePhase.ACCEPTED)
 
+        // v6.6.0: Iniciar rastreamento GPS da corrida
+        try {
+            val gps = GpsTrackingEngine(context)
+            gps.startRide()
+            Log.d(TAG, "│  📍 GPS: Rastreamento da corrida iniciado")
+        } catch (e: Exception) {
+            Log.w(TAG, "│  GPS startRide falhou: ${e.message}")
+        }
+
+        // v6.6.0: Registrar aceitação no SmartRoutingEngine (reseta contador de recusas)
+        try {
+            SmartRoutingEngine(context).registerAcceptance()
+        } catch (e: Exception) { /* non-critical */ }
+
         // v6.3.5: Atualizar status via query direta (sem carregar tabela inteira)
         scope.launch {
             try {
@@ -269,6 +285,11 @@ class RideLifecycleManager(private val context: Context) {
 
         transitionTo(RidePhase.REFUSED)
 
+        // v6.6.0: Registrar recusa no SmartRoutingEngine (incrementa contador de recusas consecutivas)
+        try {
+            SmartRoutingEngine(context).registerRejection()
+        } catch (e: Exception) { /* non-critical */ }
+
         // v6.3.5: Atualizar status via query direta (sem carregar tabela inteira)
         scope.launch {
             try {
@@ -295,8 +316,29 @@ class RideLifecycleManager(private val context: Context) {
 
         transitionTo(RidePhase.COMPLETED)
 
+        // v6.6.0: Encerrar rastreamento GPS e validar KM
+        var gpsRideKm = 0.0
+        try {
+            val gps = GpsTrackingEngine(context)
+            gpsRideKm = gps.endRide()
+            Log.d(TAG, "│  📍 GPS: Corrida encerrada. KM GPS: ${String.format("%.2f", gpsRideKm)}")
+        } catch (e: Exception) {
+            Log.w(TAG, "│  GPS endRide falhou: ${e.message}")
+        }
+
         val ride = currentRide ?: return
         val actualValue = finalValue ?: ride.rideValue
+
+        // v6.6.0: Validar KM da Uber vs GPS
+        if (gpsRideKm > 0.5) { // Só validar se GPS mediu algo significativo
+            try {
+                val gps = GpsTrackingEngine(context)
+                val validation = gps.validateRideKm(ride.dropoffDistance)
+                if (validation.isUberUnderreporting) {
+                    Log.w(TAG, "│  ⚠️ KM DIVERGENTE: GPS=${String.format("%.1f", validation.gpsDistanceKm)}km vs Uber=${String.format("%.1f", validation.uberReportedKm)}km (${String.format("%.1f", validation.differencePercent)}% a menos)")
+                }
+            } catch (e: Exception) { /* non-critical */ }
+        }
 
         // v6.3.5: Atualizar status + valor via query direta (sem carregar tabela inteira)
         scope.launch {
@@ -443,7 +485,8 @@ class RideLifecycleManager(private val context: Context) {
                 period = "DIA",
                 isAutoImported = true,
                 rideHistoryId = currentRideDbId,
-                score = currentRideScore
+                score = currentRideScore,
+                pickupDistance = ride.pickupDistance // v6.6.0: KM morto
             )
             financeDb.earningDao().insert(earning)
 

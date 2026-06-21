@@ -289,3 +289,61 @@ object ExpenseCategories {
         OUTRO to "📦"          // Caixa
     )
 }
+
+// ============================================================================
+// ENTITY: ShiftHistoryEntity — Histórico de turnos persistido (v6.6.0)
+// ============================================================================
+
+@Entity(tableName = "shift_history")
+data class ShiftHistoryEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val startTime: Long = 0,                 // Timestamp de início do turno
+    val endTime: Long = 0,                   // Timestamp de encerramento
+    val durationMinutes: Int = 0,            // Duração total em minutos
+    val totalEarned: Double = 0.0,           // Total ganho no turno
+    val ridesAccepted: Int = 0,              // Corridas aceitas
+    val ridesRejected: Int = 0,              // Corridas rejeitadas
+    val ridesCancelled: Int = 0,             // Corridas canceladas
+    val valuePerHour: Double = 0.0,          // R$/hora do turno
+    val goalValue: Double = 0.0,             // Meta configurada
+    val goalReached: Boolean = false,        // Se atingiu a meta
+    // v6.6.0: Dados GPS do turno
+    val totalKmGps: Double = 0.0,            // KM total medido pelo GPS
+    val deadKmGps: Double = 0.0,             // KM morto (entre corridas)
+    val avgSpeedKmh: Double = 0.0,           // Velocidade média
+    val maxSpeedKmh: Double = 0.0            // Velocidade máxima
+)
+
+// ============================================================================
+// DAO: ShiftHistoryDao
+// ============================================================================
+
+@Dao
+interface ShiftHistoryDao {
+    @Insert
+    suspend fun insert(shift: ShiftHistoryEntity): Long
+
+    @Query("SELECT * FROM shift_history ORDER BY startTime DESC")
+    fun getAllShifts(): Flow<List<ShiftHistoryEntity>>
+
+    @Query("SELECT * FROM shift_history ORDER BY startTime DESC LIMIT :limit")
+    suspend fun getRecentShifts(limit: Int = 30): List<ShiftHistoryEntity>
+
+    @Query("SELECT * FROM shift_history WHERE startTime >= :since ORDER BY startTime DESC")
+    suspend fun getShiftsSince(since: Long): List<ShiftHistoryEntity>
+
+    @Query("SELECT AVG(durationMinutes) FROM shift_history WHERE startTime >= :since")
+    suspend fun getAvgDuration(since: Long): Double?
+
+    @Query("SELECT AVG(valuePerHour) FROM shift_history WHERE startTime >= :since")
+    suspend fun getAvgValuePerHour(since: Long): Double?
+
+    @Query("SELECT SUM(totalKmGps) FROM shift_history WHERE startTime >= :since")
+    suspend fun getTotalKmGps(since: Long): Double?
+
+    @Query("SELECT SUM(deadKmGps) FROM shift_history WHERE startTime >= :since")
+    suspend fun getTotalDeadKm(since: Long): Double?
+
+    @Query("SELECT COUNT(*) FROM shift_history")
+    suspend fun count(): Int
+}

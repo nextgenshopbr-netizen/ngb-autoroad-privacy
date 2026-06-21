@@ -109,7 +109,8 @@ class FinanceDREEngine(
 
         // Receita Bruta
         val receitaBruta = earningDao.getTotalEarningsSync(startDate, endDate) ?: 0.0
-        val totalKmTracked = earningDao.getTotalDistanceSync(startDate, endDate) ?: 0.0
+        // v6.6.0: Usar distance + pickupDistance para KM total rastreado (inclui KM morto)
+        val totalKmTracked = earningDao.getTotalDistanceWithPickupSync(startDate, endDate) ?: 0.0
         val totalRides = earningDao.getTotalRidesSync(startDate, endDate) ?: 0
         val totalDurationMin = earningDao.getTotalDurationSync(startDate, endDate) ?: 0
         val totalHours = totalDurationMin / 60.0
@@ -323,22 +324,51 @@ class FinanceDREEngine(
     // Helpers
     // ========================================================================
 
+    /**
+     * v6.6.0: Ruptura #6 — Desgaste diferenciado para elétricos.
+     * - Elétricos: pneus desgastam 25% mais rápido (torque instantâneo),
+     *   mas freios duram 2x mais (frenagem regenerativa).
+     * - Sem troca de óleo (usa fluidos com intervalo muito maior).
+     */
     private fun calculateDesgastePorKm(vehicle: VehicleProfileEntity?): Double {
         if (vehicle == null) return 0.05 // Fallback: R$0.05/km
 
+        val isElectric = vehicle.vehicleType == "ELECTRIC"
         var total = 0.0
+
+        // Pneus: elétricos desgastam 25% mais rápido (torque instantâneo)
         if (vehicle.tireLifeKm > 0 && vehicle.tireCost > 0) {
-            total += vehicle.tireCost / vehicle.tireLifeKm
+            val effectiveLifeKm = if (isElectric) {
+                (vehicle.tireLifeKm * 0.75).toInt() // 25% menos vida útil
+            } else vehicle.tireLifeKm
+            total += vehicle.tireCost / effectiveLifeKm.toDouble()
         }
+
+        // Freios: elétricos duram ~2x mais (frenagem regenerativa)
         if (vehicle.brakepadLifeKm > 0 && vehicle.brakepadCost > 0) {
-            total += vehicle.brakepadCost / vehicle.brakepadLifeKm
+            val effectiveLifeKm = if (isElectric) {
+                (vehicle.brakepadLifeKm * 2.0).toInt() // 2x mais vida útil
+            } else vehicle.brakepadLifeKm
+            total += vehicle.brakepadCost / effectiveLifeKm.toDouble()
         }
+
+        // Óleo/Fluidos: elétricos não têm troca de óleo convencional
+        // mas têm fluido de arrefecimento da bateria (intervalo muito maior)
         if (vehicle.oilChangeKm > 0 && vehicle.oilChangeCost > 0) {
-            total += vehicle.oilChangeCost / vehicle.oilChangeKm
+            val effectiveKm = if (isElectric) {
+                (vehicle.oilChangeKm * 3.0).toInt() // Fluidos duram 3x mais
+            } else vehicle.oilChangeKm
+            total += vehicle.oilChangeCost / effectiveKm.toDouble()
         }
+
+        // Revisão geral: elétricos têm menos peças móveis, revisão mais barata
         if (vehicle.maintenanceIntervalKm > 0 && vehicle.maintenanceCost > 0) {
-            total += vehicle.maintenanceCost / vehicle.maintenanceIntervalKm
+            val effectiveCost = if (isElectric) {
+                vehicle.maintenanceCost * 0.6 // 40% mais barato
+            } else vehicle.maintenanceCost
+            total += effectiveCost / vehicle.maintenanceIntervalKm
         }
+
         return if (total > 0) total else 0.05
     }
 }

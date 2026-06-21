@@ -42,8 +42,19 @@ class OdometerEngine(
     private val earningDao: EarningDao
 ) {
 
+    // v6.6.0: Referência ao GpsTrackingEngine para dados GPS reais
+    private var gpsTrackingEngine: GpsTrackingEngine? = null
+
+    /**
+     * v6.6.0: Conecta o GpsTrackingEngine para usar dados GPS reais.
+     */
+    fun setGpsTrackingEngine(gps: GpsTrackingEngine) {
+        this.gpsTrackingEngine = gps
+    }
+
     /**
      * Calcula o odômetro estimado atual do veículo ativo.
+     * v6.6.0: Agora usa GPS quando disponível para maior precisão.
      * @return Pair(estimado, isEstimated) — isEstimated=true se é estimativa, false se é valor real recente
      */
     suspend fun getEstimatedOdometer(vehicle: VehicleProfileEntity): Pair<Int, Boolean> {
@@ -61,13 +72,28 @@ class OdometerEngine(
         val now = System.currentTimeMillis()
         val kmTracked = earningDao.getTotalDistanceSync(lastUpdate, now) ?: 0.0
 
-        if (kmTracked <= 0) {
+        // v6.6.0: Se GPS está ativo, usar KM do GPS (mais preciso que earnings)
+        val gpsKm = gpsTrackingEngine?.getTotalDistanceKm() ?: 0.0
+        val gpsDeadKm = gpsTrackingEngine?.getDeadDistanceKm() ?: 0.0
+
+        val effectiveKm = if (gpsKm > 0 && gpsKm > kmTracked) {
+            // GPS captura tudo: corridas + KM morto + reposicionamento
+            // Usar GPS diretamente (fator de correção menor, pois GPS já inclui tudo)
+            // Apenas adicionar estimativa de uso pessoal fora do turno
+            val gpsBasedFactor = (vehicle.odometerCorrectionFactor - 1.0) * 0.5 + 1.0 // Reduz fator pela metade
+            gpsKm * gpsBasedFactor
+        } else if (kmTracked > 0) {
+            // Fallback: usar earnings + fator de correção completo
+            kmTracked * vehicle.odometerCorrectionFactor
+        } else {
+            0.0
+        }
+
+        if (effectiveKm <= 0) {
             return Pair(vehicle.currentOdometer, false)
         }
 
-        // Aplicar fator de correção
-        val estimatedAdditionalKm = kmTracked * vehicle.odometerCorrectionFactor
-        val estimatedOdometer = vehicle.currentOdometer + estimatedAdditionalKm.toInt()
+        val estimatedOdometer = vehicle.currentOdometer + effectiveKm.toInt()
 
         // Se a atualização foi recente (< 3 dias), considerar como "real"
         val daysSinceUpdate = ((now - lastUpdate) / (1000 * 60 * 60 * 24)).toInt()

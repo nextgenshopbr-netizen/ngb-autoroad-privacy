@@ -66,7 +66,9 @@ data class EarningEntity(
     // v3.0 — item 3.3: DRE / relatório
     val rideHistoryId: Long = 0,           // ID do histórico de corrida associado (se auto-importado)
     // v6.3.9: Integração IA↔Finanças — score da corrida para correlação
-    val score: Double = 0.0                // Score da corrida (0-100) para análise de lucratividade
+    val score: Double = 0.0,               // Score da corrida (0-100) para análise de lucratividade
+    // v6.6.0: Pickup distance para cálculo de KM morto
+    val pickupDistance: Double = 0.0        // Distância até embarque (km) — KM morto
 )
 
 @Entity(tableName = "maintenance_reminders")
@@ -198,6 +200,10 @@ interface EarningDao {
     @Query("SELECT SUM(distance) FROM earnings WHERE date >= :startDate AND date <= :endDate")
     suspend fun getTotalDistanceSync(startDate: Long, endDate: Long): Double?
 
+    // v6.6.0: Total distance including pickup (dead km)
+    @Query("SELECT SUM(distance + pickupDistance) FROM earnings WHERE date >= :startDate AND date <= :endDate")
+    suspend fun getTotalDistanceWithPickupSync(startDate: Long, endDate: Long): Double?
+
     @Query("SELECT SUM(duration) FROM earnings WHERE date >= :startDate AND date <= :endDate")
     fun getTotalDuration(startDate: Long, endDate: Long): Flow<Int?>
 
@@ -317,9 +323,10 @@ data class PlatformSummary(
         FinancialGoalEntity::class,
         VehicleProfileEntity::class,
         IndividualExpenseEntity::class,
-        OdometerHistoryEntity::class
+        OdometerHistoryEntity::class,
+        ShiftHistoryEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class FinanceDatabase : RoomDatabase() {
@@ -331,6 +338,7 @@ abstract class FinanceDatabase : RoomDatabase() {
     abstract fun vehicleProfileDao(): VehicleProfileDao
     abstract fun individualExpenseDao(): IndividualExpenseDao
     abstract fun odometerHistoryDao(): OdometerHistoryDao
+    abstract fun shiftHistoryDao(): ShiftHistoryDao
 
     companion object {
         @Volatile
@@ -377,6 +385,34 @@ abstract class FinanceDatabase : RoomDatabase() {
                         calibrationFactor REAL NOT NULL DEFAULT 1.0,
                         source TEXT NOT NULL DEFAULT 'MANUAL',
                         timestamp INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+            }
+        }
+
+        // Migração v7 → v8: Adicionar pickupDistance, shift_history, e campos de segurança (v6.6.0)
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Ruptura #1: pickupDistance no earnings
+                database.execSQL("ALTER TABLE earnings ADD COLUMN pickupDistance REAL NOT NULL DEFAULT 0.0")
+                // Ruptura #10: Histórico de turnos
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS shift_history (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        startTime INTEGER NOT NULL DEFAULT 0,
+                        endTime INTEGER NOT NULL DEFAULT 0,
+                        durationMinutes INTEGER NOT NULL DEFAULT 0,
+                        totalEarned REAL NOT NULL DEFAULT 0.0,
+                        ridesAccepted INTEGER NOT NULL DEFAULT 0,
+                        ridesRejected INTEGER NOT NULL DEFAULT 0,
+                        ridesCancelled INTEGER NOT NULL DEFAULT 0,
+                        valuePerHour REAL NOT NULL DEFAULT 0.0,
+                        goalValue REAL NOT NULL DEFAULT 0.0,
+                        goalReached INTEGER NOT NULL DEFAULT 0,
+                        totalKmGps REAL NOT NULL DEFAULT 0.0,
+                        deadKmGps REAL NOT NULL DEFAULT 0.0,
+                        avgSpeedKmh REAL NOT NULL DEFAULT 0.0,
+                        maxSpeedKmh REAL NOT NULL DEFAULT 0.0
                     )
                 """.trimIndent())
             }
@@ -443,7 +479,7 @@ abstract class FinanceDatabase : RoomDatabase() {
                     FinanceDatabase::class.java,
                     "ngb_finance_db"
                 )
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                 // Fallback apenas para migração de versão 1 (primeira instalação antiga)
                 .fallbackToDestructiveMigrationFrom(1)
                 // Removido allowMainThreadQueries — todas as queries são suspend/Flow (item 6.2)

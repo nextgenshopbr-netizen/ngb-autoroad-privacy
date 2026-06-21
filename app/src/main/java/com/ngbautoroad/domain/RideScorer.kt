@@ -315,6 +315,31 @@ class RideScorer(
             .maxOfOrNull { it.penaltyWeight } ?: 0
 
         totalScore -= (pickupPenalty + dropoffPenalty)
+
+        // ====================================================================
+        // v6.6.0: Modificador de Segurança Multi-Fator
+        // Cruza: horário noturno + bairro perigoso + rating baixo
+        // Penalidade adicional quando múltiplos fatores de risco coincidem
+        // ====================================================================
+        val safetyModifier = SafetyScoreModifierStatic.calculatePenalty(
+            passengerRating = ride.passengerRating,
+            ratingThreshold = driverThresholds.minPassengerRating,
+            pickupNeighborhood = ride.pickupNeighborhood,
+            dropoffNeighborhood = ride.dropoffNeighborhood,
+            blockedNeighborhoods = blockedNeighborhoods
+        )
+        totalScore -= safetyModifier
+
+        // ====================================================================
+        // v6.6.0: Fator de Retorno (volta vazia)
+        // Penaliza corridas para bairros com histórico de retorno vazio
+        // ====================================================================
+        val returnPenalty = ReturnFactorEngineStatic.calculateReturnPenalty(
+            dropoffNeighborhood = ride.dropoffNeighborhood,
+            dropoffDistance = ride.dropoffDistance
+        )
+        totalScore -= returnPenalty
+
         totalScore = totalScore.coerceIn(0.0, 100.0)
 
         return RideScore(
