@@ -218,6 +218,7 @@ fun PesosSubTab(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineS
     val weights by prefsManager.criteriaWeightsFlow.collectAsState(initial = CriteriaWeights())
     val thresholds by prefsManager.driverThresholdsFlow.collectAsState(initial = DriverThresholds())
     var showThresholds by remember { mutableStateOf(true) }
+    var showRatingPenaltyInfo by remember { mutableStateOf(false) }
 
     val totalUsed = weights.totalUsed
 
@@ -271,8 +272,93 @@ fun PesosSubTab(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineS
         CriteriaSlider("Paradas Intermediárias", weights.intermediateStops, maxForCriteria(weights.intermediateStops)) { newVal ->
             scope.launch { prefsManager.saveCriteriaWeights(weights.copy(intermediateStops = newVal)) }
         }
-        CriteriaSlider("Avaliação do Passageiro", weights.passengerRating, maxForCriteria(weights.passengerRating)) { newVal ->
-            scope.launch { prefsManager.saveCriteriaWeights(weights.copy(passengerRating = newVal)) }
+        // v6.4.1: Slider de avaliação com ícone info (tabela de multiplicadores)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                CriteriaSlider("Avaliação do Passageiro", weights.passengerRating, maxForCriteria(weights.passengerRating)) { newVal ->
+                    scope.launch { prefsManager.saveCriteriaWeights(weights.copy(passengerRating = newVal)) }
+                }
+            }
+            IconButton(
+                onClick = { showRatingPenaltyInfo = true },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    Icons.Default.Info,
+                    contentDescription = "Ver tabela de penalidades",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        // Dialog: Tabela de multiplicadores de penalidade por rating
+        if (showRatingPenaltyInfo) {
+            AlertDialog(
+                onDismissRequest = { showRatingPenaltyInfo = false },
+                icon = { Icon(Icons.Default.Shield, contentDescription = null, tint = ScoreRed) },
+                title = { Text("Proteção por Avaliação", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column {
+                        Text(
+                            "Passageiros mal avaliados recebem penalidade progressiva no Score. " +
+                            "Quanto pior a avaliação, maior o multiplicador aplicado ao peso configurado.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        // Tabela de faixas
+                        val penaltyData = listOf(
+                            Triple("4.9 – 5.0 ★", "Sem penalidade", ScoreGreen),
+                            Triple("4.7 – 4.9 ★", "1.0× (${weights.passengerRating} pts)", ScoreYellow),
+                            Triple("4.5 – 4.7 ★", "2.5× (${(weights.passengerRating * 2.5).toInt()} pts)", ScoreOrange),
+                            Triple("4.3 – 4.5 ★", "3.5× (${(weights.passengerRating * 3.5).toInt()} pts)", ScoreRed),
+                            Triple("< 4.3 ★", "4.0× (${weights.passengerRating * 4} pts)", ScoreRed)
+                        )
+                        penaltyData.forEach { (faixa, penalidade, cor) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .clip(CircleShape)
+                                            .background(cor)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(faixa, style = MaterialTheme.typography.bodySmall)
+                                }
+                                Text(
+                                    penalidade,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = cor
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            "Exemplo: passageiro com 4.2★ em corrida excelente → " +
+                            "penalidade de ${weights.passengerRating * 4} pts derruba o Score abaixo de 50.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showRatingPenaltyInfo = false }) {
+                        Text("Entendi")
+                    }
+                }
+            )
         }
         CriteriaSlider("Valor da Corrida", weights.rideValue, maxForCriteria(weights.rideValue)) { newVal ->
             scope.launch { prefsManager.saveCriteriaWeights(weights.copy(rideValue = newVal)) }

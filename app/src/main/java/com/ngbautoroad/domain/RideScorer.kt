@@ -146,7 +146,9 @@ class RideScorer(
                 level = getLevel(normalized)
             )
             if (driverThresholds.isPassengerRatingActive() && ride.passengerRating < driverThresholds.minPassengerRating) {
-                val penalty = weights.passengerRating * 0.6
+                // v6.4.1: Penalidade por multiplicador — quanto pior o rating, maior a punição
+                val multiplier = getRatingPenaltyMultiplier(ride.passengerRating, driverThresholds.minPassengerRating)
+                val penalty = weights.passengerRating * multiplier
                 violations.add(ThresholdViolation(
                     criteriaName = "Avaliação",
                     currentValue = ride.passengerRating,
@@ -350,14 +352,42 @@ class RideScorer(
     }
 
     /**
-     * v5.0.0: Escala ajustada para 3.0-5.0 (mais realista).
+     * v6.4.1: Normalização com duas zonas para segurança do motorista.
+     * Zona A (4.7-5.0): linear suave → 75 a 100
+     * Zona B (< 4.7): curva cúbica agressiva → derruba rapidamente
      * Passageiros sem rating (0.0) são tratados no caller (pula critério).
      */
     private fun normalizeRating(rating: Double): Double {
         return when {
             rating >= 5.0 -> 100.0
+            rating >= 4.7 -> 75.0 + (rating - 4.7) / (5.0 - 4.7) * 25.0
             rating <= 3.0 -> 0.0
-            else -> ((rating - 3.0) / 2.0 * 100.0).coerceIn(0.0, 100.0)
+            else -> {
+                // Curva cúbica: cai agressivamente abaixo de 4.7
+                val base = (rating - 3.0) / (4.7 - 3.0)
+                (75.0 * base * base * base).coerceIn(0.0, 75.0)
+            }
+        }
+    }
+
+    /**
+     * v6.4.1: Multiplicador de penalidade por faixa de rating.
+     * Quanto mais baixo o rating do passageiro, maior o multiplicador aplicado ao peso.
+     * Protege o motorista contra passageiros de risco.
+     * Faixas:
+     *   >= threshold → 0 (sem penalidade)
+     *   4.7 - threshold → 1.0x
+     *   4.5 - 4.7 → 2.5x
+     *   4.3 - 4.5 → 3.5x
+     *   < 4.3 → 4.0x
+     */
+    private fun getRatingPenaltyMultiplier(rating: Double, threshold: Double): Double {
+        return when {
+            rating >= threshold -> 0.0
+            rating >= 4.7 -> 1.0
+            rating >= 4.5 -> 2.5
+            rating >= 4.3 -> 3.5
+            else -> 4.0
         }
     }
 
