@@ -103,7 +103,13 @@ class AutoPilotEngine(
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val prefsManager = PrefsManager(context)
     private var pendingAction: Runnable? = null
-    private var isProcessing = false
+    @Volatile private var isProcessing = false // v6.3.7: volatile para thread-safety
+    private val processingLock = Any() // v6.3.7: lock para sincronização
+    private var lastActionTimestamp = 0L // v6.3.7: timeout de segurança
+    private var lastAutoAcceptedDbId: Long = -1L // v6.3.7: feedback loop
+
+    // v6.3.7: Timeout de segurança — se isProcessing ficar true por mais de 15s, resetar
+    private val PROCESSING_TIMEOUT_MS = 15_000L
 
     /**
      * ═══════════════════════════════════════════════════════════════════
@@ -118,9 +124,19 @@ class AutoPilotEngine(
      * @param rideDbId ID da corrida no banco
      */
     fun evaluateRide(ride: RideData, score: Double, rideDbId: Long) {
-        if (isProcessing) {
-            Log.d(TAG, "│  ⊘ AutoPilot já processando outra corrida — ignorando")
-            return
+        // v6.3.7: Timeout de segurança — resetar flag presa
+        synchronized(processingLock) {
+            if (isProcessing) {
+                val elapsed = System.currentTimeMillis() - lastActionTimestamp
+                if (elapsed > PROCESSING_TIMEOUT_MS) {
+                    Log.w(TAG, "│  ⚠ Timeout de segurança: isProcessing preso por ${elapsed}ms — resetando")
+                    isProcessing = false
+                    pendingAction = null
+                } else {
+                    Log.d(TAG, "│  ⊘ AutoPilot já processando outra corrida — ignorando")
+                    return
+                }
+            }
         }
 
         scope.launch {
@@ -229,31 +245,65 @@ class AutoPilotEngine(
     // =========================================================================
 
     /**
-     * Agenda execução de ação com delay humanizado
+     * Agenda execução de ação com delay humanizado.
+     * v6.3.7: Thread-safe com synchronized + timeout de segurança.
      */
     private fun scheduleAction(delayMs: Long, action: () -> Unit) {
         cancelPendingAction()
-        isProcessing = true
+        synchronized(processingLock) {
+            isProcessing = true
+            lastActionTimestamp = System.currentTimeMillis()
+        }
 
         pendingAction = Runnable {
             action()
-            isProcessing = false
-            pendingAction = null
+            synchronized(processingLock) {
+                isProcessing = false
+                pendingAction = null
+            }
         }
         handler.postDelayed(pendingAction!!, delayMs)
     }
 
     /**
-     * Cancela ação pendente (se motorista agir antes)
+     * Cancela ação pendente (se motorista agir antes).
+     * v6.3.7: Thread-safe.
      */
     fun cancelPendingAction() {
         pendingAction?.let {
             handler.removeCallbacks(it)
-            pendingAction = null
-            isProcessing = false
+            synchronized(processingLock) {
+                pendingAction = null
+                isProcessing = false
+            }
             Log.d(TAG, "│  ⊘ Ação pendente cancelada")
         }
     }
+
+    /**
+     * v6.3.7: Feedback Loop — chamado pelo RideLifecycleManager quando o motorista
+     * cancela manualmente uma corrida que foi auto-aceita pelo AutoPilot.
+     * Registra o evento para que futuras decisões possam ser ajustadas.
+     *
+     * @param rideDbId ID da corrida que foi cancelada após auto-aceite
+     */
+    fun onAutoAcceptedRideCancelled(rideDbId: Long) {
+        Log.w(TAG, "│  ⚠ FEEDBACK: Corrida $rideDbId auto-aceita foi CANCELADA pelo motorista")
+        // Registrar em SharedPreferences para ajuste futuro da zona neutra
+        val feedbackPrefs = context.getSharedPreferences("autopilot_feedback", Context.MODE_PRIVATE)
+        val cancelCount = feedbackPrefs.getInt("cancel_count", 0) + 1
+        feedbackPrefs.edit().putInt("cancel_count", cancelCount).apply()
+        Log.i(TAG, "│  Feedback registrado: $cancelCount corridas auto-aceitas canceladas no total")
+    }
+
+    /**
+     * v6.3.7: Registra o ID da corrida auto-aceita para feedback loop.
+     */
+    fun setLastAutoAcceptedId(dbId: Long) {
+        lastAutoAcceptedDbId = dbId
+    }
+
+    fun getLastAutoAcceptedId(): Long = lastAutoAcceptedDbId
 
     /**
      * Executa click no botão ACEITAR da plataforma
@@ -275,6 +325,10 @@ class AutoPilotEngine(
             RideAccessibilityService.instance?.lifecycleManager?.onRideAccepted()
         } else {
             Log.w(TAG, "│  ⚠ Botão ACEITAR não encontrado — motorista deve agir manualmente")
+            // v6.3.7: Resetar flag se click falhou
+            synchronized(processingLock) {
+                isProcessing = false
+            }
         }
     }
 

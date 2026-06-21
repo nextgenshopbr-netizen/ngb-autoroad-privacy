@@ -1086,11 +1086,11 @@ fun ServiceStatusRow(
             OutlinedButton(
                 onClick = onRestart,
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)
             ) {
-                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Reiniciar", fontSize = 12.sp)
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.width(2.dp))
+                Text("Reiniciar", fontSize = 11.sp, maxLines = 1)
             }
             OutlinedButton(
                 onClick = onToggleLogs,

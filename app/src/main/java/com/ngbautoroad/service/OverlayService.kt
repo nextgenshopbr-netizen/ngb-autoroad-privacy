@@ -64,6 +64,7 @@ import androidx.activity.setViewTreeOnBackPressedDispatcherOwner
 import com.ngbautoroad.R
 import com.ngbautoroad.data.model.*
 import com.ngbautoroad.data.prefs.PrefsManager
+import com.ngbautoroad.domain.AdaptiveScoringEngine
 import com.ngbautoroad.domain.RideScorer
 import com.ngbautoroad.domain.ShiftManager
 import kotlinx.coroutines.*
@@ -315,11 +316,16 @@ class OverlayService : Service(),
 
         val blockedNeighborhoods = blockedPickup + blockedDropoff + zoneNeighborhoods
 
-        // Calcular score com critérios reais + bairros bloqueados
+        // v6.3.7: Usar thresholds adaptativos (EWMA) se calibrados
+        val adaptiveEngine = AdaptiveScoringEngine(this)
+        val adaptiveThresholds = adaptiveEngine.getAdaptiveThresholds()
+
+        // Calcular score com critérios reais + bairros bloqueados + thresholds adaptativos
         val scorer = RideScorer(
             weights = weights,
             driverThresholds = thresholds,
-            blockedNeighborhoods = blockedNeighborhoods
+            blockedNeighborhoods = blockedNeighborhoods,
+            thresholds = adaptiveThresholds
         )
         currentScore = scorer.calculateScore(ride)
 
