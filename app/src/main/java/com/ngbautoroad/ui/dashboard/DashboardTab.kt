@@ -63,6 +63,7 @@ import java.util.*
 @Composable
 fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     // Calcular timestamps
     val calendar = Calendar.getInstance()
     calendar.set(Calendar.HOUR_OF_DAY, 0)
@@ -119,14 +120,6 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // v6.3.0: Header com botão de ajuda
-        val context = LocalContext.current
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Início", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-            com.ngbautoroad.ui.tutorial.HelpButton(screenId = "dashboard")
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-
         // v6.1.1: Seletor rápido de perfil antes de iniciar turno
         ProfileQuickSelector(prefsManager, scope)
 

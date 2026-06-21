@@ -65,20 +65,6 @@ fun SettingsTab(prefsManager: PrefsManager, database: AppDatabase) {
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize()) {
-        // Header com botão de ajuda
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Configurações",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            com.ngbautoroad.ui.tutorial.HelpButton(screenId = "settings")
-        }
-
         // Tab Row
         TabRow(
             selectedTabIndex = selectedSubTab,
@@ -418,9 +404,9 @@ private fun SettingsAppContent(prefsManager: PrefsManager) {
         var lastTapTime by remember { mutableLongStateOf(0L) }
 
         Text(
-            text = "NGB AutoRoad v${com.ngbautoroad.BuildConfig.VERSION_NAME}",
+            text = "v${com.ngbautoroad.BuildConfig.VERSION_NAME}",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.0f),
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .clickable {

@@ -144,7 +144,6 @@ enum class TabItem(val title: String, val icon: ImageVector) {
     SETTINGS("Config", Icons.Default.Settings)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
     // v6.3.0: App sempre inicia na aba INICIO (índice 2 = centro)
@@ -194,17 +193,6 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text("NGB AutoRoad v${com.ngbautoroad.BuildConfig.VERSION_NAME}")
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        },
         bottomBar = {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface,
