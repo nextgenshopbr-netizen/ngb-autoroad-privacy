@@ -347,17 +347,65 @@ private fun SettingsAppContent(prefsManager: PrefsManager) {
                     }
                 )
 
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 5. GPS em Background
+                val isBackgroundLocationGranted = remember(permissionRefreshKey) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                        androidx.core.content.ContextCompat.checkSelfPermission(
+                            context, android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    } else true
+                }
+                PermissionCheckItem(
+                    title = "GPS em Background",
+                    description = "Rastrear KM durante todo o turno (tela desligada)",
+                    isGranted = isBackgroundLocationGranted,
+                    icon = Icons.Default.MyLocation,
+                    onClick = {
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = android.net.Uri.parse("package:${context.packageName}")
+                            }
+                            context.startActivity(intent)
+                        }
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 6. Reconhecimento de Atividade
+                val isActivityRecognitionGranted = remember(permissionRefreshKey) {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                        androidx.core.content.ContextCompat.checkSelfPermission(
+                            context, android.Manifest.permission.ACTIVITY_RECOGNITION
+                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    } else true
+                }
+                PermissionCheckItem(
+                    title = "Reconhecimento de Atividade",
+                    description = "Detectar se esta dirigindo, parado ou caminhando",
+                    isGranted = isActivityRecognitionGranted,
+                    icon = Icons.Default.DirectionsCar,
+                    onClick = {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = android.net.Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    }
+                )
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Resumo
-                val totalGranted = listOf(isAccessibilityEnabled, isOverlayEnabled, isNotificationEnabled, isIgnoringBattery).count { it }
-                val statusColor = when (totalGranted) {
-                    4 -> MaterialTheme.colorScheme.primary
-                    3 -> MaterialTheme.colorScheme.tertiary
+                val totalGranted = listOf(isAccessibilityEnabled, isOverlayEnabled, isNotificationEnabled, isIgnoringBattery, isBackgroundLocationGranted, isActivityRecognitionGranted).count { it }
+                val statusColor = when {
+                    totalGranted == 6 -> MaterialTheme.colorScheme.primary
+                    totalGranted >= 4 -> MaterialTheme.colorScheme.tertiary
                     else -> MaterialTheme.colorScheme.error
                 }
                 Text(
-                    text = "$totalGranted/4 permissoes ativas",
+                    text = "$totalGranted/6 permissoes ativas",
                     style = MaterialTheme.typography.labelMedium,
                     color = statusColor,
                     fontWeight = FontWeight.Bold
@@ -729,6 +777,26 @@ private fun SettingsAdicionaisContent(prefsManager: PrefsManager, database: AppD
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // === CONFIGURAÇÃO ASSISTIDA (v6.8.0) ===
+        var showSetupWizard by remember { mutableStateOf(false) }
+        OutlinedButton(
+            onClick = { showSetupWizard = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.RocketLaunch, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Configuração Assistida")
+        }
+
+        if (showSetupWizard) {
+            com.ngbautoroad.ui.onboarding.SetupWizardDialog(
+                prefsManager = prefsManager,
+                isFirstTime = false, // Não apaga dados
+                onDismiss = { showSetupWizard = false },
+                onComplete = { showSetupWizard = false }
+            )
+        }
+
         // === TUTORIAL ===
         OutlinedButton(
             onClick = { scope.launch { prefsManager.resetTutorial() } },

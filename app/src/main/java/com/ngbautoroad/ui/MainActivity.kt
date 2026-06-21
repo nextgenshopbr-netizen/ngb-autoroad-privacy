@@ -46,6 +46,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import com.ngbautoroad.ui.theme.NGBAutoRoadTheme
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.ngbautoroad.ui.onboarding.SetupWizardDialog
 
 class MainActivity : ComponentActivity() {
 
@@ -149,6 +150,26 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
     // v6.3.0: App sempre inicia na aba INICIO (índice 2 = centro)
     var selectedTab by remember { mutableStateOf(2) }
     val tabs = TabItem.entries.toTypedArray()
+
+    // v6.8.0: Setup Wizard (primeiro uso)
+    val setupWizardCompleted by prefsManager.setupWizardCompletedFlow.collectAsState(initial = true)
+    var showSetupWizard by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(setupWizardCompleted) {
+        if (!setupWizardCompleted) {
+            showSetupWizard = true
+        }
+    }
+
+    if (showSetupWizard) {
+        SetupWizardDialog(
+            prefsManager = prefsManager,
+            isFirstTime = true,
+            onDismiss = { showSetupWizard = false },
+            onComplete = { showSetupWizard = false }
+        )
+    }
 
     // v6.7.0: Onboarding obrigatório de odômetro (Ruptura #1 - Cold Start)
     val odometerOnboardingDone by prefsManager.odometerOnboardingDoneFlow.collectAsState(initial = true)

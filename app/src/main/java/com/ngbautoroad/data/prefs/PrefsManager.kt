@@ -662,6 +662,23 @@ class PrefsManager(private val context: Context) {
         return map
     }
 
+    // === Setup Wizard ===
+    private val KEY_SETUP_WIZARD_COMPLETED = booleanPreferencesKey("setup_wizard_completed")
+
+    suspend fun setSetupWizardCompleted(completed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_SETUP_WIZARD_COMPLETED] = completed
+        }
+    }
+
+    suspend fun isSetupWizardCompleted(): Boolean {
+        return context.dataStore.data.first()[KEY_SETUP_WIZARD_COMPLETED] ?: false
+    }
+
+    val setupWizardCompletedFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_SETUP_WIZARD_COMPLETED] ?: false
+    }
+
     suspend fun restoreAllPreferencesFromMap(map: Map<String, String>) {
         context.dataStore.edit { prefs ->
             prefs.clear()

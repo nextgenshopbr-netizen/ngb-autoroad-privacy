@@ -23,6 +23,21 @@
     <!-- v6.0.0: Vibração para alerta durante Ghost Mode -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- v6.7.0: GPS em background para rastreamento de KM durante turno -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
+    <!-- v6.7.0: Acelerômetro e sensores para detecção de movimento -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
+
+    <!-- v6.7.0: Iniciar automaticamente após reiniciar o celular -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- v6.7.0: Alarmes exatos para lembretes de manutenção -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
     <application
         android:name=".NGBAutoRoadApp"
         android:allowBackup="true"
@@ -128,6 +143,16 @@
         <receiver
             android:name=".service.UncertainReceiver"
             android:exported="false" />
+
+        <!-- v6.8.0: Auto-start após reboot -->
+        <receiver
+            android:name=".service.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
