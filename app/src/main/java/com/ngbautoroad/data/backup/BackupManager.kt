@@ -11,6 +11,7 @@ package com.ngbautoroad.data.backup
 //   - SharedPreferences: shift_prefs → estado do turno
 //   - SharedPreferences: shift_history → histórico de turnos
 // FORMATO: ZIP contendo arquivos JSON + cópias dos DBs SQLite
+// VERSÃO: v6.9.4 — Reescrito para robustez e compatibilidade
 // ============================================================================
 
 import android.content.Context
@@ -69,6 +70,10 @@ class BackupManager(private val context: Context) {
         val description: String = "NGB AutoRoad Full Backup"
     )
 
+    // =========================================================================
+    // EXPORTAÇÃO
+    // =========================================================================
+
     /**
      * Exporta todos os dados para um arquivo ZIP no Uri fornecido.
      * @return Resumo do backup (metadados)
@@ -76,7 +81,10 @@ class BackupManager(private val context: Context) {
     suspend fun exportBackup(outputUri: Uri): BackupMetadata = withContext(Dispatchers.IO) {
         Log.d(TAG, "Iniciando exportação de backup...")
 
-        // 1. Fechar databases para garantir integridade
+        // 1. Checkpoint WAL para garantir dados no arquivo principal
+        checkpointDatabases()
+
+        // 2. Fechar databases para garantir integridade
         closeDatabases()
 
         val metadata = BackupMetadata(
@@ -101,7 +109,7 @@ class BackupManager(private val context: Context) {
                 writeJsonToZip(zipOut, SP_SHIFT_PREFS, exportSharedPrefsToJson("shift_prefs"))
                 writeJsonToZip(zipOut, SP_SHIFT_HISTORY, exportSharedPrefsToJson("shift_history"))
 
-                // Room databases (cópia binária dos arquivos SQLite)
+                // Room databases (cópia binária dos arquivos SQLite — apenas arquivo principal)
                 copyDatabaseToZip(zipOut, "ngb_autoroad_db", DB_RIDES)
                 copyDatabaseToZip(zipOut, "ngb_finance_db", DB_FINANCE)
             }
@@ -110,6 +118,10 @@ class BackupManager(private val context: Context) {
         Log.d(TAG, "Backup exportado com sucesso: ${metadata.ridesCount} corridas, ${metadata.financeRecords} registros financeiros")
         metadata
     }
+
+    // =========================================================================
+    // IMPORTAÇÃO
+    // =========================================================================
 
     /**
      * Importa todos os dados de um arquivo ZIP no Uri fornecido.
@@ -127,33 +139,50 @@ class BackupManager(private val context: Context) {
             ZipInputStream(BufferedInputStream(inputStream)).use { zipIn ->
                 var entry: ZipEntry? = zipIn.nextEntry
                 while (entry != null) {
-                    when (entry.name) {
-                        METADATA_FILE -> {
+                    val entryName = entry.name
+                    when {
+                        entryName == METADATA_FILE -> {
                             val content = readZipEntry(zipIn)
                             metadata = json.decodeFromString<BackupMetadata>(content)
                             Log.d(TAG, "Metadata: v${metadata.appVersion}, ${metadata.backupDate}")
                         }
-                        PREFS_FILE -> {
+                        entryName == PREFS_FILE -> {
                             val content = readZipEntry(zipIn)
                             importDataStoreFromJson(content)
                         }
-                        SP_LEARNING -> {
+                        entryName == SP_LEARNING -> {
                             val content = readZipEntry(zipIn)
                             importSharedPrefsFromJson("learning_engine", content)
                         }
-                        SP_SHIFT_PREFS -> {
+                        entryName == SP_SHIFT_PREFS -> {
                             val content = readZipEntry(zipIn)
                             importSharedPrefsFromJson("shift_prefs", content)
                         }
-                        SP_SHIFT_HISTORY -> {
+                        entryName == SP_SHIFT_HISTORY -> {
                             val content = readZipEntry(zipIn)
                             importSharedPrefsFromJson("shift_history", content)
                         }
-                        DB_RIDES -> {
+                        // Database principal
+                        entryName == DB_RIDES -> {
                             restoreDatabaseFromZip(zipIn, "ngb_autoroad_db")
                         }
-                        DB_FINANCE -> {
+                        entryName == DB_FINANCE -> {
                             restoreDatabaseFromZip(zipIn, "ngb_finance_db")
+                        }
+                        // WAL files do backup (se existirem)
+                        entryName == "$DB_RIDES-wal" -> {
+                            restoreWalFromZip(zipIn, "ngb_autoroad_db")
+                        }
+                        entryName == "$DB_FINANCE-wal" -> {
+                            restoreWalFromZip(zipIn, "ngb_finance_db")
+                        }
+                        // SHM files (ignorar — serão recriados pelo SQLite)
+                        entryName.endsWith("-shm") -> {
+                            // Skip — SHM é recriado automaticamente
+                            Log.d(TAG, "Ignorando $entryName (recriado automaticamente)")
+                        }
+                        else -> {
+                            Log.w(TAG, "Entrada desconhecida no backup: $entryName (ignorada)")
                         }
                     }
                     zipIn.closeEntry()
@@ -161,6 +190,9 @@ class BackupManager(private val context: Context) {
                 }
             }
         } ?: throw IOException("Não foi possível abrir o arquivo de entrada")
+
+        // Invalidar singletons para forçar recriação com novos dados
+        invalidateDatabaseInstances()
 
         Log.d(TAG, "Backup importado com sucesso!")
         metadata
@@ -171,27 +203,27 @@ class BackupManager(private val context: Context) {
     // =========================================================================
 
     private suspend fun exportDataStoreToJson(): String {
-        val prefsManager = com.ngbautoroad.data.prefs.PrefsManager(context)
-        // Acessar o DataStore diretamente via reflection-free approach
-        // Ler todas as preferências como mapa
-        val dataStoreFile = File(context.filesDir, "datastore/ngb_autoroad_prefs.preferences_pb")
-        if (!dataStoreFile.exists()) return "{}"
-
-        // Usar o PrefsManager para ler todos os flows conhecidos e serializar
-        val map = mutableMapOf<String, String>()
-
         try {
+            val prefsManager = com.ngbautoroad.data.prefs.PrefsManager(context)
             val prefs = prefsManager.getAllPreferencesAsMap()
-            return json.encodeToString(prefs)
+            if (prefs.isEmpty()) {
+                Log.w(TAG, "DataStore vazio — exportando mapa vazio")
+                return "{}"
+            }
+            val result = json.encodeToString(prefs)
+            Log.d(TAG, "DataStore exportado: ${prefs.size} preferências")
+            return result
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao exportar DataStore: ${e.message}")
-            // Fallback: copiar arquivo binário
+            Log.e(TAG, "Erro ao exportar DataStore: ${e.message}", e)
             return "{}"
         }
     }
 
     private suspend fun importDataStoreFromJson(jsonContent: String) {
-        if (jsonContent.isBlank() || jsonContent == "{}") return
+        if (jsonContent.isBlank() || jsonContent == "{}") {
+            Log.w(TAG, "Conteúdo de preferências vazio, pulando importação do DataStore")
+            return
+        }
         try {
             val prefsManager = com.ngbautoroad.data.prefs.PrefsManager(context)
             val rawMap: Map<String, String> = json.decodeFromString(jsonContent)
@@ -199,7 +231,7 @@ class BackupManager(private val context: Context) {
             prefsManager.restoreAllPreferencesFromMap(map)
             Log.d(TAG, "DataStore restaurado: ${map.size} preferências")
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao importar DataStore: ${e.message}")
+            Log.e(TAG, "Erro ao importar DataStore: ${e.message}", e)
         }
     }
 
@@ -237,6 +269,7 @@ class BackupManager(private val context: Context) {
     private fun exportSharedPrefsToJson(name: String): String {
         val prefs = context.getSharedPreferences(name, Context.MODE_PRIVATE)
         val allEntries = prefs.all
+        if (allEntries.isEmpty()) return "{}"
         val map = mutableMapOf<String, String>()
         for ((key, value) in allEntries) {
             when (value) {
@@ -245,7 +278,10 @@ class BackupManager(private val context: Context) {
                 is Long -> map[key] = "L:$value"
                 is Float -> map[key] = "F:$value"
                 is Boolean -> map[key] = "B:$value"
-                is Set<*> -> map[key] = "SS:${(value as Set<String>).joinToString("|||")}"
+                is Set<*> -> {
+                    @Suppress("UNCHECKED_CAST")
+                    map[key] = "SS:${(value as Set<String>).joinToString("|||")}"
+                }
                 else -> map[key] = "S:$value"
             }
         }
@@ -270,13 +306,13 @@ class BackupManager(private val context: Context) {
                     "L" -> editor.putLong(key, value.toLongOrNull() ?: 0L)
                     "F" -> editor.putFloat(key, value.toFloatOrNull() ?: 0f)
                     "B" -> editor.putBoolean(key, value.toBooleanStrictOrNull() ?: false)
-                    "SS" -> editor.putStringSet(key, value.split("|||").toSet())
+                    "SS" -> editor.putStringSet(key, if (value.isBlank()) emptySet() else value.split("|||").toSet())
                 }
             }
             editor.apply()
             Log.d(TAG, "SharedPreferences '$name' restaurado: ${map.size} entradas")
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao importar SharedPreferences '$name': ${e.message}")
+            Log.e(TAG, "Erro ao importar SharedPreferences '$name': ${e.message}", e)
         }
     }
 
@@ -290,33 +326,32 @@ class BackupManager(private val context: Context) {
             Log.w(TAG, "Database $dbName não encontrado, pulando...")
             return
         }
-        // Também copiar -wal e -shm se existirem (checkpoint)
-        val walFile = File(dbFile.path + "-wal")
-        val shmFile = File(dbFile.path + "-shm")
 
+        // Fazer checkpoint do WAL antes de copiar (garante dados no arquivo principal)
+        try {
+            val db = android.database.sqlite.SQLiteDatabase.openDatabase(
+                dbFile.path, null, android.database.sqlite.SQLiteDatabase.OPEN_READWRITE
+            )
+            db.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null).use { it.moveToFirst() }
+            db.close()
+        } catch (e: Exception) {
+            Log.w(TAG, "Não foi possível fazer checkpoint de $dbName: ${e.message}")
+        }
+
+        // Copiar apenas o arquivo principal (após checkpoint, WAL está vazio)
         zipOut.putNextEntry(ZipEntry(entryName))
         FileInputStream(dbFile).use { fis ->
             fis.copyTo(zipOut)
         }
         zipOut.closeEntry()
-
-        if (walFile.exists()) {
-            zipOut.putNextEntry(ZipEntry("$entryName-wal"))
-            FileInputStream(walFile).use { fis -> fis.copyTo(zipOut) }
-            zipOut.closeEntry()
-        }
-        if (shmFile.exists()) {
-            zipOut.putNextEntry(ZipEntry("$entryName-shm"))
-            FileInputStream(shmFile).use { fis -> fis.copyTo(zipOut) }
-            zipOut.closeEntry()
-        }
+        Log.d(TAG, "Database $dbName exportado: ${dbFile.length()} bytes")
     }
 
     private fun restoreDatabaseFromZip(zipIn: ZipInputStream, dbName: String) {
         val dbFile = context.getDatabasePath(dbName)
         dbFile.parentFile?.mkdirs()
 
-        // Deletar WAL e SHM antigos
+        // Deletar WAL e SHM antigos para evitar conflitos
         File(dbFile.path + "-wal").delete()
         File(dbFile.path + "-shm").delete()
 
@@ -326,17 +361,68 @@ class BackupManager(private val context: Context) {
         Log.d(TAG, "Database $dbName restaurado: ${dbFile.length()} bytes")
     }
 
+    private fun restoreWalFromZip(zipIn: ZipInputStream, dbName: String) {
+        val dbFile = context.getDatabasePath(dbName)
+        val walFile = File(dbFile.path + "-wal")
+        FileOutputStream(walFile).use { fos ->
+            zipIn.copyTo(fos)
+        }
+        Log.d(TAG, "WAL de $dbName restaurado: ${walFile.length()} bytes")
+    }
+
     // =========================================================================
     // HELPERS
     // =========================================================================
 
+    /**
+     * Faz checkpoint WAL em todos os databases para garantir que dados estão
+     * no arquivo principal antes da cópia.
+     */
+    private fun checkpointDatabases() {
+        listOf("ngb_autoroad_db", "ngb_finance_db").forEach { dbName ->
+            try {
+                val dbFile = context.getDatabasePath(dbName)
+                if (dbFile.exists()) {
+                    val db = android.database.sqlite.SQLiteDatabase.openDatabase(
+                        dbFile.path, null, android.database.sqlite.SQLiteDatabase.OPEN_READWRITE
+                    )
+                    db.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null).use { it.moveToFirst() }
+                    db.close()
+                    Log.d(TAG, "Checkpoint WAL realizado: $dbName")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Checkpoint falhou para $dbName: ${e.message}")
+            }
+        }
+    }
+
     private fun closeDatabases() {
+        try {
+            com.ngbautoroad.data.db.AppDatabase.closeInstance()
+            Log.d(TAG, "AppDatabase fechado")
+        } catch (e: Exception) {
+            Log.w(TAG, "Erro ao fechar AppDatabase: ${e.message}")
+        }
+        try {
+            com.ngbautoroad.data.db.FinanceDatabase.closeInstance()
+            Log.d(TAG, "FinanceDatabase fechado")
+        } catch (e: Exception) {
+            Log.w(TAG, "Erro ao fechar FinanceDatabase: ${e.message}")
+        }
+    }
+
+    /**
+     * Invalida os singletons dos databases após importação para forçar
+     * recriação com os novos arquivos na próxima vez que forem acessados.
+     */
+    private fun invalidateDatabaseInstances() {
         try {
             com.ngbautoroad.data.db.AppDatabase.closeInstance()
         } catch (_: Exception) {}
         try {
             com.ngbautoroad.data.db.FinanceDatabase.closeInstance()
         } catch (_: Exception) {}
+        Log.d(TAG, "Singletons de database invalidados — serão recriados no próximo acesso")
     }
 
     private fun getRidesCount(): Int {
@@ -352,7 +438,10 @@ class BackupManager(private val context: Context) {
                 db.close()
                 count
             } else 0
-        } catch (_: Exception) { 0 }
+        } catch (e: Exception) {
+            Log.w(TAG, "Erro ao contar corridas: ${e.message}")
+            0
+        }
     }
 
     private fun getFinanceCount(): Int {
@@ -362,16 +451,24 @@ class BackupManager(private val context: Context) {
                 val db = android.database.sqlite.SQLiteDatabase.openDatabase(
                     dbFile.path, null, android.database.sqlite.SQLiteDatabase.OPEN_READONLY
                 )
-                val cursor = db.rawQuery(
-                    "SELECT (SELECT COUNT(*) FROM earnings) + (SELECT COUNT(*) FROM expenses) + (SELECT COUNT(*) FROM financial_goals)",
-                    null
-                )
-                val count = if (cursor.moveToFirst()) cursor.getInt(0) else 0
-                cursor.close()
+                var count = 0
+                // Contar cada tabela individualmente para evitar crash se alguma não existir
+                listOf("earnings", "expenses", "financial_goals").forEach { table ->
+                    try {
+                        val cursor = db.rawQuery("SELECT COUNT(*) FROM $table", null)
+                        if (cursor.moveToFirst()) count += cursor.getInt(0)
+                        cursor.close()
+                    } catch (_: Exception) {
+                        // Tabela pode não existir em versões antigas — ignorar
+                    }
+                }
                 db.close()
                 count
             } else 0
-        } catch (_: Exception) { 0 }
+        } catch (e: Exception) {
+            Log.w(TAG, "Erro ao contar registros financeiros: ${e.message}")
+            0
+        }
     }
 
     private fun getPreferencesCount(): Int {
