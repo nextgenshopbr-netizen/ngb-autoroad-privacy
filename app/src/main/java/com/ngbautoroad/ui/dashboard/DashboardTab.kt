@@ -1130,12 +1130,20 @@ fun ProfileQuickSelector(prefsManager: PrefsManager, scope: kotlinx.coroutines.C
 
     val allProfiles = remember(profilesJson, favoriteIds) {
         try {
-            val parsed = kotlinx.serialization.json.Json.decodeFromString<List<kotlinx.serialization.json.JsonObject>>(profilesJson)
+            val jsonParser = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+            val parsed = jsonParser.decodeFromString<List<kotlinx.serialization.json.JsonObject>>(profilesJson)
             parsed.mapIndexed { idx, obj ->
-                val profileId = obj["id"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() } ?: (idx + 1)
+                val profileId = obj["id"]?.let {
+                    val prim = it as? kotlinx.serialization.json.JsonPrimitive
+                    prim?.content?.toIntOrNull()
+                } ?: (idx + 1)
+                val profileName = obj["name"]?.let {
+                    val prim = it as? kotlinx.serialization.json.JsonPrimitive
+                    prim?.content?.takeIf { n -> n.isNotBlank() && n != "null" }
+                } ?: "Perfil $profileId"
                 QuickProfile(
                     id = profileId,
-                    name = obj["name"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.takeIf { n -> n.isNotBlank() } } ?: "Perfil ${idx + 1}",
+                    name = profileName,
                     isFavorite = profileId in favoriteIds
                 )
             }

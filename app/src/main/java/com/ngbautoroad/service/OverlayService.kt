@@ -106,6 +106,7 @@ class OverlayService : Service(),
     private var currentGalleryCard: CardGallery.GalleryCard? = null
     private var currentCustomLayout: com.ngbautoroad.ui.editor.CustomCardLayout? = null
     private var overlayWidth = 320
+    private var overlayHeight = 0  // 0 = WRAP_CONTENT; >0 = saved height in dp
     private var currentFontScale = 1.0f
     private var naturalOverlayHeight = 0
 
@@ -160,6 +161,7 @@ class OverlayService : Service(),
         // Carregar configurações iniciais
         serviceScope.launch {
             overlayWidth = prefsManager.overlayWidthFlow.first()
+            overlayHeight = prefsManager.overlayHeightFlow.first()
             currentFontScale = prefsManager.overlayFontScaleFlow.first()
         }
 
@@ -249,6 +251,7 @@ class OverlayService : Service(),
         val activeSlot = prefsManager.activeCardSlotFlow.first()
         currentFontScale = prefsManager.overlayFontScaleFlow.first()
         overlayWidth = prefsManager.overlayWidthFlow.first()
+        overlayHeight = prefsManager.overlayHeightFlow.first()
 
         // Obter card da galeria baseado no slot ativo (tipo correto: GalleryCard)
         currentCustomLayout = null // limpar por padrão
@@ -460,9 +463,10 @@ class OverlayService : Service(),
         val savedX = 0
         val savedY = 0
 
+        val heightParam = if (overlayHeight > 0) (overlayHeight * density).toInt() else WindowManager.LayoutParams.WRAP_CONTENT
         val params = WindowManager.LayoutParams(
             widthPx,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            heightParam,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
             else
@@ -535,8 +539,9 @@ class OverlayService : Service(),
                                     windowManager?.updateViewLayout(overlayView, params)
                                 } catch (_: Exception) {}
                                 overlayWidth = (newWidth / density).toInt()
+                                overlayHeight = (newHeight / density).toInt()
                                 serviceScope.launch {
-                                    prefsManager.saveOverlaySize(overlayWidth, (newHeight / density).toInt())
+                                    prefsManager.saveOverlaySize(overlayWidth, overlayHeight)
                                 }
                                 updateOverlayContent()
                             }
@@ -652,8 +657,9 @@ class OverlayService : Service(),
                                 windowManager?.updateViewLayout(view, lp)
                             } catch (_: Exception) {}
                             overlayWidth = (newWidth / density).toInt()
+                            overlayHeight = (newHeight / density).toInt()
                             serviceScope.launch {
-                                prefsManager.saveOverlaySize(overlayWidth, (newHeight / density).toInt())
+                                prefsManager.saveOverlaySize(overlayWidth, overlayHeight)
                             }
                             updateOverlayContent()
                         }

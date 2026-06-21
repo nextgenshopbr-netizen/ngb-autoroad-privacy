@@ -105,12 +105,34 @@ fun OverlayCard(
                 .background(bgColor.copy(alpha = 0.9f))
                 .padding(horizontal = 6.dp, vertical = 2.dp)
         ) {
-            // v6.3.6: Apenas botão fechar (zoom A-/A+ removido)
+            // Barra de controle: A- / A+ / Fechar
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Botões de acessibilidade A- e A+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "A\u2212",
+                        color = textColor.copy(alpha = 0.8f),
+                        fontSize = (12 * fontScale).sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clickable { onFontScaleChange((fontScale - 0.1f).coerceAtLeast(0.7f)) }
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                    Text(
+                        text = "A+",
+                        color = textColor.copy(alpha = 0.8f),
+                        fontSize = (12 * fontScale).sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier
+                            .clickable { onFontScaleChange((fontScale + 0.1f).coerceAtMost(1.6f)) }
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+                // Botão fechar
                 Text(
                     text = "\u2715",
                     color = textColor.copy(alpha = 0.9f),
