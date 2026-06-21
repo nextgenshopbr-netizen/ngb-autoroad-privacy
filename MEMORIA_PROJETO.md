@@ -752,3 +752,10 @@ Simulação avançada de 1 ano com dados aleatórios (365 dias, ~4.500 corridas,
 - **EWMA Cold Start (v6.9.0)**: Ajustado o OdometerEngine para usar alpha=0.5 nos primeiros 30 dias, permitindo que o sistema aprenda o padrão de uso pessoal do motorista 1 a 2 atualizações mais rápido.
 - **Simulações de Validação**: Script `sim_v690_validation.py` executado para 1m, 3m, 6m, 1a e 2a. Comprovou acurácia do GPS (>90%), economia de bateria (130h/ano) e zero alertas intrusivos.
 - **Release**: APK compilado, alinhado em 16KB, assinado e publicado como release `v6.9.0` no GitHub.
+
+### 21/06/2026 18:15 - Release v6.9.3 (Fix Profile Names + Legacy Backup Migration)
+- **Bug Crítico Corrigido — Nomes de Perfil**: Causa raiz identificada: backups gerados usavam chave `saved_profiles_json` mas o app lê de `profiles_json`. Além disso, campos internos de CriteriaWeights e DriverThresholds estavam com nomes errados no JSON de perfis.
+- **BackupManager — migrateLegacyKeys()**: Adicionada função que mapeia automaticamente `saved_profiles_json` → `profiles_json` ao importar backups antigos, incluindo correção de campos internos (stops→intermediateStops, rating→passengerRating, duration→rideDuration, pickupDist→pickupDistance, dropoffDist→dropoffDistance, maxPickupDist→maxPickupDistance, minRating→minPassengerRating, minDropoffDist→minDropoffDistance).
+- **Correções de Compilação**: Adicionado import `rememberLauncherForActivityResult` no DashboardTab, fix referência `LocalLifecycleOwner` (pacote correto: `compose.ui.platform`), adicionado `@OptIn(ExperimentalMaterial3Api)` no PermissionsStep, adicionada dependência `lifecycle-runtime-compose:2.7.0`.
+- **Backup de Teste Regenerado**: Script `generate_backup.py` corrigido com chave `profiles_json`, campos corretos de CriteriaWeights/DriverThresholds, campo `id` e campos `autoPilotMode`/`minAcceptScore`/`maxRefuseScore` em cada perfil. ZIP regenerado com 3.464 corridas, 132 turnos, R$ 48.756 em ganhos.
+- **Release**: APK v6.9.3 (versionCode 72) compilado, zipalign 4-byte, assinado v2/v3, publicado no GitHub com backup atualizado.
