@@ -60,6 +60,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.activity.compose.rememberLauncherForActivityResult
 import java.util.*
 
 @Composable
@@ -122,39 +123,124 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
             .verticalScroll(scrollState)
             .padding(16.dp)
     ) {
-        // v6.9.2: Banner compacto de permissões pendentes
-        val missingCount = remember { PermissionManager.getMissingRequiredCount(context) }
-        if (missingCount > 0) {
+        // v6.9.3: Banner compacto de permissões pendentes com ação inline
+        var permRefreshKey by remember { mutableIntStateOf(0) }
+        val allPermissions = remember(permRefreshKey) { PermissionManager.getAllPermissions(context) }
+        val missingPerms = allPermissions.filter { it.isRequired && !it.isGranted }
+        var showPermBanner by remember { mutableStateOf(true) }
+
+        // Lifecycle observer para refresh ao retornar de settings
+        val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+        DisposableEffect(lifecycleOwner) {
+            val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                    permRefreshKey++
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        }
+
+        // Launchers para permissões runtime (Dashboard)
+        val dashLocationLauncher = rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+        ) { permRefreshKey++ }
+        val dashBgLocationLauncher = rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+        ) { permRefreshKey++ }
+        val dashNotifLauncher = rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+        ) { permRefreshKey++ }
+        val dashActivityLauncher = rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+        ) { permRefreshKey++ }
+
+        if (missingPerms.isNotEmpty() && showPermBanner) {
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        context.startActivity(
-                            Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = android.net.Uri.parse("package:${context.packageName}")
-                            }
-                        )
-                    },
+                modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer
                 )
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = "$missingCount permiss${if (missingCount == 1) "ão crítica" else "ões críticas"} pendente${if (missingCount > 1) "s" else ""} — toque para resolver",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "${missingPerms.size} permiss${if (missingPerms.size == 1) "ão" else "ões"} pendente${if (missingPerms.size > 1) "s" else ""}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    // Lista clicável de cada permissão faltante
+                    missingPerms.forEach { perm ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    when (perm.name) {
+                                        "Acessibilidade" -> context.startActivity(
+                                            android.content.Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                        )
+                                        "Sobreposição de Tela" -> context.startActivity(
+                                            android.content.Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                                                data = android.net.Uri.parse("package:${context.packageName}")
+                                            }
+                                        )
+                                        "Notificações" -> {
+                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                                dashNotifLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                            }
+                                        }
+                                        "Localização Precisa" -> dashLocationLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                                        "Localização em Background" -> {
+                                            val hasFine = androidx.core.content.ContextCompat.checkSelfPermission(
+                                                context, android.Manifest.permission.ACCESS_FINE_LOCATION
+                                            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                            if (hasFine) {
+                                                dashBgLocationLauncher.launch(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                                            } else {
+                                                dashLocationLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                                            }
+                                        }
+                                        "Reconhecimento de Atividade" -> {
+                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                                                dashActivityLauncher.launch(android.Manifest.permission.ACTIVITY_RECOGNITION)
+                                            }
+                                        }
+                                        "Sem Restrição de Bateria" -> context.startActivity(
+                                            android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                                data = android.net.Uri.parse("package:${context.packageName}")
+                                            }
+                                        )
+                                    }
+                                }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.RadioButtonUnchecked,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "${perm.name} — toque para ativar",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -1367,15 +1453,17 @@ fun ProfileQuickSelector(prefsManager: PrefsManager, scope: kotlinx.coroutines.C
 private suspend fun applyProfile(prefsManager: PrefsManager, profilesJson: String, profileId: Int) {
     prefsManager.saveActiveProfileId(profileId)
     try {
-        val parsed = kotlinx.serialization.json.Json.decodeFromString<List<kotlinx.serialization.json.JsonObject>>(profilesJson)
-        val profileObj = parsed.getOrNull(profileId - 1)
-        if (profileObj != null) {
-            val mode = profileObj["autoPilotMode"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content } ?: "OFF"
-            val minScore = profileObj["minAcceptScore"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() } ?: 75
-            val maxRefuse = profileObj["maxRefuseScore"]?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content?.toIntOrNull() } ?: 40
-            prefsManager.saveAutoPilotMode(mode)
-            prefsManager.saveAutoPilotMinScore(minScore)
-            prefsManager.saveAutoPilotMaxRefuseScore(maxRefuse)
+        val jsonParser = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+        val profiles = jsonParser.decodeFromString<List<com.ngbautoroad.ui.criteria.SavedProfile>>(profilesJson)
+        // v6.9.3: Buscar pelo ID real, não pela posição na lista
+        val profile = profiles.find { it.id == profileId }
+        if (profile != null) {
+            prefsManager.saveAutoPilotMode(profile.autoPilotMode)
+            prefsManager.saveAutoPilotMinScore(profile.minAcceptScore)
+            prefsManager.saveAutoPilotMaxRefuseScore(profile.maxRefuseScore)
+            // Aplicar pesos e thresholds também
+            prefsManager.saveCriteriaWeights(profile.weights)
+            prefsManager.saveDriverThresholds(profile.thresholds)
         }
     } catch (_: Exception) {}
 }

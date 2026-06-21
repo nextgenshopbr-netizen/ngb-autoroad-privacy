@@ -87,7 +87,7 @@ object PermissionManager {
             isGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 ContextCompat.checkSelfPermission(context, Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED
             } else true,
-            isRequired = false,
+            isRequired = true,
             category = PermissionCategory.SENSORS
         ))
 

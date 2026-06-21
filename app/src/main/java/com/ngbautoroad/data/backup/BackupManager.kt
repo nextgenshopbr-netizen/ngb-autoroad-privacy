@@ -194,12 +194,40 @@ class BackupManager(private val context: Context) {
         if (jsonContent.isBlank() || jsonContent == "{}") return
         try {
             val prefsManager = com.ngbautoroad.data.prefs.PrefsManager(context)
-            val map: Map<String, String> = json.decodeFromString(jsonContent)
+            val rawMap: Map<String, String> = json.decodeFromString(jsonContent)
+            val map = migrateLegacyKeys(rawMap)
             prefsManager.restoreAllPreferencesFromMap(map)
             Log.d(TAG, "DataStore restaurado: ${map.size} preferências")
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao importar DataStore: ${e.message}")
         }
+    }
+
+    /**
+     * Migra chaves legadas de backups antigos para o formato atual.
+     * - saved_profiles_json → profiles_json (com correção de campos internos)
+     */
+    private fun migrateLegacyKeys(original: Map<String, String>): Map<String, String> {
+        val result = original.toMutableMap()
+
+        // Migrar saved_profiles_json → profiles_json
+        if ("saved_profiles_json" in result && "profiles_json" !in result) {
+            val legacyValue = result.remove("saved_profiles_json")!!
+            // Corrigir nomes de campos antigos dentro do JSON de perfis
+            val migrated = legacyValue
+                .replace("\"stops\"", "\"intermediateStops\"")
+                .replace("\"rating\"", "\"passengerRating\"")
+                .replace("\"duration\"", "\"rideDuration\"")
+                .replace("\"pickupDist\"", "\"pickupDistance\"")
+                .replace("\"dropoffDist\"", "\"dropoffDistance\"")
+                .replace("\"maxPickupDist\"", "\"maxPickupDistance\"")
+                .replace("\"minRating\"", "\"minPassengerRating\"")
+                .replace("\"minDropoffDist\"", "\"minDropoffDistance\"")
+            result["profiles_json"] = migrated
+            Log.d(TAG, "Migrada chave legada: saved_profiles_json → profiles_json")
+        }
+
+        return result
     }
 
     // =========================================================================

@@ -242,6 +242,7 @@ private fun WelcomeStep(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PermissionsStep(
     onNext: () -> Unit,
@@ -252,6 +253,35 @@ private fun PermissionsStep(
     val permissions = remember(refreshKey) { PermissionManager.getAllPermissions(context) }
     val requiredGranted = permissions.count { it.isRequired && it.isGranted }
     val requiredTotal = permissions.count { it.isRequired }
+
+    // Launchers para permissões runtime
+    val locationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { refreshKey++ }
+
+    val backgroundLocationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { refreshKey++ }
+
+    val activityRecognitionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { refreshKey++ }
+
+    val notificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { refreshKey++ }
+
+    // Lifecycle observer para refresh ao retornar de settings
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                refreshKey++
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Column(
         modifier = Modifier
@@ -270,10 +300,22 @@ private fun PermissionsStep(
             color = if (requiredGranted == requiredTotal) MaterialTheme.colorScheme.primary
             else MaterialTheme.colorScheme.error
         )
+        Text(
+            "Toque em cada item para ativar. Ative na ordem de cima para baixo.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (requiredGranted < requiredTotal) {
+            Text(
+                "Você pode pular e ativar depois em Config > App",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Permission list
+        // Permission list - CADA ITEM É CLICÁVEL
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -282,6 +324,63 @@ private fun PermissionsStep(
         ) {
             permissions.forEach { perm ->
                 Card(
+                    onClick = {
+                        if (!perm.isGranted) {
+                            // Abrir a permissão específica baseado no nome
+                            when (perm.name) {
+                                "Acessibilidade" -> {
+                                    context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                                }
+                                "Sobreposição de Tela" -> {
+                                    context.startActivity(
+                                        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                                            data = android.net.Uri.parse("package:${context.packageName}")
+                                        }
+                                    )
+                                }
+                                "Notificações" -> {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        notificationLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                }
+                                "Localização Precisa" -> {
+                                    locationLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                                }
+                                "Localização em Background" -> {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                        // Precisa ter localização precisa primeiro
+                                        val hasFine = androidx.core.content.ContextCompat.checkSelfPermission(
+                                            context, android.Manifest.permission.ACCESS_FINE_LOCATION
+                                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                        if (hasFine) {
+                                            backgroundLocationLauncher.launch(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                                        } else {
+                                            // Pede localização precisa primeiro
+                                            locationLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                                            Toast.makeText(context, "Ative a Localização Precisa primeiro", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                                "Reconhecimento de Atividade" -> {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                        activityRecognitionLauncher.launch(android.Manifest.permission.ACTIVITY_RECOGNITION)
+                                    }
+                                }
+                                "Sem Restrição de Bateria" -> {
+                                    context.startActivity(
+                                        Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                            data = android.net.Uri.parse("package:${context.packageName}")
+                                        }
+                                    )
+                                }
+                                "Alarmes Exatos" -> {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                        context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+                                    }
+                                }
+                            }
+                        }
+                    },
                     colors = CardDefaults.cardColors(
                         containerColor = if (perm.isGranted)
                             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
@@ -318,6 +417,14 @@ private fun PermissionsStep(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        if (!perm.isGranted) {
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                contentDescription = "Ativar",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -332,22 +439,12 @@ private fun PermissionsStep(
         ) {
             TextButton(onClick = onBack) { Text("Voltar") }
             Button(
-                onClick = {
-                    if (requiredGranted == requiredTotal) {
-                        onNext()
-                    } else {
-                        // Open app settings
-                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = android.net.Uri.parse("package:${context.packageName}")
-                        }
-                        context.startActivity(intent)
-                        refreshKey++
-                    }
-                }
+                onClick = { onNext() },
+                enabled = true // v6.9.3: Permitir avançar sempre (usuário pode ativar depois)
             ) {
                 Text(
-                    if (requiredGranted == requiredTotal) "Próximo"
-                    else "Abrir Configurações ($requiredGranted/$requiredTotal)"
+                    if (requiredGranted == requiredTotal) "Próximo ✓"
+                    else "Pular ($requiredGranted/$requiredTotal)"
                 )
             }
         }
