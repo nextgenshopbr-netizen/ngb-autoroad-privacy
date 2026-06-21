@@ -553,3 +553,34 @@
 - Build: compilou com sucesso (R8 minificado, ~56MB debug)
 - APK: ngb-autoroad-privacy-v6.3.5.apk
 - 6 arquivos alterados, auditoria completa documentada em AUDITORIA_V6.3.4.md
+
+---
+
+## v6.4.0 — Correções de Bugs + Compatibilidade Android 15 (16KB Page Alignment) (21/06/2026)
+### Correções de Bugs:
+1. **Perfil (DashboardTab)**: Nome salvo agora aparece corretamente no Dashboard — antes mostrava "Perfil 1" mesmo com nome personalizado. Fix no parsing de `profile_X_name` das SharedPreferences.
+2. **Overlay altura (OverlayService)**: Altura do overlay agora persiste entre sessões — carrega `overlayHeight` das prefs na criação do serviço e aplica no WindowManager.LayoutParams.
+3. **Overlay botões A-/A+ (OverlayCard)**: Botões de acessibilidade restaurados no header do card overlay.
+
+### Compatibilidade Android 15+ (16KB Page Size):
+- **Problema**: `libmlkit_google_ocr_pipeline.so` do ML Kit não era alinhada a 16KB, causando aviso "Não é compatível com 16 KB page size" no Android 15+
+- **Solução aplicada**:
+  1. ML Kit text-recognition atualizado de 16.0.0 para 16.0.1
+  2. `jniLibs { useLegacyPackaging = false }` — armazena .so sem compressão no APK
+  3. APK re-alinhado com `zipalign -P 16` (build-tools 35.0.0) — garante offset 16KB para todas as bibliotecas nativas
+  4. Re-assinado com keystore de produção após realinhamento
+- **Verificação**: `zipalign -c -P 16 -v 4` confirma todas as 4 bibliotecas (arm64-v8a, armeabi-v7a, x86, x86_64) com alinhamento OK
+
+### Arquivos modificados:
+- `app/build.gradle.kts` — ML Kit 16.0.1, jniLibs useLegacyPackaging=false, versionCode=639
+- `app/src/main/java/com/ngbautoroad/ui/dashboard/DashboardTab.kt` — Fix parsing nome de perfil
+- `app/src/main/java/com/ngbautoroad/service/OverlayService.kt` — Persistência de altura
+- `app/src/main/java/com/ngbautoroad/service/OverlayCard.kt` — Botões A-/A+ restaurados
+
+### Técnico:
+- versionCode: 639 | versionName: 6.4.0
+- Build: compilou com sucesso (R8 minificado, ~45MB)
+- APK: ngb-autoroad-privacy-v6.4.0-release.apk
+- Assinado: CN=NGB AutoRoad, O=NextGenShop BR
+- 16KB aligned: Verificado com build-tools 35.0.0
+- GitHub Release: https://github.com/nextgenshopbr-netizen/ngb-autoroad-privacy/releases/tag/v6.4.0
