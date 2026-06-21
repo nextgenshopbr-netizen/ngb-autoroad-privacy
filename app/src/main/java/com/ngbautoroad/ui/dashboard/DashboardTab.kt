@@ -46,6 +46,7 @@ import com.ngbautoroad.data.model.DashboardData
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.ui.features.FeaturesActivity
 import com.ngbautoroad.ui.theme.*
+import com.ngbautoroad.domain.OdometerEngine
 import com.ngbautoroad.domain.ShiftManager
 import com.ngbautoroad.domain.ShiftState
 import com.ngbautoroad.service.OverlayService
@@ -1485,45 +1486,14 @@ fun OdometerAlertCard() {
                         val newOdometer = odometerInput.toIntOrNull() ?: 0
                         if (newOdometer > 0) {
                             scope.launch {
-                                val now = System.currentTimeMillis()
-                                // Salvar no histórico
-                                val lastEntry = odometerHistoryDao.getLastEntry(vehicle.id)
-                                val kmTracked = 0.0 // TODO: calcular KM rastreado desde última atualização
-                                val calibFactor = if (lastEntry != null && kmTracked > 0) {
-                                    (newOdometer - lastEntry.odometerValue).toDouble() / kmTracked
-                                } else 1.0
-
-                                odometerHistoryDao.insert(
-                                    OdometerHistoryEntity(
-                                        vehicleId = vehicle.id,
-                                        odometerValue = newOdometer,
-                                        estimatedAtMoment = vehicle.currentOdometer,
-                                        kmTrackedSinceLast = kmTracked,
-                                        calibrationFactor = calibFactor,
-                                        source = if (vehicle.currentOdometer == 0) "INITIAL" else "MANUAL",
-                                        timestamp = now
-                                    )
+                                // v6.7.0: Delegar toda lógica ao OdometerEngine
+                                // Isso inclui: histórico, EWMA, outlier detection, max factor 5.0
+                                val odometerEngine = OdometerEngine(
+                                    vehicleProfileDao = vehicleProfileDao,
+                                    odometerHistoryDao = odometerHistoryDao,
+                                    earningDao = financeDb.earningDao()
                                 )
-                                // Atualizar veículo
-                                vehicleProfileDao.updateOdometer(vehicle.id, newOdometer, now)
-
-                                // Auto-calibração: se temos dados suficientes, atualizar fator
-                                if (lastEntry != null && kmTracked > 100) {
-                                    val entries = odometerHistoryDao.getLastEntries(vehicle.id)
-                                    if (entries.size >= 2) {
-                                        // EWMA com alpha=0.3 (mais peso nos dados recentes)
-                                        val alpha = 0.3
-                                        var ewmaFactor = entries.last().calibrationFactor
-                                        entries.reversed().forEach { entry ->
-                                            if (entry.calibrationFactor > 0) {
-                                                ewmaFactor = alpha * entry.calibrationFactor + (1 - alpha) * ewmaFactor
-                                            }
-                                        }
-                                        // Limitar entre 1.0 e 3.0
-                                        val clampedFactor = ewmaFactor.coerceIn(1.0, 3.0)
-                                        vehicleProfileDao.updateCorrectionFactor(vehicle.id, clampedFactor)
-                                    }
-                                }
+                                odometerEngine.processOdometerUpdate(vehicle, newOdometer)
                             }
                             showOdometerDialog = false
                         }
@@ -1531,6 +1501,15 @@ fun OdometerAlertCard() {
                     enabled = (odometerInput.toIntOrNull() ?: 0) > 0 && 
                               (odometerInput.toIntOrNull() ?: 0) >= vehicle.currentOdometer
                 ) { Text("Salvar") }
+                // v6.7.0 Ruptura #5: Alerta se valor informado é menor que estimado
+                val inputVal = odometerInput.toIntOrNull() ?: 0
+                if (inputVal > 0 && vehicle.currentOdometer > 0 && inputVal < vehicle.currentOdometer) {
+                    Text(
+                        "⚠️ Valor menor que o último registro (${String.format("%,d", vehicle.currentOdometer)} km). Verifique.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
             },
             dismissButton = {
                 TextButton(onClick = { showOdometerDialog = false }) { Text("Depois") }

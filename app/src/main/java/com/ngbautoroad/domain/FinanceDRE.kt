@@ -87,7 +87,8 @@ class FinanceDREEngine(
     private val earningDao: EarningDao,
     private val expenseDao: ExpenseDao,
     private val individualExpenseDao: IndividualExpenseDao,
-    private val vehicleProfileDao: VehicleProfileDao
+    private val vehicleProfileDao: VehicleProfileDao,
+    private val odometerHistoryDao: OdometerHistoryDao? = null
 ) {
 
     /**
@@ -115,9 +116,19 @@ class FinanceDREEngine(
         val totalDurationMin = earningDao.getTotalDurationSync(startDate, endDate) ?: 0
         val totalHours = totalDurationMin / 60.0
 
-        // v6.5.0: Aplicar fator de correção do odômetro para KM real
-        // O KM rastreado é apenas corridas; o KM real inclui uso pessoal
-        val correctionFactor = vehicle?.odometerCorrectionFactor ?: 1.3
+        // v6.7.0: Fator de correção por período (Ruptura #2 - DRE não retroativo)
+        // Usa o fator que era válido NO PERÍODO, não o fator atual (evita mudar histórico)
+        val correctionFactor = if (vehicle != null && odometerHistoryDao != null) {
+            val historyEntries = odometerHistoryDao.getEntriesInPeriodSync(vehicle.id, startDate, endDate)
+            if (historyEntries.isNotEmpty()) {
+                // Média dos fatores registrados no período
+                historyEntries.map { it.calibrationFactor }.filter { it > 0 }.average()
+            } else {
+                vehicle.odometerCorrectionFactor
+            }
+        } else {
+            vehicle?.odometerCorrectionFactor ?: 1.3
+        }
         val totalKm = totalKmTracked * correctionFactor
 
         // Custos Variáveis (combustível + desgaste por km REAL)

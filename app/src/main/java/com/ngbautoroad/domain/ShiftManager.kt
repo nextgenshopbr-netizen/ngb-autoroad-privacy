@@ -17,7 +17,9 @@ data class ShiftState(
     // v6.6.0: Cancelamento e fadiga
     val ridesCancelled: Int = 0,
     val fatigueAlertShown: Boolean = false,
-    val lastFatigueAlertMs: Long = 0L
+    val lastFatigueAlertMs: Long = 0L,
+    // v6.7.0 Ruptura #9: Veículo associado ao turno
+    val vehicleId: Int = 0
 ) {
     val elapsedMs: Long
         get() {
@@ -114,10 +116,20 @@ class ShiftManager(private val context: Context) {
     }
 
     // v5.0.0: Guard contra turno duplicado
-    fun startShift(goal: Double): ShiftState = synchronized(lock) {
+    /**
+     * v6.7.0 Ruptura #9: Aceita vehicleId para associar turno ao veículo.
+     * Quando o motorista tem mais de um veículo, a UI pergunta qual usar.
+     * Se só tem um, passa o ID automaticamente.
+     */
+    fun startShift(goal: Double, vehicleId: Int = 0): ShiftState = synchronized(lock) {
         val current = loadState()
         if (current.isActive) return current // Já tem turno ativo, não sobrescrever
-        val s = ShiftState(isActive = true, startTimeMs = System.currentTimeMillis(), goalValue = goal)
+        val s = ShiftState(
+            isActive = true,
+            startTimeMs = System.currentTimeMillis(),
+            goalValue = goal,
+            vehicleId = vehicleId
+        )
         saveState(s); return s
     }
 

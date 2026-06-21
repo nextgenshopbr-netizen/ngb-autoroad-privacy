@@ -41,7 +41,8 @@ data class RideData(
     val pickupNeighborhood: String = "",  // Bairro de embarque (extraído por regex)
     val dropoffNeighborhood: String = "", // Bairro de destino (extraído por regex)
     val isSimulation: Boolean = false,    // Flag: true = dados simulados (não salvar no histórico)
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val metadata: Map<String, String>? = null  // v6.7.0: Metadados extras (shiftHours, gpsKm, etc.)
 ) {
     // Propriedade calculada: R$/km (protegida contra divisão por zero)
     val valuePerKm: Double

@@ -154,6 +154,9 @@ interface OdometerHistoryDao {
 
     @Query("SELECT COUNT(*) FROM odometer_history WHERE vehicleId = :vehicleId")
     suspend fun countEntries(vehicleId: Long): Int
+
+    @Query("SELECT * FROM odometer_history WHERE vehicleId = :vehicleId AND timestamp BETWEEN :startDate AND :endDate ORDER BY timestamp ASC")
+    fun getEntriesInPeriodSync(vehicleId: Long, startDate: Long, endDate: Long): List<OdometerHistoryEntity>
 }
 
 // ============================================================================

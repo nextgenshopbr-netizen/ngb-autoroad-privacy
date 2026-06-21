@@ -150,6 +150,28 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
     var selectedTab by remember { mutableStateOf(2) }
     val tabs = TabItem.entries.toTypedArray()
 
+    // v6.7.0: Onboarding obrigatório de odômetro (Ruptura #1 - Cold Start)
+    val odometerOnboardingDone by prefsManager.odometerOnboardingDoneFlow.collectAsState(initial = true)
+    var showOnboarding by remember { mutableStateOf(false) }
+    val ctx = LocalContext.current
+    val financeDatabase = remember { com.ngbautoroad.data.db.FinanceDatabase.getInstance(ctx) }
+
+    LaunchedEffect(odometerOnboardingDone) {
+        if (!odometerOnboardingDone) {
+            // Verificar se já tem veículo com odômetro > 0
+            val vehicle = financeDatabase.vehicleProfileDao().getActiveVehicleSync()
+            showOnboarding = vehicle == null || vehicle.currentOdometer == 0
+        }
+    }
+
+    if (showOnboarding) {
+        com.ngbautoroad.ui.onboarding.OdometerOnboardingDialog(
+            prefsManager = prefsManager,
+            financeDb = financeDatabase,
+            onComplete = { showOnboarding = false }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(

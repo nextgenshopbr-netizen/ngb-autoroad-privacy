@@ -251,17 +251,57 @@ class GpsTrackingEngine(private val context: Context) : LocationListener, Sensor
     // LocationListener
     // ========================================================================
 
+    // v6.7.0 Ruptura #12: Filtro Kalman simples para suavizar GPS ruidoso
+    private var kalmanLat: Double = 0.0
+    private var kalmanLon: Double = 0.0
+    private var kalmanVariance: Double = 1.0  // Incerteza inicial alta
+    private var kalmanInitialized: Boolean = false
+
+    /**
+     * Aplica filtro Kalman 1D em cada eixo (lat/lon separadamente).
+     * Reduz ruído de GPS em túneis, áreas urbanas densas, e multi-path.
+     * Resultado: distâncias mais precisas, menos "zig-zag" fictício.
+     */
+    private fun kalmanFilter(measuredLat: Double, measuredLon: Double, accuracy: Float): Pair<Double, Double> {
+        val measurementVariance = (accuracy * accuracy).toDouble().coerceAtLeast(1.0)
+
+        if (!kalmanInitialized) {
+            kalmanLat = measuredLat
+            kalmanLon = measuredLon
+            kalmanVariance = measurementVariance
+            kalmanInitialized = true
+            return Pair(measuredLat, measuredLon)
+        }
+
+        // Kalman gain: quanto confiar na nova medição vs estado anterior
+        val kalmanGain = kalmanVariance / (kalmanVariance + measurementVariance)
+
+        // Atualizar estado
+        kalmanLat = kalmanLat + kalmanGain * (measuredLat - kalmanLat)
+        kalmanLon = kalmanLon + kalmanGain * (measuredLon - kalmanLon)
+
+        // Atualizar variância (incerteza diminui com cada medição)
+        kalmanVariance = (1 - kalmanGain) * kalmanVariance + 0.5 // Process noise
+
+        return Pair(kalmanLat, kalmanLon)
+    }
+
     override fun onLocationChanged(location: Location) {
         // Filtrar pontos com baixa precisão
         if (location.accuracy > MIN_ACCURACY_METERS) return
+
+        // v6.7.0: Aplicar filtro Kalman para suavizar GPS
+        val (filteredLat, filteredLon) = kalmanFilter(
+            location.latitude, location.longitude, location.accuracy
+        )
 
         val prevLat = state.lastLatitude
         val prevLon = state.lastLongitude
 
         if (prevLat != 0.0 && prevLon != 0.0) {
-            // Calcular distância entre pontos
+            // Calcular distância usando coordenadas filtradas pelo Kalman
             val results = FloatArray(1)
-            Location.distanceBetween(prevLat, prevLon, location.latitude, location.longitude, results)
+            Location.distanceBetween(prevLat, prevLon, filteredLat, filteredLon, results)
             val distanceMeters = results[0]
 
             // Filtrar saltos de GPS (teleportação > 500m em 3s = impossível)
@@ -269,6 +309,9 @@ class GpsTrackingEngine(private val context: Context) : LocationListener, Sensor
                 Log.w(TAG, "GPS jump detectado: ${distanceMeters}m — ignorando")
                 return
             }
+
+            // Filtro adicional: ignorar micro-movimentos < 3m (ruído GPS parado)
+            if (distanceMeters < 3 && !state.isMoving) return
 
             val distanceKm = distanceMeters / 1000.0
             val newTotal = state.totalDistanceKm + distanceKm
@@ -286,8 +329,8 @@ class GpsTrackingEngine(private val context: Context) : LocationListener, Sensor
             state = state.copy(
                 totalDistanceKm = newTotal,
                 deadDistanceKm = newDeadKm,
-                lastLatitude = location.latitude,
-                lastLongitude = location.longitude,
+                lastLatitude = filteredLat,  // v6.7.0: Usar coordenadas filtradas pelo Kalman
+                lastLongitude = filteredLon,
                 lastUpdateMs = System.currentTimeMillis(),
                 pointsCollected = state.pointsCollected + 1,
                 avgSpeedKmh = newAvgSpeed,
@@ -297,8 +340,8 @@ class GpsTrackingEngine(private val context: Context) : LocationListener, Sensor
         } else {
             // Primeiro ponto
             state = state.copy(
-                lastLatitude = location.latitude,
-                lastLongitude = location.longitude,
+                lastLatitude = filteredLat,  // v6.7.0: Usar coordenadas filtradas
+                lastLongitude = filteredLon,
                 lastUpdateMs = System.currentTimeMillis(),
                 pointsCollected = 1
             )

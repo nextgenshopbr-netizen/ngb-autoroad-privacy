@@ -600,6 +600,24 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    // --- Onboarding Odômetro ---
+    private val KEY_ODOMETER_ONBOARDING_DONE = booleanPreferencesKey("odometer_onboarding_done")
+    val odometerOnboardingDoneFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_ODOMETER_ONBOARDING_DONE] ?: false
+    }
+    suspend fun setOdometerOnboardingDone(done: Boolean) {
+        context.dataStore.edit { prefs -> prefs[KEY_ODOMETER_ONBOARDING_DONE] = done }
+    }
+
+    // --- Veículo ativo no turno ---
+    private val KEY_ACTIVE_VEHICLE_ID = intPreferencesKey("active_vehicle_id_shift")
+    val activeVehicleIdFlow: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[KEY_ACTIVE_VEHICLE_ID] ?: 0
+    }
+    suspend fun setActiveVehicleId(id: Int) {
+        context.dataStore.edit { prefs -> prefs[KEY_ACTIVE_VEHICLE_ID] = id }
+    }
+
     suspend fun resetTutorial() {
         context.dataStore.edit { prefs -> prefs[KEY_TUTORIAL_COMPLETED] = "" }
     }

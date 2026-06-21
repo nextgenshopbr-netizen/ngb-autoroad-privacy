@@ -321,14 +321,20 @@ class RideScorer(
         // Cruza: horário noturno + bairro perigoso + rating baixo
         // Penalidade adicional quando múltiplos fatores de risco coincidem
         // ====================================================================
+        // v6.7.0: Ruptura #3 - Threshold mínimo de segurança (motorista não pode desativar proteção)
+        val effectiveRatingThreshold = driverThresholds.minPassengerRating.coerceAtLeast(4.5)
         val safetyModifier = SafetyScoreModifierStatic.calculatePenalty(
             passengerRating = ride.passengerRating,
-            ratingThreshold = driverThresholds.minPassengerRating,
+            ratingThreshold = effectiveRatingThreshold,
             pickupNeighborhood = ride.pickupNeighborhood,
             dropoffNeighborhood = ride.dropoffNeighborhood,
             blockedNeighborhoods = blockedNeighborhoods
         )
         totalScore -= safetyModifier
+        // v6.7.0: Ruptura #3 - Safety Floor: se penalidade de segurança > 15, cap score em 50
+        if (safetyModifier > 15.0) {
+            totalScore = totalScore.coerceAtMost(50.0)
+        }
 
         // ====================================================================
         // v6.6.0: Fator de Retorno (volta vazia)
@@ -339,6 +345,31 @@ class RideScorer(
             dropoffDistance = ride.dropoffDistance
         )
         totalScore -= returnPenalty
+
+        // ====================================================================
+        // v6.7.0: Ruptura #7 - Fadiga pré-corrida
+        // Se o motorista está há muitas horas no turno, penaliza para forçar parada
+        // Usa shiftHours passado via ride.metadata (se disponível)
+        // ====================================================================
+        val shiftHours = ride.metadata?.get("shiftHours")?.toDoubleOrNull() ?: 0.0
+        if (shiftHours > 0) {
+            val fatiguePenalty = when {
+                shiftHours >= 12.0 -> 40.0  // Perigo extremo: força recusa
+                shiftHours >= 10.0 -> 25.0  // Muito cansado
+                shiftHours >= 8.0 -> 15.0   // Cansado
+                shiftHours >= 6.0 -> 5.0    // Alerta leve
+                else -> 0.0
+            }
+            if (fatiguePenalty > 0) {
+                totalScore -= fatiguePenalty
+                violations.add(ThresholdViolation(
+                    criteriaName = "Fadiga",
+                    currentValue = shiftHours,
+                    minimumRequired = 6.0,
+                    penaltyApplied = fatiguePenalty
+                ))
+            }
+        }
 
         totalScore = totalScore.coerceIn(0.0, 100.0)
 

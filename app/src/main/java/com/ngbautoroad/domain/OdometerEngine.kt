@@ -181,7 +181,7 @@ class OdometerEngine(
             if (entries.size >= 2) {
                 calculateEWMA(entries)
             } else {
-                calibrationFactor.coerceIn(1.0, 3.0)
+                calibrationFactor.coerceIn(1.0, 5.0)
             }
         } else {
             vehicle.odometerCorrectionFactor
@@ -196,20 +196,55 @@ class OdometerEngine(
     /**
      * Calcula EWMA (Exponentially Weighted Moving Average) do fator de correção.
      * Alpha = 0.3 → mais peso nos dados recentes.
+     *
+     * v6.7.0: Ruptura #8 - Detecção de outlier (férias, viagem longa)
+     *   Se um fator é > 2× a média dos anteriores, é marcado como outlier
+     *   e recebe peso reduzido (alpha/3) no EWMA.
+     *
+     * v6.7.0: Ruptura #10 - Max factor aumentado para 5.0
+     *   Famílias com uso pessoal alto podem ter fator real > 3.0
      */
     private fun calculateEWMA(entries: List<OdometerHistoryEntity>): Double {
         val alpha = 0.3
         val validEntries = entries.filter { it.calibrationFactor > 0 && it.kmTrackedSinceLast > 50 }
         if (validEntries.isEmpty()) return 1.3
 
+        // Calcular média para detecção de outlier
+        val avgFactor = validEntries.map { it.calibrationFactor }.average()
+
         // Entries vêm DESC (mais recente primeiro), precisamos processar do mais antigo
         var ewma = validEntries.last().calibrationFactor
         validEntries.reversed().drop(1).forEach { entry ->
-            ewma = alpha * entry.calibrationFactor + (1 - alpha) * ewma
+            // Ruptura #8: Outlier detection
+            val isOutlier = entry.calibrationFactor > avgFactor * 2.0 ||
+                           entry.calibrationFactor < avgFactor * 0.3
+            val effectiveAlpha = if (isOutlier) alpha / 3.0 else alpha
+            ewma = effectiveAlpha * entry.calibrationFactor + (1 - effectiveAlpha) * ewma
         }
 
-        // Limitar entre 1.0 e 3.0 para evitar valores absurdos
-        return ewma.coerceIn(1.0, 3.0)
+        // Ruptura #10: Limitar entre 1.0 e 5.0 (antes era 3.0)
+        // Famílias com uso pessoal intenso podem ter fator real de 3-4x
+        return ewma.coerceIn(1.0, 5.0)
+    }
+
+    /**
+     * v6.7.0 Ruptura #11: Fator sazonal para predição de uso familiar.
+     * Férias (dez-jan) e feriados prolongados têm uso familiar 40-80% maior.
+     * Meses normais têm uso padrão.
+     */
+    fun getSeasonalMultiplier(): Double {
+        val month = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH)
+        return when (month) {
+            // Dezembro e Janeiro: férias escolares, viagens
+            java.util.Calendar.DECEMBER, java.util.Calendar.JANUARY -> 1.6
+            // Julho: férias de meio de ano
+            java.util.Calendar.JULY -> 1.4
+            // Carnaval (fevereiro), Semana Santa (março/abril)
+            java.util.Calendar.FEBRUARY -> 1.3
+            java.util.Calendar.MARCH -> 1.15
+            // Meses normais
+            else -> 1.0
+        }
     }
 
     /**
@@ -364,7 +399,9 @@ class OdometerEngine(
         val familyPrediction = predictFamilyUsage(vehicle)
 
         // Adicionar KM familiar previsto ao odômetro estimado
-        val familyKmToAdd = familyPrediction.avgDailyFamilyKm * daysSinceUpdate
+        // v6.7.0 Ruptura #11: Aplicar fator sazonal (férias = mais uso familiar)
+        val seasonalFactor = getSeasonalMultiplier()
+        val familyKmToAdd = familyPrediction.avgDailyFamilyKm * daysSinceUpdate * seasonalFactor
         val predictedOdometer = baseEstimate + familyKmToAdd.toInt()
 
         // Confiança diminui com o tempo sem atualização
