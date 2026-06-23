@@ -26,6 +26,7 @@ package com.ngbautoroad.service
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -327,13 +328,24 @@ class AutoPilotEngine(
         val clicked = findAndClickButton(acceptTexts, platform.packageName)
         if (clicked) {
             Log.i(TAG, "│  ✅ Botão ACEITAR clicado com sucesso!")
-            // Notificar lifecycle que corrida foi aceita
             RideAccessibilityService.instance?.lifecycleManager?.onRideAccepted()
+            RideAccessibilityService.instance?.userActionDetector?.stopMonitoring()
         } else {
-            Log.w(TAG, "│  ⚠ Botão ACEITAR não encontrado — motorista deve agir manualmente")
-            // v6.3.7: Resetar flag se click falhou
-            synchronized(processingLock) {
-                isProcessing = false
+            // v6.9.9: Fallback com swipe para Uber (slider "deslize para aceitar")
+            if (platform == Platform.UBER && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                Log.i(TAG, "│  👆 Tentando swipe (slider Uber)...")
+                val swipeResult = performSwipeAccept()
+                if (swipeResult) {
+                    Log.i(TAG, "│  ✅ Swipe ACEITAR executado com sucesso!")
+                    RideAccessibilityService.instance?.lifecycleManager?.onRideAccepted()
+                    RideAccessibilityService.instance?.userActionDetector?.stopMonitoring()
+                } else {
+                    Log.w(TAG, "│  ⚠ Swipe também falhou — motorista deve agir manualmente")
+                    synchronized(processingLock) { isProcessing = false }
+                }
+            } else {
+                Log.w(TAG, "│  ⚠ Botão ACEITAR não encontrado — motorista deve agir manualmente")
+                synchronized(processingLock) { isProcessing = false }
             }
         }
     }
@@ -453,6 +465,64 @@ class AutoPilotEngine(
         }
 
         return null
+    }
+
+    // =========================================================================
+    // v6.9.9: Swipe para aceitar (Uber slider)
+    // =========================================================================
+    @android.annotation.TargetApi(Build.VERSION_CODES.N)
+    private fun performSwipeAccept(): Boolean {
+        try {
+            // O slider da Uber fica na parte inferior da tela
+            // Swipe da esquerda para a direita (centro-baixo da tela)
+            val displayMetrics = context.resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels.toFloat()
+            val screenHeight = displayMetrics.heightPixels.toFloat()
+
+            // Ponto inicial: ~15% da largura, ~85% da altura (canto inferior esquerdo do slider)
+            val startX = screenWidth * 0.15f
+            val startY = screenHeight * 0.85f
+            // Ponto final: ~85% da largura, mesma altura
+            val endX = screenWidth * 0.85f
+            val endY = startY
+
+            val path = android.graphics.Path()
+            path.moveTo(startX, startY)
+            path.lineTo(endX, endY)
+
+            val stroke = android.accessibilityservice.GestureDescription.StrokeDescription(
+                path, 0L, 300L // 300ms de duração para simular swipe natural
+            )
+
+            val gesture = android.accessibilityservice.GestureDescription.Builder()
+                .addStroke(stroke)
+                .build()
+
+            var gestureResult = false
+            val latch = java.util.concurrent.CountDownLatch(1)
+
+            accessibilityService.dispatchGesture(
+                gesture,
+                object : AccessibilityService.GestureResultCallback() {
+                    override fun onCompleted(gestureDescription: android.accessibilityservice.GestureDescription?) {
+                        gestureResult = true
+                        latch.countDown()
+                    }
+                    override fun onCancelled(gestureDescription: android.accessibilityservice.GestureDescription?) {
+                        gestureResult = false
+                        latch.countDown()
+                    }
+                },
+                null
+            )
+
+            latch.await(2, java.util.concurrent.TimeUnit.SECONDS)
+            Log.d(TAG, "│    Swipe result: $gestureResult (${startX.toInt()},${startY.toInt()} -> ${endX.toInt()},${endY.toInt()})")
+            return gestureResult
+        } catch (e: Exception) {
+            Log.e(TAG, "│  ✖ Erro ao executar swipe: ${e.message}")
+            return false
+        }
     }
 
     // =========================================================================

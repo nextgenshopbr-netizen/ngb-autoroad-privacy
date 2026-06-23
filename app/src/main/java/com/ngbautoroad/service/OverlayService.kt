@@ -122,6 +122,8 @@ class OverlayService : Service(),
 
     companion object {
         const val NOTIFICATION_ID = 1001
+        const val RIDE_NOTIFICATION_ID = 1002
+        const val RIDE_CHANNEL_ID = "ngb_ride_alerts"
         const val ACTION_STOP = "com.ngbautoroad.STOP_SERVICE"
         var onRideDetected: ((RideData) -> Unit)? = null
         var onStealthModeChanged: ((Boolean) -> Unit)? = null
@@ -387,6 +389,13 @@ class OverlayService : Service(),
                     val lifecycleManager = RideAccessibilityService.instance?.lifecycleManager
                     lifecycleManager?.onRideDetected(ride, rideId, scoreResult.totalScore)
 
+                    // v6.9.9: Iniciar UserActionDetector para detectar cliques do motorista
+                    val service = RideAccessibilityService.instance
+                    if (service?.userActionDetector == null) {
+                        service?.initUserActionDetector(rideId)
+                    }
+                    service?.userActionDetector?.startMonitoring(ride.platform)
+
                     // v6.1.0: Notificar AutoPilot para avaliar auto-aceitar/recusar
                     val autoPilot = RideAccessibilityService.instance?.autoPilotEngine
                     autoPilot?.evaluateRide(ride, scoreResult.totalScore, rideId)
@@ -399,6 +408,9 @@ class OverlayService : Service(),
                 }
             }
         }
+
+        // v6.9.9: Notificação de corrida para Android Auto e tela de bloqueio
+        showRideNotification(ride, currentScore)
 
         withContext(Dispatchers.Main) {
             // v5.0.0: Se overlay já visível, remover antes de recriar (evita duplicata)
@@ -752,5 +764,63 @@ class OverlayService : Service(),
                 stopPendingIntent
             )
             .build()
+    }
+
+    // =========================================================================
+    // v6.9.9: Notificação de corrida (visível no Android Auto e tela de bloqueio)
+    // =========================================================================
+
+    private fun showRideNotification(ride: RideData, score: com.ngbautoroad.data.model.RideScore?) {
+        try {
+            // Criar canal de notificação para corridas (alta prioridade para Android Auto)
+            val notifManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = android.app.NotificationChannel(
+                    RIDE_CHANNEL_ID,
+                    "Alertas de Corrida",
+                    android.app.NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Notificações de novas corridas detectadas"
+                    lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                }
+                notifManager.createNotificationChannel(channel)
+            }
+
+            val scoreText = if (score != null) "%.0f pts".format(score.totalScore) else "--"
+            val valueText = "R$ %.2f".format(ride.rideValue)
+            val platformName = ride.platform.displayName
+
+            // Resumo compacto para Android Auto
+            val title = "🚗 $platformName — $valueText ($scoreText)"
+            val body = buildString {
+                if (ride.pickupNeighborhood.isNotBlank()) append("↑ ${ride.pickupNeighborhood}")
+                if (ride.dropoffNeighborhood.isNotBlank()) append(" → ${ride.dropoffNeighborhood}")
+                if (ride.pickupDistance > 0) append(" | ${"%.1f".format(ride.pickupDistance)}km")
+                if (ride.rideDuration > 0) append(" | ${ride.rideDuration}min")
+            }
+
+            val notification = NotificationCompat.Builder(this, RIDE_CHANNEL_ID)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setSmallIcon(android.R.drawable.ic_menu_directions)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_MESSAGE) // Aparece no Android Auto
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setAutoCancel(true)
+                .setTimeoutAfter(30_000) // Auto-dismiss após 30s
+                .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
+                .build()
+
+            notifManager.notify(RIDE_NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+            android.util.Log.e("OverlayService", "Erro ao mostrar notificação de corrida: ${e.message}")
+        }
+    }
+
+    private fun dismissRideNotification() {
+        try {
+            val notifManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            notifManager.cancel(RIDE_NOTIFICATION_ID)
+        } catch (_: Exception) {}
     }
 }

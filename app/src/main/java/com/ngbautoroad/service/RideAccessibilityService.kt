@@ -182,6 +182,10 @@ class RideAccessibilityService : AccessibilityService() {
     var autoPilotEngine: AutoPilotEngine? = null
         private set
 
+    // --- v6.9.9: UserActionDetector (detecta cliques do motorista) ---
+    var userActionDetector: UserActionDetector? = null
+        private set
+
     // --- Controle de deduplicação ---
     private var lastRideHash: Int = 0
     private var lastRideHashTime = 0L
@@ -230,7 +234,8 @@ class RideAccessibilityService : AccessibilityService() {
             eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
                     AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED or
                     AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED or
-                    AccessibilityEvent.TYPE_VIEW_SCROLLED
+                    AccessibilityEvent.TYPE_VIEW_SCROLLED or
+                    AccessibilityEvent.TYPE_VIEW_CLICKED // v6.9.9: detectar cliques do motorista
 
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
 
@@ -261,6 +266,56 @@ class RideAccessibilityService : AccessibilityService() {
 
         // v6.2.0: AS conectou com sucesso — NotificationListener volta ao papel secundário
         RideNotificationListener.isPrimaryChannel = false
+    }
+
+    // =========================================================================
+    // v6.9.9: Inicializa UserActionDetector com callbacks para atualizar status
+    // =========================================================================
+    fun initUserActionDetector(currentRideId: Long) {
+        val context = applicationContext
+        userActionDetector = UserActionDetector(
+            context = context,
+            onAccepted = {
+                Log.i("NGB_ACTION", "✅ CORRIDA ACEITA (UserActionDetector)")
+                TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                    "UserActionDetector: ACEITA rideId=$currentRideId")
+                lifecycleManager?.onRideAccepted()
+                // Fechar overlay atual (mas serviço continua ativo para novas ofertas)
+                OverlayService.onRideAccepted?.invoke()
+            },
+            onRefused = {
+                Log.i("NGB_ACTION", "❌ CORRIDA RECUSADA/EXPIRADA (UserActionDetector)")
+                TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                    "UserActionDetector: RECUSADA/EXPIRADA rideId=$currentRideId")
+                lifecycleManager?.onRideRefused()
+                OverlayService.onRideAccepted?.invoke() // Fechar overlay também
+                userActionDetector?.stopMonitoring()
+            },
+            onCompleted = {
+                Log.i("NGB_ACTION", "🏁 CORRIDA FINALIZADA (UserActionDetector)")
+                TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                    "UserActionDetector: FINALIZADA rideId=$currentRideId")
+                lifecycleManager?.onRideCompleted()
+                userActionDetector?.stopMonitoring()
+            },
+            onCancelled = {
+                Log.i("NGB_ACTION", "🚫 CORRIDA CANCELADA (UserActionDetector)")
+                TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                    "UserActionDetector: CANCELADA rideId=$currentRideId")
+                lifecycleManager?.onRideCancelled()
+                userActionDetector?.stopMonitoring()
+            },
+            onTripStarted = {
+                Log.i("NGB_ACTION", "🚗 VIAGEM INICIADA (UserActionDetector)")
+                TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                    "UserActionDetector: VIAGEM INICIADA rideId=$currentRideId")
+            },
+            onArrived = {
+                Log.i("NGB_ACTION", "📍 CHEGOU NO LOCAL (UserActionDetector)")
+                TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                    "UserActionDetector: CHEGOU NO LOCAL rideId=$currentRideId")
+            }
+        )
     }
 
     // =========================================================================
@@ -316,18 +371,36 @@ class RideAccessibilityService : AccessibilityService() {
         lastProcessedTime = now
 
         // ─────────────────────────────────────────────────────────────────────
+        // v6.9.9: DETECÇÃO DE CLIQUES DO MOTORISTA (UserActionDetector)
+        // TYPE_VIEW_CLICKED é processado ANTES do parser para detectar aceite/recusa
+        // ─────────────────────────────────────────────────────────────────────
+        if (eventType == AccessibilityEvent.TYPE_VIEW_CLICKED && userActionDetector?.isActive() == true) {
+            val actionDetected = userActionDetector?.onViewClicked(event, packageName) ?: false
+            if (actionDetected) {
+                Log.d(TAG_ENGINE, "│  UserActionDetector: ação detectada via clique")
+                return // Ação já processada, não precisa continuar
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         // PROCESSAR EVENTO DE APP DE CORRIDA
         // ─────────────────────────────────────────────────────────────────────
         handleRideAppEvent(packageName, eventType, event)
 
         // ─────────────────────────────────────────────────────────────────────
-        // v6.1.0: MONITORAMENTO PÓS-DETEÇÃO (Lifecycle)
-        // Envia textos coletados ao LifecycleManager para detectar
-        // aceitação, conclusão ou cancelamento da corrida ativa
+        // v6.9.9: MONITORAMENTO PÓS-DETEÇÃO (UserActionDetector + Lifecycle)
+        // Detecta mudança de contexto (oferta sumiu → aceite/timeout)
         // ─────────────────────────────────────────────────────────────────────
-        if (lifecycleManager?.isActive() == true) {
+        if (userActionDetector?.isActive() == true || lifecycleManager?.isActive() == true) {
             val textsForLifecycle = collectTextsMultiWindow(packageName, event)
             if (textsForLifecycle.isNotEmpty()) {
+                // Camada 2: Detecção por mudança de contexto da tela
+                val contextAction = userActionDetector?.onScreenContentChanged(textsForLifecycle) ?: false
+                if (!contextAction) {
+                    // Camada 2b: Detecção de conclusão/cancelamento após aceite
+                    userActionDetector?.onTextsAfterAccepted(textsForLifecycle)
+                }
+                // Legacy lifecycle (mantido para compatibilidade)
                 lifecycleManager?.onTextsDetected(textsForLifecycle, packageName)
             }
         }
@@ -683,24 +756,32 @@ class RideAccessibilityService : AccessibilityService() {
         stealthModeActive = true
         ghostModeStartTime = System.currentTimeMillis()
 
+        // v6.9.9: Log telemetria
+        TelemetryLogger.getInstance(applicationContext).log(TelemetryLogger.Category.SYSTEM, TelemetryLogger.Level.INFO,
+            "Ghost Mode ATIVADO para: $bankPackage")
+
         // ── NÍVEL 1: Invisibilidade Visual ──
         // Notificar OverlayService para remover overlay + bubble imediatamente
         OverlayService.onStealthModeChanged?.invoke(true)
 
         // ── NÍVEL 2: Hibernação do Serviço ──
         // Alterar serviceInfo para não receber mais eventos
+        // NOTA: O Nubank e outros bancos detectam serviços de acessibilidade REGISTRADOS
+        // no sistema. Não podemos nos desregistrar sem perder funcionalidade.
+        // O que fazemos: parar de processar eventos + esconder toda UI.
         try {
             serviceInfo = serviceInfo.apply {
-                // Filtrar apenas um package inexistente → não recebe eventos de ninguém
-                packageNames = arrayOf("com.ngb.ghost.placeholder.inactive")
+                // Filtrar apenas o próprio app → não recebe eventos de outros apps
+                // Usar nosso próprio package (menos suspeito que placeholder inexistente)
+                packageNames = arrayOf("com.ngbautoroad")
                 // Manter eventTypes mínimo (precisa de WINDOW_STATE para detectar saída do banco)
                 eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
                 // Remover flags de leitura de conteúdo
-                flags = AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+                flags = 0 // Nenhuma flag = mínimo de atividade
                 // Timeout alto para reduzir processamento
-                notificationTimeout = 500
+                notificationTimeout = 1000
             }
-            Log.d(TAG_GHOST, "│  ServiceInfo hibernado (packageNames=[placeholder], eventTypes=WINDOW_STATE only)")
+            Log.d(TAG_GHOST, "│  ServiceInfo hibernado (packageNames=[self], eventTypes=WINDOW_STATE only, flags=0)")
         } catch (e: Exception) {
             Log.e(TAG_GHOST, "│  ✖ Erro ao hibernar serviceInfo: ${e.message}")
         }

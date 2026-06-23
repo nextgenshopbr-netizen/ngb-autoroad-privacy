@@ -352,6 +352,7 @@ fun IndividualExpensesTab(
     val expenses by individualExpenseDao.getAllExpenses().collectAsState(initial = emptyList())
     val totalMonthly by individualExpenseDao.getTotalMonthlyRated().collectAsState(initial = 0.0)
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingExpense by remember { mutableStateOf<IndividualExpenseEntity?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Total mensal rateado
@@ -390,6 +391,7 @@ fun IndividualExpensesTab(
                             individualExpenseDao.update(expense.copy(isIncludedInCalc = !expense.isIncludedInCalc))
                         }
                     },
+                    onEdit = { editingExpense = expense },
                     onDelete = {
                         scope.launch {
                             individualExpenseDao.delete(expense)
@@ -415,12 +417,29 @@ fun IndividualExpensesTab(
             vehicleProfileDao = vehicleProfileDao
         )
     }
+
+    // v6.9.9: Diálogo de edição de despesa fixa
+    editingExpense?.let { existing ->
+        AddIndividualExpenseDialog(
+            onDismiss = { editingExpense = null },
+            onSave = { updated ->
+                scope.launch {
+                    individualExpenseDao.update(updated.copy(id = existing.id))
+                    editingExpense = null
+                    snackbarHostState.showSnackbar("Despesa atualizada!")
+                }
+            },
+            vehicleProfileDao = vehicleProfileDao,
+            existingExpense = existing
+        )
+    }
 }
 
 @Composable
 fun IndividualExpenseCard(
     expense: IndividualExpenseEntity,
     onToggleCalc: () -> Unit,
+    onEdit: () -> Unit = {},
     onDelete: () -> Unit
 ) {
     Card(
@@ -461,6 +480,9 @@ fun IndividualExpenseCard(
                     Text("Incluir nos cálculos", fontSize = 11.sp)
                 }
                 Spacer(modifier = Modifier.weight(1f))
+                IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                }
                 IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = ScoreRed, modifier = Modifier.size(18.dp))
                 }
@@ -473,23 +495,25 @@ fun IndividualExpenseCard(
 fun AddIndividualExpenseDialog(
     onDismiss: () -> Unit,
     onSave: (IndividualExpenseEntity) -> Unit,
-    vehicleProfileDao: VehicleProfileDao? = null
+    vehicleProfileDao: VehicleProfileDao? = null,
+    existingExpense: IndividualExpenseEntity? = null
 ) {
-    var title by rememberSaveable { mutableStateOf("") }
-    var category by rememberSaveable { mutableStateOf(ExpenseCategories.IPVA) }
-    var totalAmount by rememberSaveable { mutableStateOf("") }
-    var installments by rememberSaveable { mutableStateOf("12") }
-    var frequency by rememberSaveable { mutableStateOf("MENSAL") }
-    var dueDay by rememberSaveable { mutableStateOf("10") }  // Dia do mês para vencimento
-    var includeInCalc by rememberSaveable { mutableStateOf(true) }
+    val isEdit = existingExpense != null
+    var title by rememberSaveable { mutableStateOf(existingExpense?.title ?: "") }
+    var category by rememberSaveable { mutableStateOf(existingExpense?.category ?: ExpenseCategories.IPVA) }
+    var totalAmount by rememberSaveable { mutableStateOf(existingExpense?.totalAmount?.let { "%.2f".format(it) } ?: "") }
+    var installments by rememberSaveable { mutableStateOf(existingExpense?.installments?.toString() ?: "12") }
+    var frequency by rememberSaveable { mutableStateOf(existingExpense?.frequency ?: "MENSAL") }
+    var dueDay by rememberSaveable { mutableStateOf(existingExpense?.dueDay?.toString() ?: "10") }  // Dia do mês para vencimento
+    var includeInCalc by rememberSaveable { mutableStateOf(existingExpense?.isIncludedInCalc ?: true) }
     var expanded by remember { mutableStateOf(false) }
-    var selectedVehicleId by rememberSaveable { mutableStateOf(0L) }
+    var selectedVehicleId by rememberSaveable { mutableStateOf(existingExpense?.vehicleId ?: 0L) }
     val vehicles = vehicleProfileDao?.getAllVehicles()?.collectAsState(initial = emptyList())?.value ?: emptyList()
     val vehicleCategories = setOf(ExpenseCategories.IPVA, ExpenseCategories.SEGURO, ExpenseCategories.PARCELA, ExpenseCategories.MANUTENCAO, ExpenseCategories.LICENCIAMENTO)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Cadastrar Despesa") },
+        title = { Text(if (isEdit) "Editar Despesa" else "Cadastrar Despesa") },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Título (ex: IPVA 2026)") }, modifier = Modifier.fillMaxWidth())
@@ -609,7 +633,7 @@ fun AddIndividualExpenseDialog(
                 )
                 onSave(expense)
             }, enabled = title.isNotBlank() && (totalAmount.toDoubleLocaleOrNull() ?: 0.0) > 0) {
-                Text("Salvar")
+                Text(if (isEdit) "Atualizar" else "Salvar")
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
