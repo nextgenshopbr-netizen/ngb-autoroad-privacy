@@ -432,7 +432,7 @@ private fun SettingsAppContent(prefsManager: PrefsManager) {
         Text(
             text = "v${com.ngbautoroad.BuildConfig.VERSION_NAME}",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.0f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .clickable {
