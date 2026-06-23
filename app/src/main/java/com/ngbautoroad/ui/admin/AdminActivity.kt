@@ -407,6 +407,156 @@ fun AdminPanel(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // === SEÇÃO: TELEMETRIA E LOGS (v6.9.8) ===
+            AdminSectionHeader("Telemetria e Logs", Icons.Default.BugReport)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "Logs detalhados de detecção, duplicatas, erros e sistema. Exporte para diagnóstico.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Botão exportar logs
+            Button(
+                onClick = {
+                    scope.launch {
+                        try {
+                            val telemetry = com.ngbautoroad.domain.TelemetryLogger.getInstance(context)
+                            val zipFile = telemetry.exportLogsAsZip()
+                            if (zipFile != null && zipFile.exists()) {
+                                val uri = androidx.core.content.FileProvider.getUriForFile(
+                                    context, "${context.packageName}.fileprovider", zipFile
+                                )
+                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "application/zip"
+                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(android.content.Intent.createChooser(intent, "Exportar Logs de Telemetria").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                            } else {
+                                android.widget.Toast.makeText(context, "Nenhum log disponível", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(context, "Erro: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(Icons.Default.Share, contentDescription = "Exportar", modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Exportar Logs (ZIP)")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Botão limpar logs antigos
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        val telemetry = com.ngbautoroad.domain.TelemetryLogger.getInstance(context)
+                        telemetry.clearOldLogs(7) // manter apenas últimos 7 dias
+                        android.widget.Toast.makeText(context, "Logs antigos removidos (mantidos últimos 7 dias)", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.CleaningServices, contentDescription = "Limpar", modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Limpar Logs Antigos (manter 7 dias)")
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // === SEÇÃO: LIMPEZA DE FALSOS POSITIVOS (v6.9.8) ===
+            AdminSectionHeader("Gerenciamento de Corridas", Icons.Default.FilterAlt)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "Limpe corridas com status PENDING/EXPIRED/UNCERTAIN (falsos positivos) em lote.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            var falsePositiveCount by remember { mutableStateOf<Int?>(null) }
+            var showDeleteConfirm by remember { mutableStateOf(false) }
+
+            // Contar falsos positivos
+            LaunchedEffect(Unit) {
+                val db = com.ngbautoroad.data.db.AppDatabase.getInstance(context)
+                falsePositiveCount = db.rideHistoryDao().countFalsePositives()
+            }
+
+            falsePositiveCount?.let { count ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (count > 0) ScoreRed.copy(alpha = 0.1f) else ScoreGreen.copy(alpha = 0.1f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                "$count falsos positivos",
+                                fontWeight = FontWeight.Bold,
+                                color = if (count > 0) ScoreRed else ScoreGreen
+                            )
+                            Text(
+                                "Status: PENDING, EXPIRED, UNCERTAIN",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (count > 0) {
+                            Button(
+                                onClick = { showDeleteConfirm = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = ScoreRed)
+                            ) {
+                                Icon(Icons.Default.DeleteSweep, contentDescription = "Limpar", modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Limpar")
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (showDeleteConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteConfirm = false },
+                    title = { Text("Limpar Falsos Positivos") },
+                    text = { Text("Isso vai excluir permanentemente ${falsePositiveCount ?: 0} corridas com status PENDING, EXPIRED e UNCERTAIN. Corridas confirmadas (ACCEPTED/COMPLETED) não serão afetadas.") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                scope.launch {
+                                    val db = com.ngbautoroad.data.db.AppDatabase.getInstance(context)
+                                    val deleted = db.rideHistoryDao().deleteFalsePositives()
+                                    falsePositiveCount = 0
+                                    showDeleteConfirm = false
+                                    android.widget.Toast.makeText(context, "$deleted corridas removidas", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        ) {
+                            Text("EXCLUIR", color = ScoreRed)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteConfirm = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // === SEÇÃO: INFORMAÇÕES DO SISTEMA ===
             AdminSectionHeader("Informações do Sistema", Icons.Default.Info)
             Spacer(modifier = Modifier.height(8.dp))

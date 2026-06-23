@@ -92,6 +92,7 @@ import com.ngbautoroad.data.model.Platform
 import com.ngbautoroad.data.model.RideData
 import com.ngbautoroad.data.model.RideType
 import com.ngbautoroad.data.prefs.PrefsManager
+import com.ngbautoroad.domain.TelemetryLogger
 
 class RideAccessibilityService : AccessibilityService() {
 
@@ -184,7 +185,12 @@ class RideAccessibilityService : AccessibilityService() {
     // --- Controle de deduplicação ---
     private var lastRideHash: Int = 0
     private var lastRideHashTime = 0L
-    private val DUPLICATE_WINDOW_MS = 10_000L // 10s janela anti-duplicata
+    private val DUPLICATE_WINDOW_MS = 60_000L // v6.9.8: 60s janela anti-duplicata (era 10s)
+
+    // v6.9.8: Debounce por valor — mesmo R$ dentro de 30s = duplicata
+    private var lastRideValue: Double = 0.0
+    private var lastRideValueTime = 0L
+    private val VALUE_DEBOUNCE_MS = 30_000L // 30s para mesmo valor
 
     // --- Controle de throttle ---
     private var lastProcessedTime = 0L
@@ -373,12 +379,22 @@ class RideAccessibilityService : AccessibilityService() {
                 val now = System.currentTimeMillis()
 
                 if (hash == lastRideHash && (now - lastRideHashTime) < DUPLICATE_WINDOW_MS) {
-                    Log.d(TAG_DEDUP, "│  ⊘ Duplicata ignorada (hash=$hash, Δt=${now - lastRideHashTime}ms)")
+                    Log.d(TAG_DEDUP, "│  ⊊ Duplicata ignorada (hash=$hash, Δt=${now - lastRideHashTime}ms)")
+                    TelemetryLogger.getInstance(this).logDuplicate(rideData.platform.displayName, rideData.rideValue, "hash_duplicado_${DUPLICATE_WINDOW_MS/1000}s")
+                    return
+                }
+
+                // v6.9.8: Debounce por valor — mesmo R$ dentro de 30s = releitura
+                if (rideData.rideValue == lastRideValue && (now - lastRideValueTime) < VALUE_DEBOUNCE_MS) {
+                    Log.d(TAG_DEDUP, "│  ⊊ Mesmo valor R$${String.format("%.2f", rideData.rideValue)} dentro de ${VALUE_DEBOUNCE_MS/1000}s — ignorando")
+                    TelemetryLogger.getInstance(this).logDuplicate(rideData.platform.displayName, rideData.rideValue, "valor_duplicado_${VALUE_DEBOUNCE_MS/1000}s")
                     return
                 }
 
                 lastRideHash = hash
                 lastRideHashTime = now
+                lastRideValue = rideData.rideValue
+                lastRideValueTime = now
 
                 Log.i(TAG_ENGINE, "├─ ✅ CORRIDA DETECTADA!")
                 Log.i(TAG_ENGINE, "│  Platform: ${rideData.platform.displayName}")
@@ -389,6 +405,19 @@ class RideAccessibilityService : AccessibilityService() {
                 Log.i(TAG_ENGINE, "│  Rating: ★ ${String.format("%.2f", rideData.passengerRating)}")
                 Log.i(TAG_ENGINE, "│  Bairro: ${rideData.pickupNeighborhood} → ${rideData.dropoffNeighborhood}")
                 Log.i(TAG_ENGINE, "└─ Enviando para OverlayService...")
+
+                // v6.9.8: Telemetria
+                TelemetryLogger.getInstance(this).logRideDetected(
+                    platform = rideData.platform.displayName,
+                    value = rideData.rideValue,
+                    pickupKm = rideData.pickupDistance,
+                    dropoffKm = rideData.dropoffDistance,
+                    duration = rideData.rideDuration,
+                    rating = rideData.passengerRating,
+                    hasAcceptButton = true, // só chega aqui se hasAcceptButton=true
+                    accepted = false,
+                    hash = hash
+                )
 
                 // Enviar para o overlay
                 OverlayService.onRideDetected?.invoke(rideData)
@@ -402,6 +431,7 @@ class RideAccessibilityService : AccessibilityService() {
             }
         } catch (e: Exception) {
             Log.e(TAG_ENGINE, "└─ ✖ ERRO no parsing: ${e.message}", e)
+            TelemetryLogger.getInstance(this).error("Erro no parsing", e, mapOf("platform" to platform.displayName))
         }
     }
 
@@ -597,10 +627,17 @@ class RideAccessibilityService : AccessibilityService() {
                             val now = System.currentTimeMillis()
 
                             if (hash != lastRideHash || (now - lastRideHashTime) >= DUPLICATE_WINDOW_MS) {
-                                lastRideHash = hash
-                                lastRideHashTime = now
-                                Log.i(TAG_OCR, "│  ✅ CORRIDA VIA OCR! R$${String.format("%.2f", rideData.rideValue)}")
-                                OverlayService.onRideDetected?.invoke(rideData)
+                                // v6.9.8: Debounce por valor também no OCR
+                                if (rideData.rideValue == lastRideValue && (now - lastRideValueTime) < VALUE_DEBOUNCE_MS) {
+                                    Log.d(TAG_OCR, "│  ⊊ OCR: Mesmo valor dentro de ${VALUE_DEBOUNCE_MS/1000}s — ignorando")
+                                } else {
+                                    lastRideHash = hash
+                                    lastRideHashTime = now
+                                    lastRideValue = rideData.rideValue
+                                    lastRideValueTime = now
+                                    Log.i(TAG_OCR, "│  ✅ CORRIDA VIA OCR! R$${String.format("%.2f", rideData.rideValue)}")
+                                    OverlayService.onRideDetected?.invoke(rideData)
+                                }
                             }
                         }
                     } else {
@@ -958,9 +995,15 @@ class RideAccessibilityService : AccessibilityService() {
             }
         }
 
-        // ── VALIDAÇÃO: Precisa ter valor OU botão aceitar ──
-        if (rideValue == 0.0 && !hasAcceptButton) {
-            Log.d(TAG_PARSE, "│    [UBER] ✖ Sem valor e sem botão aceitar — descartando")
+        // ── VALIDAÇÃO v6.9.8: EXIGIR botão aceitar para confirmar que é tela de OFERTA ──
+        // Sem botão = tela de corrida ativa, resumo, ou histórico → IGNORAR
+        // Isso elimina falsos positivos de releitura da corrida em andamento
+        if (!hasAcceptButton) {
+            Log.d(TAG_PARSE, "│    [UBER] ✖ Sem botão Aceitar/Selecionar — não é tela de oferta, descartando")
+            return null
+        }
+        if (rideValue == 0.0) {
+            Log.d(TAG_PARSE, "│    [UBER] ✖ Botão aceitar presente mas valor R$0 — descartando")
             return null
         }
 

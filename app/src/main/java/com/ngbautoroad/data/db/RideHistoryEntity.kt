@@ -172,6 +172,28 @@ interface RideHistoryDao {
 
     @Query("DELETE FROM ride_history")
     suspend fun deleteAll()
+
+    // v6.9.8: Queries para gerenciamento manual de corridas
+    @Query("DELETE FROM ride_history WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM ride_history WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
+
+    @Query("DELETE FROM ride_history WHERE status = :status")
+    suspend fun deleteByStatus(status: String): Int
+
+    @Query("DELETE FROM ride_history WHERE status IN ('PENDING', 'EXPIRED', 'UNCERTAIN')")
+    suspend fun deleteFalsePositives(): Int
+
+    @Query("SELECT COUNT(*) FROM ride_history WHERE status IN ('PENDING', 'EXPIRED', 'UNCERTAIN')")
+    suspend fun countFalsePositives(): Int
+
+    @Query("UPDATE ride_history SET status = 'ACCEPTED' WHERE id = :id")
+    suspend fun confirmRide(id: Long)
+
+    @Query("UPDATE ride_history SET status = 'ACCEPTED' WHERE id IN (:ids)")
+    suspend fun confirmRides(ids: List<Long>)
 }
 
 /** Resultado de query de bairros mais lucrativos */

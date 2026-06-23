@@ -125,6 +125,9 @@ class OverlayService : Service(),
         const val ACTION_STOP = "com.ngbautoroad.STOP_SERVICE"
         var onRideDetected: ((RideData) -> Unit)? = null
         var onStealthModeChanged: ((Boolean) -> Unit)? = null
+        // v6.9.8: Callback para fechar overlay quando corrida é aceita
+        // O serviço continua ativo — novas ofertas reais abrem novo overlay
+        var onRideAccepted: (() -> Unit)? = null
 
         // Referência ao serviço ativo para resize ao vivo e MemoryMonitor
         var instance: OverlayService? = null
@@ -180,6 +183,14 @@ class OverlayService : Service(),
             }
         }
 
+        // v6.9.8: Fechar overlay quando corrida é aceita (não recalcular com dados da corrida ativa)
+        onRideAccepted = {
+            serviceScope.launch {
+                hideOverlay()
+                android.util.Log.d("NGB_OVERLAY", "Overlay fechado após aceitação — serviço continua ativo para novas ofertas")
+            }
+        }
+
         // Stealth mode: remover/restaurar overlay quando app bancário está ativo
         onStealthModeChanged = { stealthActive ->
             serviceScope.launch {
@@ -223,6 +234,7 @@ class OverlayService : Service(),
         hideOverlay()
         onRideDetected = null
         onStealthModeChanged = null
+        onRideAccepted = null
         serviceScope.cancel()
         _viewModelStore.clear()
         super.onDestroy()

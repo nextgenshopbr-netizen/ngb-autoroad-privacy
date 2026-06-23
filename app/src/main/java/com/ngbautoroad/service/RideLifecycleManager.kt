@@ -238,6 +238,10 @@ class RideLifecycleManager(private val context: Context) {
 
         transitionTo(RidePhase.ACCEPTED)
 
+        // v6.9.8: Fechar overlay do card atual (não recalcular com dados da corrida ativa)
+        // O serviço continua ativo — se nova oferta real chegar (com botão aceitar), abre novo overlay
+        OverlayService.onRideAccepted?.invoke()
+
         // v6.6.0: Iniciar rastreamento GPS da corrida
         try {
             val gps = GpsTrackingEngine(context)

@@ -266,7 +266,22 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
 
     // Item 5.2: Detalhe da corrida
     selectedRide?.let { ride ->
-        RideDetailDialog(ride = ride, onDismiss = { selectedRide = null })
+        RideDetailDialog(
+            ride = ride,
+            onDismiss = { selectedRide = null },
+            onConfirm = {
+                scope.launch {
+                    dao.confirmRide(ride.id)
+                    selectedRide = null
+                }
+            },
+            onDelete = {
+                scope.launch {
+                    dao.deleteById(ride.id)
+                    selectedRide = null
+                }
+            }
+        )
     }
 }
 
@@ -409,8 +424,14 @@ fun RideHistoryItem(ride: RideHistoryEntity, onClick: () -> Unit) {
 }
 
 // Item 5.2: Dialog de detalhes da corrida
+// v6.9.8: Adicionado onConfirm e onDelete para gerenciamento manual
 @Composable
-fun RideDetailDialog(ride: RideHistoryEntity, onDismiss: () -> Unit) {
+fun RideDetailDialog(
+    ride: RideHistoryEntity,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit = {},
+    onDelete: () -> Unit = {}
+) {
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault()) }
     val scoreColor = when {
         ride.score >= 70 -> ScoreGreen
@@ -520,11 +541,48 @@ fun RideDetailDialog(ride: RideHistoryEntity, onDismiss: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
+                // v6.9.8: Botões de ação manual
+                Divider()
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Fechar")
+                    // Botão Confirmar (só se não for já ACCEPTED)
+                    if (ride.status != "ACCEPTED" && ride.status != "COMPLETED") {
+                        Button(
+                            onClick = onConfirm,
+                            colors = ButtonDefaults.buttonColors(containerColor = ScoreGreen),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = "Confirmar", modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Confirmar", fontSize = 12.sp)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    // Botão Excluir
+                    Button(
+                        onClick = onDelete,
+                        colors = ButtonDefaults.buttonColors(containerColor = ScoreRed),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Excluir", modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Excluir", fontSize = 12.sp)
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Botão Fechar
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("Fechar", fontSize = 12.sp)
+                    }
                 }
             }
         }
