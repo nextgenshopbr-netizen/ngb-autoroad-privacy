@@ -61,7 +61,9 @@ data class RideData(
 // ============================================================================
 enum class Platform(val displayName: String, val packageName: String) {
     UBER("Uber", "com.ubercab.driver"),
-    NINETY_NINE("99", "com.ninety9.driver"),
+    // v6.9.7: Package real do 99 Motorista na Play Store é com.app99.driver
+    // (com.ninety9.driver era incorreto — nunca existiu)
+    NINETY_NINE("99", "com.app99.driver"),
     INDRIVE("inDrive", "com.machfrankfurt.android"),
     CABIFY("Cabify", "com.cabify.driver"),
     UNKNOWN("Desconhecido", "")

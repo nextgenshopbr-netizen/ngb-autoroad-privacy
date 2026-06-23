@@ -149,7 +149,7 @@ class RideAccessibilityService : AccessibilityService() {
         val RIDE_PACKAGES = setOf(
             "com.ubercab.driver",       // Uber Driver
             "com.ubercab",              // Uber (rider, caso driver use)
-            "com.ninety9.driver",       // 99 Driver
+            "com.app99.driver",          // 99 Motorista (package real Play Store)
             "com.machfrankfurt.android", // inDrive
             "com.cabify.driver"         // Cabify Driver
         )
@@ -986,74 +986,129 @@ class RideAccessibilityService : AccessibilityService() {
     }
 
     // =========================================================================
-    // BLOCO: Parser 99 Driver — v6.0.0
+    // BLOCO: Parser 99 Motorista — v6.9.7
+    // Layout real da oferta 99:
+    //   Linha: "R$18,60"          → valor principal
+    //   Linha: "R$1,74/km"        → ignorar (é R$/km, não valor)
+    //   Linha: "R$3,86 Tarifa base dinâmica" → ignorar (é tarifa base)
+    //   Linha: "4,89 • 353 corridas" → rating (sem ★, usa •)
+    //   Linha: "5min (1,1km)"     → pickup: duração + distância
+    //   Linha: "19min (9,6km)"    → dropoff: duração + distância
+    //   Linha: "Rua X, Vila Rica" → bairro pickup
+    //   Linha: "Rua Y, Bom Pastor" → bairro dropoff
     // =========================================================================
     private fun parse99Ride(allText: List<String>): RideData? {
         var rideValue = 0.0
-        var distance = 0.0
+        var dropoffDistance = 0.0
         var pickupDistance = 0.0
-        var duration = 0.0
+        var pickupDuration = 0.0
+        var dropoffDuration = 0.0
         var rating = 0.0
         var stops = 0
         var pickupNeighborhood = ""
         var dropoffNeighborhood = ""
+        var foundPickup = false
+        var foundDropoff = false
 
         for (text in allText) {
-            // Valor
+            val trimmed = text.trim()
+
+            // ── VALOR PRINCIPAL ──
+            // Captura "R$18,60" mas ignora "R$1,74/km" e "R$3,86 Tarifa base"
             if (rideValue == 0.0) {
-                val valueMatch = Regex("""R\$\s*(\d{1,4}[.,]\d{2})""").find(text)
-                if (valueMatch != null) {
-                    val v = valueMatch.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
-                    if (v in 2.0..999.0) rideValue = v
+                // Ignora linhas com /km ou "tarifa" ou "base"
+                val lowerText = trimmed.lowercase()
+                if (!lowerText.contains("/km") && !lowerText.contains("tarifa") && !lowerText.contains("base")) {
+                    val valueMatch = Regex("""^R\$\s*(\d{1,4}[.,]\d{2})$""").find(trimmed)
+                        ?: Regex("""R\$\s*(\d{1,4}[.,]\d{2})(?:\s|$)""").find(trimmed)
+                    if (valueMatch != null) {
+                        val v = valueMatch.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
+                        if (v in 2.0..999.0) {
+                            rideValue = v
+                            Log.d(TAG_PARSE, "│    [99] Valor: R$ $v")
+                        }
+                    }
                 }
             }
 
-            // Rating (99 usa "4,90 ★" ou "★ 4,90")
+            // ── RATING ──
+            // Formatos: "4,89 • 353 corridas", "4,89 ★", "★ 4,89", "4.89"
             if (rating == 0.0) {
-                val ratingMatch = Regex("""([4-5][.,]\d{1,2})\s*★""").find(text)
-                    ?: Regex("""★\s*([4-5][.,]\d{1,2})""").find(text)
+                val ratingMatch =
+                    Regex("""([4-5][.,]\d{1,2})\s*[•★·]""").find(trimmed)
+                    ?: Regex("""[•★·]\s*([4-5][.,]\d{1,2})""").find(trimmed)
+                    ?: Regex("""^([4-5][.,]\d{2})\s*•""").find(trimmed)
                 if (ratingMatch != null) {
                     val r = ratingMatch.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
-                    if (r in 3.0..5.0) rating = r
+                    if (r in 3.0..5.0) {
+                        rating = r
+                        Log.d(TAG_PARSE, "│    [99] Rating: $r")
+                    }
                 }
             }
 
-            // Distância
-            if (distance == 0.0) {
-                val distMatch = Regex("""(\d+[.,]\d+)\s*km""", RegexOption.IGNORE_CASE).find(text)
-                if (distMatch != null) {
-                    distance = distMatch.groupValues[1].replace(",", ".").toDoubleOrNull() ?: 0.0
+            // ── PICKUP: "5min (1,1km)" ou "5 min (1.1km)" ──
+            // Primeira ocorrência de "Xmin (Y,Zkm)" = embarque
+            if (!foundPickup) {
+                val pickupMatch = Regex("""(\d+)\s*min\s*\((\d+[.,]\d+)\s*km\)""", RegexOption.IGNORE_CASE).find(trimmed)
+                if (pickupMatch != null) {
+                    pickupDuration = pickupMatch.groupValues[1].toDoubleOrNull() ?: 0.0
+                    pickupDistance = pickupMatch.groupValues[2].replace(",", ".").toDoubleOrNull() ?: 0.0
+                    foundPickup = true
+                    Log.d(TAG_PARSE, "│    [99] Pickup: ${pickupDuration.toInt()} min / $pickupDistance km")
+                }
+            } else if (!foundDropoff) {
+                // Segunda ocorrência = desembarque
+                val dropoffMatch = Regex("""(\d+)\s*min\s*\((\d+[.,]\d+)\s*km\)""", RegexOption.IGNORE_CASE).find(trimmed)
+                if (dropoffMatch != null) {
+                    dropoffDuration = dropoffMatch.groupValues[1].toDoubleOrNull() ?: 0.0
+                    dropoffDistance = dropoffMatch.groupValues[2].replace(",", ".").toDoubleOrNull() ?: 0.0
+                    foundDropoff = true
+                    Log.d(TAG_PARSE, "│    [99] Dropoff: ${dropoffDuration.toInt()} min / $dropoffDistance km")
                 }
             }
 
-            // Duração
-            if (duration == 0.0) {
-                val durMatch = Regex("""(\d+)\s*min""", RegexOption.IGNORE_CASE).find(text)
-                if (durMatch != null) {
-                    val d = durMatch.groupValues[1].toDoubleOrNull() ?: 0.0
-                    if (d > 0 && d < 120) duration = d
+            // ── BAIRROS (endereços após pickup/dropoff) ──
+            // Formato 99: "Rua Amaral Pedroso, 43, Vila Rica"
+            if (foundPickup && pickupNeighborhood.isBlank() && !foundDropoff) {
+                val neighborMatch = Regex(""",\s*([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+){0,3})\s*$""").find(trimmed)
+                if (neighborMatch != null && !isCommonWord(neighborMatch.groupValues[1])) {
+                    pickupNeighborhood = neighborMatch.groupValues[1].trim().take(30)
+                    Log.d(TAG_PARSE, "│    [99] Bairro pickup: \"$pickupNeighborhood\"")
+                }
+            }
+            if (foundDropoff && dropoffNeighborhood.isBlank()) {
+                val neighborMatch = Regex(""",\s*([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+){0,3})\s*$""").find(trimmed)
+                if (neighborMatch != null && !isCommonWord(neighborMatch.groupValues[1]) && neighborMatch.groupValues[1] != pickupNeighborhood) {
+                    dropoffNeighborhood = neighborMatch.groupValues[1].trim().take(30)
+                    Log.d(TAG_PARSE, "│    [99] Bairro dropoff: \"$dropoffNeighborhood\"")
                 }
             }
 
-            // Bairro
-            if (pickupNeighborhood.isBlank() && rideValue > 0) {
-                val m = Regex("""[/\-,]\s*([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+){0,3})""").find(text)
-                if (m != null && !isCommonWord(m.groupValues[1])) {
-                    pickupNeighborhood = m.groupValues[1].trim().take(30)
-                }
+            // ── PARADAS ──
+            if (stops == 0 && (trimmed.contains("parada", ignoreCase = true) || trimmed.contains("stop", ignoreCase = true))) {
+                val stopMatch = Regex("""(\d+)\s*parada""", RegexOption.IGNORE_CASE).find(trimmed)
+                stops = stopMatch?.groupValues?.get(1)?.toIntOrNull() ?: 1
             }
         }
 
-        if (rideValue == 0.0) return null
+        if (rideValue == 0.0) {
+            Log.d(TAG_PARSE, "│    [99] ✖ Sem valor — descartando")
+            return null
+        }
 
-        Log.d(TAG_PARSE, "│    [99] Valor=$rideValue, Dist=$distance, Dur=$duration, Rating=$rating")
+        // Duração total = pickup + dropoff
+        val totalDuration = if (dropoffDuration > 0) dropoffDuration else pickupDuration
+
+        Log.d(TAG_PARSE, "│    [99] ✅ Valor=R$$rideValue, Pickup=${pickupDistance}km, Dropoff=${dropoffDistance}km, Dur=${totalDuration}min, Rating=$rating")
 
         return RideData(
             platform = Platform.NINETY_NINE,
+            rideType = RideType.NINETY_NINE_POP,
             rideValue = rideValue,
             pickupDistance = pickupDistance,
-            dropoffDistance = distance,
-            rideDuration = duration,
+            dropoffDistance = dropoffDistance,
+            rideDuration = totalDuration,
             passengerRating = rating,
             intermediateStops = stops,
             pickupNeighborhood = pickupNeighborhood,

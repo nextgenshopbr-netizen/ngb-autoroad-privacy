@@ -69,7 +69,7 @@ class RideNotificationListener : NotificationListenerService() {
         private val MONITORED_PACKAGES = setOf(
             "com.ubercab.driver",
             "com.ubercab",
-            "com.ninety9.driver",
+            "com.app99.driver",          // 99 Motorista (package real Play Store)
             "com.machfrankfurt.android",
             "com.cabify.driver"
         )
@@ -154,7 +154,7 @@ class RideNotificationListener : NotificationListenerService() {
         // Tentar parsear como corrida
         val rideData = when {
             packageName.contains("ubercab") -> parseUberNotification(fullText)
-            packageName.contains("ninety9") -> parse99Notification(fullText)
+            packageName.contains("app99") || packageName.contains("ninety9") -> parse99Notification(fullText)
             packageName.contains("machfrankfurt") -> parseInDriveNotification(fullText)
             packageName.contains("cabify") -> parseCabifyNotification(fullText)
             else -> null

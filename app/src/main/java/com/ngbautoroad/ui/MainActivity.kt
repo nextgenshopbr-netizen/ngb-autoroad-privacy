@@ -150,14 +150,21 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
     var selectedTab by remember { mutableStateOf(2) }
     val tabs = TabItem.entries.toTypedArray()
 
-    // v6.8.0: Setup Wizard (primeiro uso)
-    val setupWizardCompleted by prefsManager.setupWizardCompletedFlow.collectAsState(initial = true)
+    // v6.9.7: Setup Wizard (primeiro uso)
+    // CORRIGIDO: initial=true causava o wizard nunca aparecer no primeiro uso.
+    // O DataStore demora alguns ms para emitir o valor real. Com initial=true,
+    // o LaunchedEffect rodava com setupWizardCompleted=true e nunca abria o wizard.
+    // Com initial=false, o wizard abre imediatamente e fecha quando DataStore confirmar.
+    val setupWizardCompleted by prefsManager.setupWizardCompletedFlow.collectAsState(initial = false)
     var showSetupWizard by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(setupWizardCompleted) {
         if (!setupWizardCompleted) {
             showSetupWizard = true
+        } else {
+            // DataStore confirmou que wizard já foi concluído — fechar se estiver aberto
+            showSetupWizard = false
         }
     }
 
@@ -171,7 +178,8 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
     }
 
     // v6.7.0: Onboarding obrigatório de odômetro (Ruptura #1 - Cold Start)
-    val odometerOnboardingDone by prefsManager.odometerOnboardingDoneFlow.collectAsState(initial = true)
+    // v6.9.7: initial=false para garantir que o DataStore seja lido antes de suprimir o dialog
+    val odometerOnboardingDone by prefsManager.odometerOnboardingDoneFlow.collectAsState(initial = false)
     var showOnboarding by remember { mutableStateOf(false) }
     val ctx = LocalContext.current
     val financeDatabase = remember { com.ngbautoroad.data.db.FinanceDatabase.getInstance(ctx) }
