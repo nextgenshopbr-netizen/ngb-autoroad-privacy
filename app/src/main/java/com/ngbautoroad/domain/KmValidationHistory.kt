@@ -47,6 +47,10 @@ data class KmValidationReport(
  */
 class KmValidationHistory(context: Context) {
 
+    // Lock utilizado para sincronizar acesso concorrente ao SharedPreferences e JSON arrays.
+    // Utilizado por: recordValidation, generateMonthlyReport, saveDiscrepancy, loadDiscrepancies
+    private val lock = Any()
+
     private val prefs: SharedPreferences = context.getSharedPreferences(
         "km_validation_history", Context.MODE_PRIVATE
     )
@@ -66,38 +70,42 @@ class KmValidationHistory(context: Context) {
      * @param gpsKm KM medido pelo GPS do app
      * @param avgValuePerKm R$/km médio atual (para calcular perda)
      */
+    // Utilizado por: GpsTrackingEngine (chamado ao final de cada corrida)
+    // Depende de: lock, prefs, saveDiscrepancy
     fun recordValidation(
         platform: String,
         platformKm: Double,
         gpsKm: Double,
         avgValuePerKm: Double
     ) {
-        // Incrementar total de corridas validadas
-        val totalValidated = prefs.getInt(KEY_TOTAL_RIDES_VALIDATED, 0) + 1
-        prefs.edit().putInt(KEY_TOTAL_RIDES_VALIDATED, totalValidated).apply()
+        synchronized(lock) {
+            // Incrementar total de corridas validadas
+            val totalValidated = prefs.getInt(KEY_TOTAL_RIDES_VALIDATED, 0) + 1
+            prefs.edit().putInt(KEY_TOTAL_RIDES_VALIDATED, totalValidated).apply()
 
-        // Atualizar média de R$/km (EWMA)
-        val currentAvg = prefs.getFloat(KEY_AVG_VALUE_PER_KM, avgValuePerKm.toFloat()).toDouble()
-        val newAvg = currentAvg * 0.9 + avgValuePerKm * 0.1
-        prefs.edit().putFloat(KEY_AVG_VALUE_PER_KM, newAvg.toFloat()).apply()
+            // Atualizar média de R$/km (EWMA)
+            val currentAvg = prefs.getFloat(KEY_AVG_VALUE_PER_KM, avgValuePerKm.toFloat()).toDouble()
+            val newAvg = currentAvg * 0.9 + avgValuePerKm * 0.1
+            prefs.edit().putFloat(KEY_AVG_VALUE_PER_KM, newAvg.toFloat()).apply()
 
-        // Calcular diferença
-        val differenceKm = gpsKm - platformKm
-        val differencePct = if (platformKm > 0) (differenceKm / platformKm) * 100.0 else 0.0
+            // Calcular diferença
+            val differenceKm = gpsKm - platformKm
+            val differencePct = if (platformKm > 0) (differenceKm / platformKm) * 100.0 else 0.0
 
-        // Só registrar se diferença > threshold (evitar ruído de GPS)
-        if (differencePct > DISCREPANCY_THRESHOLD_PCT && differenceKm > 0.3) {
-            val estimatedLoss = differenceKm * newAvg
-            val discrepancy = KmDiscrepancy(
-                timestamp = System.currentTimeMillis(),
-                platform = platform,
-                platformKm = platformKm,
-                gpsKm = gpsKm,
-                differenceKm = differenceKm,
-                differencePct = differencePct,
-                estimatedLoss = estimatedLoss
-            )
-            saveDiscrepancy(discrepancy)
+            // Só registrar se diferença > threshold (evitar ruído de GPS)
+            if (differencePct > DISCREPANCY_THRESHOLD_PCT && differenceKm > 0.3) {
+                val estimatedLoss = differenceKm * newAvg
+                val discrepancy = KmDiscrepancy(
+                    timestamp = System.currentTimeMillis(),
+                    platform = platform,
+                    platformKm = platformKm,
+                    gpsKm = gpsKm,
+                    differenceKm = differenceKm,
+                    differencePct = differencePct,
+                    estimatedLoss = estimatedLoss
+                )
+                saveDiscrepancy(discrepancy)
+            }
         }
     }
 
@@ -105,34 +113,38 @@ class KmValidationHistory(context: Context) {
      * Gera relatório mensal de discrepâncias.
      * @param month Mês no formato "2026-06" (null = mês atual)
      */
+    // Utilizado por: Dashboard e Relatórios na UI do motorista
+    // Depende de: lock, loadDiscrepancies
     fun generateMonthlyReport(month: String? = null): KmValidationReport {
-        val targetMonth = month ?: SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
-        val allDiscrepancies = loadDiscrepancies()
+        return synchronized(lock) {
+            val targetMonth = month ?: SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
+            val allDiscrepancies = loadDiscrepancies()
 
-        // Filtrar pelo mês
-        val sdf = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-        val monthDiscrepancies = allDiscrepancies.filter {
-            sdf.format(Date(it.timestamp)) == targetMonth
+            // Filtrar pelo mês
+            val sdf = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+            val monthDiscrepancies = allDiscrepancies.filter {
+                sdf.format(Date(it.timestamp)) == targetMonth
+            }
+
+            val totalValidated = prefs.getInt(KEY_TOTAL_RIDES_VALIDATED, 0)
+            val avgDiscrepancy = if (monthDiscrepancies.isNotEmpty()) {
+                monthDiscrepancies.map { it.differencePct }.average()
+            } else 0.0
+            val totalExtraKm = monthDiscrepancies.sumOf { it.differenceKm }
+            val totalLoss = monthDiscrepancies.sumOf { it.estimatedLoss }
+            val worst = monthDiscrepancies.maxByOrNull { it.differencePct }
+
+            KmValidationReport(
+                month = targetMonth,
+                totalRidesValidated = totalValidated,
+                ridesWithDiscrepancy = monthDiscrepancies.size,
+                avgDiscrepancyPct = avgDiscrepancy,
+                totalExtraKmNotPaid = totalExtraKm,
+                estimatedTotalLoss = totalLoss,
+                worstDiscrepancy = worst,
+                discrepancies = monthDiscrepancies
+            )
         }
-
-        val totalValidated = prefs.getInt(KEY_TOTAL_RIDES_VALIDATED, 0)
-        val avgDiscrepancy = if (monthDiscrepancies.isNotEmpty()) {
-            monthDiscrepancies.map { it.differencePct }.average()
-        } else 0.0
-        val totalExtraKm = monthDiscrepancies.sumOf { it.differenceKm }
-        val totalLoss = monthDiscrepancies.sumOf { it.estimatedLoss }
-        val worst = monthDiscrepancies.maxByOrNull { it.differencePct }
-
-        return KmValidationReport(
-            month = targetMonth,
-            totalRidesValidated = totalValidated,
-            ridesWithDiscrepancy = monthDiscrepancies.size,
-            avgDiscrepancyPct = avgDiscrepancy,
-            totalExtraKmNotPaid = totalExtraKm,
-            estimatedTotalLoss = totalLoss,
-            worstDiscrepancy = worst,
-            discrepancies = monthDiscrepancies
-        )
     }
 
     /**
@@ -152,48 +164,56 @@ class KmValidationHistory(context: Context) {
     // Persistência (JSON em SharedPreferences)
     // ========================================================================
 
+    // Utilizado por: recordValidation
+    // Depende de: lock, loadDiscrepanciesJson
     private fun saveDiscrepancy(discrepancy: KmDiscrepancy) {
-        val array = loadDiscrepanciesJson()
-        val obj = JSONObject().apply {
-            put("timestamp", discrepancy.timestamp)
-            put("platform", discrepancy.platform)
-            put("platformKm", discrepancy.platformKm)
-            put("gpsKm", discrepancy.gpsKm)
-            put("differenceKm", discrepancy.differenceKm)
-            put("differencePct", discrepancy.differencePct)
-            put("estimatedLoss", discrepancy.estimatedLoss)
-        }
-        array.put(obj)
-
-        // Manter apenas últimos 6 meses (limpar antigos)
-        val sixMonthsAgo = System.currentTimeMillis() - (180L * 24 * 60 * 60 * 1000)
-        val filtered = JSONArray()
-        for (i in 0 until array.length()) {
-            val item = array.getJSONObject(i)
-            if (item.getLong("timestamp") > sixMonthsAgo) {
-                filtered.put(item)
+        synchronized(lock) {
+            val array = loadDiscrepanciesJson()
+            val obj = JSONObject().apply {
+                put("timestamp", discrepancy.timestamp)
+                put("platform", discrepancy.platform)
+                put("platformKm", discrepancy.platformKm)
+                put("gpsKm", discrepancy.gpsKm)
+                put("differenceKm", discrepancy.differenceKm)
+                put("differencePct", discrepancy.differencePct)
+                put("estimatedLoss", discrepancy.estimatedLoss)
             }
-        }
+            array.put(obj)
 
-        prefs.edit().putString(KEY_DISCREPANCIES, filtered.toString()).apply()
+            // Manter apenas últimos 6 meses (limpar antigos)
+            val sixMonthsAgo = System.currentTimeMillis() - (180L * 24 * 60 * 60 * 1000)
+            val filtered = JSONArray()
+            for (i in 0 until array.length()) {
+                val item = array.getJSONObject(i)
+                if (item.getLong("timestamp") > sixMonthsAgo) {
+                    filtered.put(item)
+                }
+            }
+
+            prefs.edit().putString(KEY_DISCREPANCIES, filtered.toString()).apply()
+        }
     }
 
+    // Utilizado por: generateMonthlyReport
+    // Depende de: lock, loadDiscrepanciesJson
     private fun loadDiscrepancies(): List<KmDiscrepancy> {
-        val array = loadDiscrepanciesJson()
-        val list = mutableListOf<KmDiscrepancy>()
-        for (i in 0 until array.length()) {
-            val obj = array.getJSONObject(i)
-            list.add(KmDiscrepancy(
-                timestamp = obj.getLong("timestamp"),
-                platform = obj.getString("platform"),
-                platformKm = obj.getDouble("platformKm"),
-                gpsKm = obj.getDouble("gpsKm"),
-                differenceKm = obj.getDouble("differenceKm"),
-                differencePct = obj.getDouble("differencePct"),
-                estimatedLoss = obj.getDouble("estimatedLoss")
-            ))
+        return synchronized(lock) {
+            val array = loadDiscrepanciesJson()
+            val list = mutableListOf<KmDiscrepancy>()
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                list.add(KmDiscrepancy(
+                    timestamp = obj.getLong("timestamp"),
+                    platform = obj.getString("platform"),
+                    platformKm = obj.getDouble("platformKm"),
+                    gpsKm = obj.getDouble("gpsKm"),
+                    differenceKm = obj.getDouble("differenceKm"),
+                    differencePct = obj.getDouble("differencePct"),
+                    estimatedLoss = obj.getDouble("estimatedLoss")
+                ))
+            }
+            list
         }
-        return list
     }
 
     private fun loadDiscrepanciesJson(): JSONArray {

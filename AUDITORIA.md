@@ -53,4 +53,13 @@ Foi desenvolvida uma simulação em Python (`scripts/simulate_1_year_audit.py`) 
 4. **Escala de Penalidade de Prejuízo:**
    Melhorar a fórmula do Lucro/KM no `RideScorer.kt` para subtrair pontos de forma não-linear caso o lucro seja negativo (exemplo: prejuízos grandes zeram o Score, forçando o `Safety Modifier`).
 
+### 4. Correções Aplicadas e Validação (24 de Junho de 2026)
+
+Todas as correções propostas no plano de auditoria foram aplicadas e validadas:
+- **[FinanceDRE.kt](file:///c:/Users/ovand/ngb-autoroad-privacy/app/src/main/java/com/ngbautoroad/domain/FinanceDRE.kt)**: Correção de `NaN` em `correctionFactor` adicionando verificação segura de lista não-vazia antes de calcular a média (`average()`).
+- **[KmValidationHistory.kt](file:///c:/Users/ovand/ngb-autoroad-privacy/app/src/main/java/com/ngbautoroad/domain/KmValidationHistory.kt)**: Adicionado bloqueio sincronizado de exclusão mútua (`private val lock = Any()`) em todos os métodos que manipulam o SharedPreferences e dados JSON (`recordValidation`, `generateMonthlyReport`, `saveDiscrepancy`, `loadDiscrepancies`).
+- **[RideScorer.kt](file:///c:/Users/ovand/ngb-autoroad-privacy/app/src/main/java/com/ngbautoroad/domain/RideScorer.kt)**: Substituição da penalidade estática de 5.0 pontos no cálculo de Lucro/KM por uma fórmula dinâmica e não-linear `5.0 + 25.0 * (abs(profitPerKm) / costPerKm)^1.5` limitada a 50.0 pontos, garantindo punições severas para grandes prejuízos operacionais.
+- **Validação de Build**: A compilação do projeto com Gradle wrapper foi executada e finalizada com sucesso (`BUILD SUCCESSFUL`), sem erros de sintaxe ou de compilação.
+
 ---
+

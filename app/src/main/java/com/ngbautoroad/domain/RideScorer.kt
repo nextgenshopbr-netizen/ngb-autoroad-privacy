@@ -273,12 +273,19 @@ class RideScorer(
                 level = getLevel(normalized)
             )
             // Penalidade se lucro negativo (corrida dá prejuízo)
-            if (profitPerKm < 0) {
+            if (profitPerKm < 0.0) {
+                // v6.9.15: Penalidade dinâmica e não-linear proporcional ao prejuízo em relação ao custo por KM.
+                // Evita que prejuízos severos sejam punidos levemente.
+                // Depende de: profitPerKm, costPerKm
+                // Utilizado por: calculateScore (para compor penalidades aplicadas ao score final)
+                val ratio = kotlin.math.abs(profitPerKm) / costPerKm
+                val dynamicPenalty = 5.0 + (25.0 * java.lang.Math.pow(ratio, 1.5))
+                val penaltyApplied = dynamicPenalty.coerceAtMost(50.0)
                 violations.add(ThresholdViolation(
                     criteriaName = "Lucro/KM",
                     currentValue = profitPerKm,
                     minimumRequired = 0.0,
-                    penaltyApplied = 5.0 // Penalidade fixa de 5 pontos por prejuízo
+                    penaltyApplied = penaltyApplied
                 ))
             }
         }

@@ -118,11 +118,15 @@ class FinanceDREEngine(
 
         // v6.7.0: Fator de correção por período (Ruptura #2 - DRE não retroativo)
         // Usa o fator que era válido NO PERÍODO, não o fator atual (evita mudar histórico)
+        // Depende de: vehicle (para obter o fator padrão) e odometerHistoryDao (histórico de calibragem)
+        // Utilizado por: totalKm (cálculo de distância real calibrada)
+        // v6.9.15: Correção contra Double.NaN caso nenhum fator do histórico seja maior que 0
         val correctionFactor = if (vehicle != null && odometerHistoryDao != null) {
             val historyEntries = odometerHistoryDao.getEntriesInPeriodSync(vehicle.id, startDate, endDate)
-            if (historyEntries.isNotEmpty()) {
-                // Média dos fatores registrados no período
-                historyEntries.map { it.calibrationFactor }.filter { it > 0 }.average()
+            val filteredFactors = historyEntries.map { it.calibrationFactor }.filter { it > 0 }
+            if (filteredFactors.isNotEmpty()) {
+                // Média dos fatores registrados no período (seguro contra lista vazia)
+                filteredFactors.average()
             } else {
                 vehicle.odometerCorrectionFactor
             }
