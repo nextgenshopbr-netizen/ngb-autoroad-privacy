@@ -189,12 +189,12 @@ class RideAccessibilityService : AccessibilityService() {
     // --- Controle de deduplicação ---
     private var lastRideHash: Int = 0
     private var lastRideHashTime = 0L
-    private val DUPLICATE_WINDOW_MS = 60_000L // v6.9.8: 60s janela anti-duplicata (era 10s)
+    private val DUPLICATE_WINDOW_MS = 30_000L // v6.9.14: 30s janela anti-duplicata (era 60s)
 
-    // v6.9.8: Debounce por valor — mesmo R$ dentro de 30s = duplicata
+    // v6.9.8: Debounce por valor — mesmo R$ dentro de 60s = duplicata
     private var lastRideValue: Double = 0.0
     private var lastRideValueTime = 0L
-    private val VALUE_DEBOUNCE_MS = 30_000L // 30s para mesmo valor
+    private val VALUE_DEBOUNCE_MS = 60_000L // v6.9.14: 60s para mesmo valor (era 30s)
 
     // --- Controle de throttle ---
     private var lastProcessedTime = 0L
@@ -916,6 +916,19 @@ class RideAccessibilityService : AccessibilityService() {
     //   "1 parada" (paradas intermediárias)
     // =========================================================================
     private fun parseUberRide(allText: List<String>): RideData? {
+        if (isEarningsScreen(allText)) {
+            Log.d(TAG_PARSE, "│    [UBER] ✖ Tela de Ganhos detectada — descartando")
+            return null
+        }
+        if (isNotificationShadeContent(allText)) {
+            Log.d(TAG_PARSE, "│    [UBER] ✖ Tela de Notificações detectada — descartando")
+            return null
+        }
+        if (isNavigationScreen(allText)) {
+            Log.d(TAG_PARSE, "│    [UBER] ✖ Tela de Navegação detectada — descartando")
+            return null
+        }
+
         var rideValue = 0.0
         var pickupDistance = 0.0
         var dropoffDistance = 0.0
@@ -1474,7 +1487,7 @@ class RideAccessibilityService : AccessibilityService() {
      * Combina: plataforma + valor + distância trip + bairro pickup
      */
     private fun generateRideHash(ride: RideData): Int {
-        return "${ride.platform}_${String.format("%.2f", ride.rideValue)}_${String.format("%.1f", ride.dropoffDistance)}_${ride.pickupNeighborhood}".hashCode()
+        return "${ride.platform}_${String.format("%.2f", ride.rideValue)}_${ride.pickupNeighborhood}".hashCode()
     }
 
     /**
@@ -1503,5 +1516,32 @@ class RideAccessibilityService : AccessibilityService() {
             AccessibilityEvent.TYPE_VIEW_SCROLLED -> "SCROLLED"
             else -> "TYPE_$eventType"
         }
+    }
+
+    private fun isEarningsScreen(texts: List<String>): Boolean {
+        val joined = texts.joinToString(" ").lowercase()
+        val earningsIndicators = listOf(
+            "última viagem", "ver histórico de ganhos", "ver resumo semanal",
+            "viagens concluídas", "uber pro", "ver progresso",
+            "começar", "você está offline"
+        )
+        val matchCount = earningsIndicators.count { joined.contains(it) }
+        return matchCount >= 2 // 2+ indicadores = tela de ganhos
+    }
+
+    private fun isNotificationShadeContent(texts: List<String>): Boolean {
+        val joined = texts.joinToString(" ").lowercase()
+        val shadeIndicators = listOf(
+            "recentes", "voltar", "início", "painéis edge", "silenciar",
+            "notificações", "gerenciar", "limpar tudo"
+        )
+        return shadeIndicators.any { joined.contains(it) }
+    }
+
+    private fun isNavigationScreen(texts: List<String>): Boolean {
+        val joined = texts.joinToString(" ").lowercase()
+        val hasDestino = joined.contains("destino de")
+        val hasCountdown = Regex("""(em|a)\s+\d+(?:[.,]\d+)?\s*(m|km)""").containsMatchIn(joined)
+        return hasDestino || hasCountdown
     }
 }

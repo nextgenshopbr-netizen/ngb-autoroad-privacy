@@ -113,7 +113,7 @@ class OverlayService : Service(),
     // Supressão de duplicatas (item 2.2)
     private var lastRideHash: Int = 0
     private var lastRideTime: Long = 0L
-    private val DUPLICATE_WINDOW_MS = 3000L // 3 segundos
+    private val DUPLICATE_WINDOW_MS = 30000L // v6.9.14: 30 segundos (era 3s)
 
     private lateinit var prefsManager: PrefsManager
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -172,9 +172,8 @@ class OverlayService : Service(),
 
         onRideDetected = { ride ->
             serviceScope.launch {
-                // v6.3.5: Hash de deduplicação melhorado — inclui pickupDistance e bairro
-                // para evitar falsos positivos em corridas curtas com mesmo valor
-                val rideHash = "${ride.platform}_${ride.rideValue}_${ride.dropoffDistance}_${ride.pickupDistance}_${ride.pickupNeighborhood}".hashCode()
+                // v6.9.14: Hash de deduplicação estável — baseado apenas em platform, value e rideType
+                val rideHash = "${ride.platform}_${ride.rideValue}_${ride.rideType}".hashCode()
                 val now = System.currentTimeMillis()
                 if (rideHash == lastRideHash && (now - lastRideTime) < DUPLICATE_WINDOW_MS) {
                     return@launch // Ignorar duplicata

@@ -238,6 +238,12 @@ class UserActionDetector(
     fun onScreenContentChanged(allTexts: List<String>): Boolean {
         if (!isMonitoring) return false
 
+        // v6.9.14: Ignorar se for tela de ganhos ou aba de notificações,
+        // evitando falsos eventos de expiração (timeout)
+        if (isEarningsScreen(allTexts) || isNotificationShadeContent(allTexts)) {
+            return false
+        }
+
         val lowerTexts = allTexts.map { it.lowercase() }
         val joinedTexts = lowerTexts.joinToString(" ")
 
@@ -246,10 +252,10 @@ class UserActionDetector(
             joinedTexts.contains(indicator)
         }
 
-        // Verificar se mudou para tela de navegação (corrida aceita via swipe)
+        // Verificar se mudou para tela de navegação (corrida aceita via swipe/auto)
         val isNavigationScreen = NAVIGATION_INDICATORS.any { indicator ->
             joinedTexts.contains(indicator)
-        }
+        } || isNavigationScreen(allTexts)
 
         // Verificar se voltou para tela de espera (corrida expirou)
         val isIdleScreen = IDLE_SCREEN_INDICATORS.any { indicator ->
@@ -387,5 +393,32 @@ class UserActionDetector(
         Platform.NINETY_NINE -> listOf("cancelada", "corrida cancelada")
         Platform.INDRIVE -> listOf("cancelada", "cancelled")
         else -> listOf("cancelada", "cancelled")
+    }
+
+    private fun isEarningsScreen(texts: List<String>): Boolean {
+        val joined = texts.joinToString(" ").lowercase()
+        val earningsIndicators = listOf(
+            "última viagem", "ver histórico de ganhos", "ver resumo semanal",
+            "viagens concluídas", "uber pro", "ver progresso",
+            "começar", "você está offline"
+        )
+        val matchCount = earningsIndicators.count { joined.contains(it) }
+        return matchCount >= 2
+    }
+
+    private fun isNotificationShadeContent(texts: List<String>): Boolean {
+        val joined = texts.joinToString(" ").lowercase()
+        val shadeIndicators = listOf(
+            "recentes", "voltar", "início", "painéis edge", "silenciar",
+            "notificações", "gerenciar", "limpar tudo"
+        )
+        return shadeIndicators.any { joined.contains(it) }
+    }
+
+    private fun isNavigationScreen(texts: List<String>): Boolean {
+        val joined = texts.joinToString(" ").lowercase()
+        val hasDestino = joined.contains("destino de")
+        val hasCountdown = Regex("""(em|a)\s+\d+(?:[.,]\d+)?\s*(m|km)""").containsMatchIn(joined)
+        return hasDestino || hasCountdown
     }
 }
