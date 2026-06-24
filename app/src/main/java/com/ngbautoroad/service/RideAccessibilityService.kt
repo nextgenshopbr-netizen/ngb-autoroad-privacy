@@ -1518,6 +1518,8 @@ class RideAccessibilityService : AccessibilityService() {
         }
     }
 
+    // Utilizado por: parseUberRide
+    // Depende de: List<String> contendo a lista de todos os nós de texto visíveis na janela
     private fun isEarningsScreen(texts: List<String>): Boolean {
         val joined = texts.joinToString(" ").lowercase()
         val earningsIndicators = listOf(
@@ -1529,6 +1531,8 @@ class RideAccessibilityService : AccessibilityService() {
         return matchCount >= 2 // 2+ indicadores = tela de ganhos
     }
 
+    // Utilizado por: parseUberRide
+    // Depende de: List<String> contendo a lista de todos os nós de texto visíveis na janela
     private fun isNotificationShadeContent(texts: List<String>): Boolean {
         val joined = texts.joinToString(" ").lowercase()
         val shadeIndicators = listOf(
@@ -1538,6 +1542,8 @@ class RideAccessibilityService : AccessibilityService() {
         return shadeIndicators.any { joined.contains(it) }
     }
 
+    // Utilizado por: parseUberRide
+    // Depende de: List<String> contendo a lista de todos os nós de texto visíveis na janela
     private fun isNavigationScreen(texts: List<String>): Boolean {
         val joined = texts.joinToString(" ").lowercase()
         val hasDestino = joined.contains("destino de")

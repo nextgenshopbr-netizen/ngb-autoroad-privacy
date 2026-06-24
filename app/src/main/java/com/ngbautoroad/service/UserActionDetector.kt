@@ -395,6 +395,8 @@ class UserActionDetector(
         else -> listOf("cancelada", "cancelled")
     }
 
+    // Utilizado por: onScreenContentChanged
+    // Depende de: List<String> contendo a lista de todos os nós de texto visíveis na janela
     private fun isEarningsScreen(texts: List<String>): Boolean {
         val joined = texts.joinToString(" ").lowercase()
         val earningsIndicators = listOf(
@@ -406,6 +408,8 @@ class UserActionDetector(
         return matchCount >= 2
     }
 
+    // Utilizado por: onScreenContentChanged
+    // Depende de: List<String> contendo a lista de todos os nós de texto visíveis na janela
     private fun isNotificationShadeContent(texts: List<String>): Boolean {
         val joined = texts.joinToString(" ").lowercase()
         val shadeIndicators = listOf(
@@ -415,6 +419,8 @@ class UserActionDetector(
         return shadeIndicators.any { joined.contains(it) }
     }
 
+    // Utilizado por: onScreenContentChanged
+    // Depende de: List<String> contendo a lista de todos os nós de texto visíveis na janela
     private fun isNavigationScreen(texts: List<String>): Boolean {
         val joined = texts.joinToString(" ").lowercase()
         val hasDestino = joined.contains("destino de")
