@@ -4,6 +4,14 @@ Todas as mudanças notáveis do projeto estão documentadas aqui.
 
 ---
 
+## [6.9.14] — 2026-06-24
+### Corrigido
+- **Filtros de Tela de Ganhos/Resumos (Uber)** — O parser agora identifica e ignora a tela de ganhos do Uber Driver (`isEarningsScreen`), evitando o registro de falsas corridas no banco de dados.
+- **Filtro de Tela de Notificações (`isNotificationShadeContent`)** — Ignora dados capturados da aba de notificações do sistema (Samsung/Android), eliminando falsos positivos.
+- **Filtro de Tela de Navegação (`isNavigationScreen`)** — Ignora leituras do parser do Uber quando o motorista está com o GPS de navegação ativo na tela.
+- **Deduplicação e Estabilidade do Hash** — Janela de duplicatas estendida e hash do overlay simplificado para considerar apenas `platform`, `rideValue` e `rideType`, ignorando distâncias que mudam dinamicamente.
+- **Proteção do Ciclo de Vida do Turno** — O detector de ação do usuário (`UserActionDetector`) agora ignora atualizações de tela de ganhos e da aba de notificações, prevenindo falsas expirações de corrida (`onRefused()`).
+
 ## [5.3.2] — 2026-06-19
 ### Corrigido
 - **Barra de título separada acima do card (estilo Windows)** — solução definitiva para sobreposição dos botões A−/A+/✕ com o Score
