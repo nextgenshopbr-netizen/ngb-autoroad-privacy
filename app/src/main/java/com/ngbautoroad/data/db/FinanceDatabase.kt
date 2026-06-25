@@ -112,6 +112,18 @@ data class FinancialGoalEntity(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+@Entity(tableName = "maintenance_records")
+data class MaintenanceRecordEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val vehicleId: Int = 1,
+    val date: Long = System.currentTimeMillis(),
+    val odometer: Int = 0,
+    val totalCost: Double = 0.0,
+    val maintenanceType: String = "PREVENTIVA", // PREVENTIVA, CORRETIVA
+    val replacedParts: String = "", // Pneus, Freios, Óleo, etc
+    val notes: String = ""
+)
+
 // === DAOs ===
 
 @Dao
@@ -298,6 +310,27 @@ interface FinancialGoalDao {
     suspend fun getActiveGoalsSync(): List<FinancialGoalEntity>
 }
 
+@Dao
+interface MaintenanceRecordDao {
+    @Insert
+    suspend fun insert(record: MaintenanceRecordEntity): Long
+
+    @Update
+    suspend fun update(record: MaintenanceRecordEntity)
+
+    @Delete
+    suspend fun delete(record: MaintenanceRecordEntity)
+
+    @Query("SELECT * FROM maintenance_records ORDER BY date DESC")
+    fun getAllRecords(): Flow<List<MaintenanceRecordEntity>>
+
+    @Query("SELECT * FROM maintenance_records WHERE vehicleId = :vehicleId ORDER BY date DESC")
+    fun getRecordsByVehicle(vehicleId: Int): Flow<List<MaintenanceRecordEntity>>
+    
+    @Query("SELECT SUM(totalCost) FROM maintenance_records WHERE vehicleId = :vehicleId AND date >= :startDate AND date <= :endDate")
+    suspend fun getTotalCostByPeriod(vehicleId: Int, startDate: Long, endDate: Long): Double?
+}
+
 // === Resultado de queries de relatório ===
 
 data class CategorySummary(
@@ -324,9 +357,10 @@ data class PlatformSummary(
         VehicleProfileEntity::class,
         IndividualExpenseEntity::class,
         OdometerHistoryEntity::class,
-        ShiftHistoryEntity::class
+        ShiftHistoryEntity::class,
+        MaintenanceRecordEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 abstract class FinanceDatabase : RoomDatabase() {
@@ -339,6 +373,7 @@ abstract class FinanceDatabase : RoomDatabase() {
     abstract fun individualExpenseDao(): IndividualExpenseDao
     abstract fun odometerHistoryDao(): OdometerHistoryDao
     abstract fun shiftHistoryDao(): ShiftHistoryDao
+    abstract fun maintenanceRecordDao(): MaintenanceRecordDao
 
     companion object {
         @Volatile
@@ -472,6 +507,23 @@ abstract class FinanceDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS maintenance_records (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        vehicleId INTEGER NOT NULL DEFAULT 1,
+                        date INTEGER NOT NULL DEFAULT 0,
+                        odometer INTEGER NOT NULL DEFAULT 0,
+                        totalCost REAL NOT NULL DEFAULT 0.0,
+                        maintenanceType TEXT NOT NULL DEFAULT 'PREVENTIVA',
+                        replacedParts TEXT NOT NULL DEFAULT '',
+                        notes TEXT NOT NULL DEFAULT ''
+                    )
+                """.trimIndent())
+            }
+        }
+
         fun getInstance(context: Context): FinanceDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -479,7 +531,7 @@ abstract class FinanceDatabase : RoomDatabase() {
                     FinanceDatabase::class.java,
                     "ngb_finance_db"
                 )
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                 // Fallback apenas para migração de versão 1 (primeira instalação antiga)
                 .fallbackToDestructiveMigrationFrom(1)
                 // Removido allowMainThreadQueries — todas as queries são suspend/Flow (item 6.2)

@@ -254,57 +254,7 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
         // v5.2.0: Card de Turno integrado na Dashboard
         ShiftDashboardCard(context, scope, prefsManager)
 
-        Spacer(modifier = Modifier.height(12.dp))
 
-        // v6.3.2: Botão de acesso rápido a Recursos Avançados (IA)
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { context.startActivity(Intent(context, FeaturesActivity::class.java)) },
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.SmartToy,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            "Recursos Avançados",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            maxLines = 1
-                        )
-                        Text(
-                            "IA Local, Ranking, Relatórios, Exportar",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                            maxLines = 1
-                        )
-                    }
-                }
-                Icon(
-                    Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
 
         // Estado vazio: sem corridas
         if (dashData.totalRidesToday == 0 && dashData.totalRidesWeek == 0) {
@@ -1798,11 +1748,9 @@ private fun MaintenanceAdvisorCard(context: android.content.Context) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(
-                containerColor = if (data.isUrgent)
-                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-                else
-                    MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-            )
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, ScoreOrange)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

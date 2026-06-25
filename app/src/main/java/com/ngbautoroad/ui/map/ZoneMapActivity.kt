@@ -548,7 +548,7 @@ fun ZoneMapScreen(prefsManager: PrefsManager, activity: ComponentActivity) {
                     Text(
                         "Tipo: ${if (drawMode == "PICKUP") "Embarque" else "Desembarque"}",
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (drawMode == "PICKUP") ScoreOrange else ScoreRed,
+                        color = if (drawMode == "PICKUP") androidx.compose.ui.graphics.Color.LightGray else ScoreRed,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))

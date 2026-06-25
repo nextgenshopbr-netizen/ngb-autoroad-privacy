@@ -102,6 +102,12 @@ class PrefsManager(private val context: Context) {
     // Keep screen on
     private val KEY_KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
 
+    // Overlay Toggles (Sprint 2)
+    private val KEY_OVERLAY_SHOW_SCORE = booleanPreferencesKey("overlay_show_score")
+    private val KEY_OVERLAY_SHOW_META = booleanPreferencesKey("overlay_show_meta")
+    private val KEY_OVERLAY_SHOW_ACCESSIBILITY = booleanPreferencesKey("overlay_show_accessibility")
+    private val KEY_OVERLAY_SHOW_CLOSE = booleanPreferencesKey("overlay_show_close")
+    private val KEY_OVERLAY_PINNED = booleanPreferencesKey("overlay_pinned")
     // Gallery favorites
     private val KEY_GALLERY_FAVORITES = stringPreferencesKey("gallery_favorites")
 
@@ -457,10 +463,24 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    // --- Overlay Toggles (Sprint 2) ---
+    val overlayShowScoreFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_SCORE] ?: true }
+    val overlayShowMetaFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_META] ?: true }
+    val overlayShowAccessibilityFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_ACCESSIBILITY] ?: true }
+    val overlayShowCloseFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_CLOSE] ?: true }
+    val overlayPinnedFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_PINNED] ?: false }
+
+    suspend fun setOverlayShowScore(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_SCORE] = show } }
+    suspend fun setOverlayShowMeta(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_META] = show } }
+    suspend fun setOverlayShowAccessibility(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_ACCESSIBILITY] = show } }
+    suspend fun setOverlayShowClose(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_CLOSE] = show } }
+    suspend fun setOverlayPinned(pinned: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_PINNED] = pinned } }
+
+
     // --- Auto-dismiss overlay (v5.0.0) ---
     private val KEY_AUTO_DISMISS_SECONDS = intPreferencesKey("auto_dismiss_seconds")
     val autoDismissSecondsFlow: Flow<Int> = context.dataStore.data.map { prefs ->
-        prefs[KEY_AUTO_DISMISS_SECONDS] ?: 30 // Padrão: 30 segundos (0 = nunca)
+        prefs[KEY_AUTO_DISMISS_SECONDS] ?: 5 // Padrão: 5 segundos (0 = nunca)
     }
     suspend fun saveAutoDismissSeconds(seconds: Int) {
         context.dataStore.edit { prefs ->
@@ -542,6 +562,41 @@ class PrefsManager(private val context: Context) {
     }
     suspend fun saveAutoPilotGeoFilters(enabled: Boolean) {
         context.dataStore.edit { prefs -> prefs[KEY_AUTOPILOT_GEO_FILTERS] = enabled }
+    }
+
+    // --- Smart Return (Sprint 3) ---
+    private val KEY_SMART_RETURN = booleanPreferencesKey("smart_return_enabled")
+    private val KEY_HOME_LAT = stringPreferencesKey("home_lat")
+    private val KEY_HOME_LNG = stringPreferencesKey("home_lng")
+
+    val smartReturnEnabledFlow: Flow<Boolean> = context.dataStore.data.map { it[KEY_SMART_RETURN] ?: false }
+    suspend fun saveSmartReturnEnabled(enabled: Boolean) { context.dataStore.edit { it[KEY_SMART_RETURN] = enabled } }
+
+    val homeLatFlow: Flow<Double> = context.dataStore.data.map { it[KEY_HOME_LAT]?.toDoubleOrNull() ?: 0.0 }
+    suspend fun saveHomeLat(lat: Double) { context.dataStore.edit { it[KEY_HOME_LAT] = lat.toString() } }
+
+    val homeLngFlow: Flow<Double> = context.dataStore.data.map { it[KEY_HOME_LNG]?.toDoubleOrNull() ?: 0.0 }
+    suspend fun saveHomeLng(lng: Double) { context.dataStore.edit { it[KEY_HOME_LNG] = lng.toString() } }
+
+    // Synchronous reads for AutoPilotEngine
+    var isSmartReturnEnabled: Boolean = false
+        private set
+    var homeLatitude: Double = 0.0
+        private set
+    var homeLongitude: Double = 0.0
+        private set
+
+    init {
+        // Collect flows to update synchronous properties for Engine use
+        kotlinx.coroutines.GlobalScope.launch {
+            smartReturnEnabledFlow.collect { isSmartReturnEnabled = it }
+        }
+        kotlinx.coroutines.GlobalScope.launch {
+            homeLatFlow.collect { homeLatitude = it }
+        }
+        kotlinx.coroutines.GlobalScope.launch {
+            homeLngFlow.collect { homeLongitude = it }
+        }
     }
 
     // =========================================================================

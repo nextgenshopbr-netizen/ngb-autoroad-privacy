@@ -99,11 +99,27 @@ class MaintenanceReserveAdvisor(private val context: Context) {
         vehicle: VehicleProfileEntity?,
         currentOdometerKm: Int,
         currentReserve: Double,
-        avgDailyKm: Double = DEFAULT_DAILY_KM
+        avgDailyKm: Double = DEFAULT_DAILY_KM,
+        records: List<com.ngbautoroad.data.db.MaintenanceRecordEntity> = emptyList()
     ): ReserveAdjustmentSuggestion? {
         if (vehicle == null) return null
 
-        val maintenanceTable = getMaintenanceTable(vehicle.fuelType)
+        val baseTable = getMaintenanceTable(vehicle.fuelType)
+        
+        // v6.9.15: Calibrar estimativas usando os custos REAIS registrados pelo motorista (Sprint 3)
+        val maintenanceTable = if (records.isNotEmpty()) {
+            baseTable.map { item ->
+                val matched = records.filter { 
+                    it.replacedParts.contains(item.name, ignoreCase = true) || 
+                    it.notes.contains(item.name, ignoreCase = true) 
+                }
+                if (matched.isNotEmpty()) {
+                    val realAvg = matched.map { it.totalCost }.average()
+                    item.copy(estimatedCost = realAvg)
+                } else item
+            }
+        } else baseTable
+
         // costPerKm é o custo de combustível/km; para reserva de manutenção usamos 3% do costPerKm como taxa padrão
         val currentRate = if (vehicle.costPerKm > 0) (vehicle.costPerKm * 0.03).coerceAtLeast(0.03) else 0.03
 

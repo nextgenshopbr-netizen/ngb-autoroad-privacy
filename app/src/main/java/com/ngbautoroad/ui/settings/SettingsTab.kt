@@ -199,7 +199,7 @@ private fun SettingsAppContent(prefsManager: PrefsManager) {
                         tint = if (keepScreenOn) ScoreYellow else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Column {
+                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                         Text(
                             "Manter Tela Ligada",
                             style = MaterialTheme.typography.bodyMedium,
@@ -627,6 +627,45 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                 }
             }
         }
+
+        // === OVERLAY - LAYOUT (Sprint 2) ===
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Overlay - Layout",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val showScore by prefsManager.overlayShowScoreFlow.collectAsState(initial = true)
+                val showMeta by prefsManager.overlayShowMetaFlow.collectAsState(initial = true)
+                val showAccessibility by prefsManager.overlayShowAccessibilityFlow.collectAsState(initial = true)
+                val showClose by prefsManager.overlayShowCloseFlow.collectAsState(initial = true)
+
+                @Composable
+                fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(label, style = MaterialTheme.typography.bodyMedium)
+                        Switch(checked = checked, onCheckedChange = onCheckedChange)
+                    }
+                }
+
+                ToggleRow("Exibir Score", showScore) { scope.launch { prefsManager.setOverlayShowScore(it) } }
+                ToggleRow("Exibir Meta", showMeta) { scope.launch { prefsManager.setOverlayShowMeta(it) } }
+                ToggleRow("Exibir Botão Acessibilidade", showAccessibility) { scope.launch { prefsManager.setOverlayShowAccessibility(it) } }
+                ToggleRow("Exibir Botão Fechar", showClose) { scope.launch { prefsManager.setOverlayShowClose(it) } }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // === OVERLAY - APARENCIA ===
         Card(

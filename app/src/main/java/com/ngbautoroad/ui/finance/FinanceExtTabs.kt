@@ -477,7 +477,7 @@ fun IndividualExpenseCard(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = expense.isIncludedInCalc, onCheckedChange = { onToggleCalc() })
-                    Text("Incluir nos cálculos", fontSize = 11.sp)
+                    Text("Incluir no Lucro Líquido e Score", fontSize = 11.sp)
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
@@ -604,7 +604,7 @@ fun AddIndividualExpenseDialog(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = includeInCalc, onCheckedChange = { includeInCalc = it })
-                    Text("Incluir nos cálculos de custo", fontSize = 12.sp)
+                    Text("Incluir no Lucro Líquido e Score", fontSize = 12.sp)
                 }
             }
         },

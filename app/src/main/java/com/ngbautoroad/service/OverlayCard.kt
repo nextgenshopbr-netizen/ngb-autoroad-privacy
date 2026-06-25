@@ -59,6 +59,12 @@ fun OverlayCard(
     goalEarned: Double = 0.0,
     goalTarget: Double = 200.0,
     customLayout: com.ngbautoroad.ui.editor.CustomCardLayout? = null,
+    showScore: Boolean = true,
+    showMeta: Boolean = true,
+    showAccessibility: Boolean = true,
+    showClose: Boolean = true,
+    isPinned: Boolean = false,
+    onTogglePin: () -> Unit = {},
     onDismiss: () -> Unit,
     onFontScaleChange: (Float) -> Unit = {},
     onResize: ((deltaX: Float, deltaY: Float) -> Unit)? = null
@@ -105,46 +111,79 @@ fun OverlayCard(
                 .background(bgColor.copy(alpha = 0.9f))
                 .padding(horizontal = 6.dp, vertical = 2.dp)
         ) {
-            // Barra de controle: A- / A+ / Fechar
+            // Barra de controle: A- / A+ / Score / Pin / Fechar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Botões de acessibilidade A- e A+
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                if (showAccessibility) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "A\u2212",
+                            color = textColor.copy(alpha = 0.8f),
+                            fontSize = (12 * fontScale).sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable { onFontScaleChange((fontScale - 0.1f).coerceAtLeast(0.7f)) }
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                        Text(
+                            text = "A+",
+                            color = textColor.copy(alpha = 0.8f),
+                            fontSize = (12 * fontScale).sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable { onFontScaleChange((fontScale + 0.1f).coerceAtMost(1.6f)) }
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier.width(40.dp))
+                }
+
+                // Score Centralizado
+                if (showScore) {
                     Text(
-                        text = "A\u2212",
-                        color = textColor.copy(alpha = 0.8f),
+                        text = "Score: ${score.totalScore.toInt()}",
+                        color = totalScoreColor,
                         fontSize = (12 * fontScale).sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .clickable { onFontScaleChange((fontScale - 0.1f).coerceAtLeast(0.7f)) }
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                    Text(
-                        text = "A+",
-                        color = textColor.copy(alpha = 0.8f),
-                        fontSize = (12 * fontScale).sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .clickable { onFontScaleChange((fontScale + 0.1f).coerceAtMost(1.6f)) }
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                        fontWeight = FontWeight.Bold
                     )
                 }
-                // Botão fechar
-                Text(
-                    text = "\u2715",
-                    color = textColor.copy(alpha = 0.9f),
-                    fontSize = (13 * fontScale).sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clickable { onDismiss() }
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                )
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Botão Pin
+                    Icon(
+                        imageVector = if (isPinned) Icons.Default.PushPin else Icons.Default.PushPin, // Outline was not available so use Default with opacity
+                        contentDescription = "Pin",
+                        tint = if (isPinned) ScoreYellow else textColor.copy(alpha = 0.5f),
+                        modifier = Modifier
+                            .clickable { onTogglePin() }
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .size((14 * fontScale).dp)
+                    )
+
+                    // Botão fechar
+                    if (showClose) {
+                        Text(
+                            text = "\u2715",
+                            color = textColor.copy(alpha = 0.9f),
+                            fontSize = (13 * fontScale).sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable { onDismiss() }
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.width(16.dp))
+                    }
+                }
             }
 
             // Linha 2: Mini barra de progresso da meta do dia
+            if (showMeta) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -181,6 +220,7 @@ fun OverlayCard(
                     fontSize = (8 * fontScale).sp
                 )
             }
+            } // end if (showMeta)
             Spacer(modifier = Modifier.height(2.dp))
         }
 

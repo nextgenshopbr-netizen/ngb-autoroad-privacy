@@ -528,6 +528,20 @@ class OverlayService : Service(),
                     val score = currentScore
                     if (ride != null && score != null) {
                         val shiftState = ShiftManager(applicationContext).loadState()
+                        val showScore by prefsManager.overlayShowScoreFlow.collectAsState(initial = true)
+                        val showMeta by prefsManager.overlayShowMetaFlow.collectAsState(initial = true)
+                        val showAccessibility by prefsManager.overlayShowAccessibilityFlow.collectAsState(initial = true)
+                        val showClose by prefsManager.overlayShowCloseFlow.collectAsState(initial = true)
+                        val isPinned by prefsManager.overlayPinnedFlow.collectAsState(initial = false)
+
+                        LaunchedEffect(isPinned) {
+                            if (isPinned) {
+                                autoDismissJob?.cancel()
+                            } else {
+                                startAutoDismissTimer()
+                            }
+                        }
+
                         OverlayCard(
                             ride = ride,
                             score = score,
@@ -537,6 +551,12 @@ class OverlayService : Service(),
                             goalEarned = shiftState.totalEarned,
                             goalTarget = shiftState.goalValue,
                             customLayout = currentCustomLayout,
+                            showScore = showScore,
+                            showMeta = showMeta,
+                            showAccessibility = showAccessibility,
+                            showClose = showClose,
+                            isPinned = isPinned,
+                            onTogglePin = { serviceScope.launch { prefsManager.setOverlayPinned(!isPinned) } },
                             onDismiss = { hideOverlay() },
                             onFontScaleChange = { newScale ->
                                 currentFontScale = newScale
@@ -643,17 +663,37 @@ class OverlayService : Service(),
                 val ride = currentRide
                 val score = currentScore
                 if (ride != null && score != null) {
-                    val shiftState = ShiftManager(applicationContext).loadState()
-                    OverlayCard(
-                        ride = ride,
-                        score = score,
-                        galleryCard = currentGalleryCard,
-                        fontScale = currentFontScale,
-                        goalProgress = shiftState.goalProgress,
-                        goalEarned = shiftState.totalEarned,
-                        goalTarget = shiftState.goalValue,
-                        customLayout = currentCustomLayout,
-                        onDismiss = { hideOverlay() },
+                        val shiftState = ShiftManager(applicationContext).loadState()
+                        val showScore by prefsManager.overlayShowScoreFlow.collectAsState(initial = true)
+                        val showMeta by prefsManager.overlayShowMetaFlow.collectAsState(initial = true)
+                        val showAccessibility by prefsManager.overlayShowAccessibilityFlow.collectAsState(initial = true)
+                        val showClose by prefsManager.overlayShowCloseFlow.collectAsState(initial = true)
+                        val isPinned by prefsManager.overlayPinnedFlow.collectAsState(initial = false)
+
+                        LaunchedEffect(isPinned) {
+                            if (isPinned) {
+                                autoDismissJob?.cancel()
+                            } else {
+                                startAutoDismissTimer()
+                            }
+                        }
+
+                        OverlayCard(
+                            ride = ride,
+                            score = score,
+                            galleryCard = currentGalleryCard,
+                            fontScale = currentFontScale,
+                            goalProgress = shiftState.goalProgress,
+                            goalEarned = shiftState.totalEarned,
+                            goalTarget = shiftState.goalValue,
+                            customLayout = currentCustomLayout,
+                            showScore = showScore,
+                            showMeta = showMeta,
+                            showAccessibility = showAccessibility,
+                            showClose = showClose,
+                            isPinned = isPinned,
+                            onTogglePin = { serviceScope.launch { prefsManager.setOverlayPinned(!isPinned) } },
+                            onDismiss = { hideOverlay() },
                         onFontScaleChange = { newScale ->
                             currentFontScale = newScale
                             serviceScope.launch { prefsManager.saveOverlayFontScale(newScale) }
