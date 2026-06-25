@@ -69,6 +69,7 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
     var selectedFilter by remember { mutableStateOf(HistoryFilter.TODAY) }
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
+    var showFilterMenu by remember { mutableStateOf(false) }
     var selectedRide by remember { mutableStateOf<RideHistoryEntity?>(null) }
 
     // Item 5.1: Histórico reativo via Flow — atualiza automaticamente quando novas corridas chegam
@@ -114,6 +115,33 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
                         contentDescription = "Buscar",
                         modifier = Modifier.size(20.dp)
                     )
+                }
+                // Filtros dropdown
+                Box {
+                    IconButton(onClick = { showFilterMenu = true }) {
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = "Filtros", modifier = Modifier.size(24.dp))
+                    }
+                    DropdownMenu(
+                        expanded = showFilterMenu,
+                        onDismissRequest = { showFilterMenu = false }
+                    ) {
+                        HistoryFilter.values().forEach { filter ->
+                            DropdownMenuItem(
+                                text = { Text(filter.label) },
+                                onClick = {
+                                    selectedFilter = filter
+                                    searchQuery = ""
+                                    showSearch = false
+                                    showFilterMenu = false
+                                },
+                                trailingIcon = {
+                                    if (selectedFilter == filter && searchQuery.isBlank()) {
+                                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
                 // Item 5.4: Exportação CSV
                 IconButton(onClick = {

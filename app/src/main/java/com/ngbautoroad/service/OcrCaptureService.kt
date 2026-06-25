@@ -216,6 +216,15 @@ class OcrCaptureService : Service() {
      */
     private fun parseOcrText(text: String): RideData? {
         val lines = text.lines()
+        val lowerText = text.lowercase()
+
+        // Filtro de Falsos Positivos: Ignorar telas de ganhos, saldo e carteira
+        val ignoreKeywords = listOf("saldo", "ganhos", "carteira", "transferir", "resumo", "rendimento", "repasse", "semanal", "hoje", "concluídas", "taxa de aceitação")
+        // Se contiver palavras de ganhos e NÃO for explicitamente uma corrida (ex: não tem botão de aceitar/recusar ou distância clara)
+        if (ignoreKeywords.any { lowerText.contains(it) } && !lowerText.contains("min") && !lowerText.contains("km")) {
+             return null
+        }
+
         var platform = Platform.UNKNOWN
         var rideValue = 0.0
         var distance = 0.0
@@ -225,7 +234,6 @@ class OcrCaptureService : Service() {
         var stops = 0
 
         // Detectar plataforma
-        val lowerText = text.lowercase()
         platform = when {
             lowerText.contains("uber") || lowerText.contains("uberdrive") -> Platform.UBER
             lowerText.contains("99") || lowerText.contains("ninety") -> Platform.NINETY_NINE

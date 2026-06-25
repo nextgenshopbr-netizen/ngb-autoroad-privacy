@@ -1191,7 +1191,7 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
                             fontSize = 14.sp
                         )
                         Text(
-                            "AutoPilot: ${profile.autoPilotMode} | Min: ${profile.minAcceptScore}",
+                            "Pesos: ${profile.weights.totalUsed}/100 | AutoPilot: ${profile.autoPilotMode} | Min: ${profile.minAcceptScore}",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

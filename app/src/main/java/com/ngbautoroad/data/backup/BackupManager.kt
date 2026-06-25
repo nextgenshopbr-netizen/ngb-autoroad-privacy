@@ -56,6 +56,7 @@ class BackupManager(private val context: Context) {
         private const val SP_SHIFT_HISTORY = "shared_prefs_shift_history.json"
         private const val DB_RIDES = "ngb_autoroad_db"
         private const val DB_FINANCE = "ngb_finance_db"
+        private const val DS_BINARY = "ngb_autoroad_prefs.preferences_pb"
     }
 
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
@@ -112,6 +113,15 @@ class BackupManager(private val context: Context) {
                 // Room databases (cópia binária dos arquivos SQLite — apenas arquivo principal)
                 copyDatabaseToZip(zipOut, "ngb_autoroad_db", DB_RIDES)
                 copyDatabaseToZip(zipOut, "ngb_finance_db", DB_FINANCE)
+
+                // DataStore binário (garante que as zonas do mapa e estruturas complexas sejam salvas corretamente)
+                val dsFile = File(context.filesDir, "datastore/ngb_autoroad_prefs.preferences_pb")
+                if (dsFile.exists()) {
+                    zipOut.putNextEntry(ZipEntry(DS_BINARY))
+                    FileInputStream(dsFile).use { fis -> fis.copyTo(zipOut) }
+                    zipOut.closeEntry()
+                    Log.d(TAG, "DataStore binário exportado: ${dsFile.length()} bytes")
+                }
             }
         } ?: throw IOException("Não foi possível abrir o arquivo de saída")
 
@@ -175,6 +185,13 @@ class BackupManager(private val context: Context) {
                         }
                         entryName == "$DB_FINANCE-wal" -> {
                             restoreWalFromZip(zipIn, "ngb_finance_db")
+                        }
+                        // DataStore binário
+                        entryName == DS_BINARY -> {
+                            val dsFile = File(context.filesDir, "datastore/ngb_autoroad_prefs.preferences_pb")
+                            dsFile.parentFile?.mkdirs()
+                            FileOutputStream(dsFile).use { fos -> zipIn.copyTo(fos) }
+                            Log.d(TAG, "DataStore binário restaurado: ${dsFile.length()} bytes")
                         }
                         // SHM files (ignorar — serão recriados pelo SQLite)
                         entryName.endsWith("-shm") -> {

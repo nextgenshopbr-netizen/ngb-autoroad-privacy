@@ -194,7 +194,7 @@ class RideAccessibilityService : AccessibilityService() {
     // v6.9.8: Debounce por valor — mesmo R$ dentro de 60s = duplicata
     private var lastRideValue: Double = 0.0
     private var lastRideValueTime = 0L
-    private val VALUE_DEBOUNCE_MS = 60_000L // v6.9.14: 60s para mesmo valor (era 30s)
+    private val VALUE_DEBOUNCE_MS = 120_000L // v6.9.14: 120s para mesmo valor (era 60s)
 
     // --- Controle de throttle ---
     private var lastProcessedTime = 0L
@@ -1495,14 +1495,18 @@ class RideAccessibilityService : AccessibilityService() {
      * Evita falsos positivos como "Brasil", "Rua", "Avenida" etc.
      */
     private fun isCommonWord(word: String): Boolean {
+        // v6.9.14: Ignorar strings muito longas (provavelmente frases capturadas erroneamente)
+        if (word.length > 30) return true
+
         val common = setOf(
             "Brasil", "Brazil", "Rua", "Avenida", "Alameda", "Travessa",
             "Rodovia", "Estrada", "Praça", "Largo", "Viela", "Beco",
             "Norte", "Sul", "Leste", "Oeste", "Centro",
             "Uber", "Viagem", "Trip", "Pickup", "Dropoff",
-            "Selecionar", "Aceitar", "Cancelar", "Recusar"
+            "Selecionar", "Aceitar", "Cancelar", "Recusar",
+            "Ganhos", "Saldo", "Carteira", "Transferir", "Resumo", "Rendimento"
         )
-        return common.any { it.equals(word, ignoreCase = true) }
+        return common.any { it.equals(word, ignoreCase = true) } || word.split(" ").size > 5
     }
 
     /**
