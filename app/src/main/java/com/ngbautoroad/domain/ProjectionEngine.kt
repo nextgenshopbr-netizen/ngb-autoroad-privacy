@@ -75,10 +75,12 @@ class ProjectionEngine(
             else -> 1.0
         }
 
-        val projEarnings = avgDailyEarnings * multiplier
-        val projKm = avgDailyKm * multiplier
-        val projRides = (avgDailyRides * multiplier).toInt()
-        val projHours = avgDailyHours * multiplier
+        val daysWorkedRatio = if (totalRides30 > 0) (daysWithData / 30.0).coerceAtMost(1.0) else 0.0
+
+        val projEarnings = avgDailyEarnings * multiplier * daysWorkedRatio
+        val projKm = avgDailyKm * multiplier * daysWorkedRatio
+        val projRides = (avgDailyRides * multiplier * daysWorkedRatio).toInt()
+        val projHours = avgDailyHours * multiplier * daysWorkedRatio
 
         // v6.5.0: Aplicar fator de correção do odômetro para KM real
         // projKm é baseado apenas em earnings (corridas). O KM real inclui uso pessoal.
@@ -229,15 +231,21 @@ class ProjectionEngine(
 
         // Cenário 4: Mescla (70% boas + 20% médias + 10% ruins)
         // v5.0.0: Guard contra goodRides vazio (usa averageOrZero)
-        val mixedAvgValue = (goodRides.map { it.rideValue }.averageOrZero() * 0.7) +
-            (avgRides.map { it.rideValue }.averageOrZero() * 0.2) +
-            (badRides.map { it.rideValue }.averageOrZero() * 0.1)
-        val mixedAvgKm = (goodRides.map { it.dropoffDistance }.averageOrZero() * 0.7) +
-            (avgRides.map { it.dropoffDistance }.averageOrZero() * 0.2) +
-            (badRides.map { it.dropoffDistance }.averageOrZero() * 0.1)
-        val mixedAvgDuration = (goodRides.map { it.rideDuration }.averageOrZero() * 0.7) +
-            (avgRides.map { it.rideDuration }.averageOrZero() * 0.2) +
-            (badRides.map { it.rideDuration }.averageOrZero() * 0.1)
+        var wGood = if (goodRides.isNotEmpty()) 0.7 else 0.0
+        var wAvg = if (avgRides.isNotEmpty()) 0.2 else 0.0
+        var wBad = if (badRides.isNotEmpty()) 0.1 else 0.0
+        val tWeight = wGood + wAvg + wBad
+        if (tWeight > 0.0) { wGood /= tWeight; wAvg /= tWeight; wBad /= tWeight }
+
+        val mixedAvgValue = (goodRides.map { it.rideValue }.averageOrZero() * wGood) +
+            (avgRides.map { it.rideValue }.averageOrZero() * wAvg) +
+            (badRides.map { it.rideValue }.averageOrZero() * wBad)
+        val mixedAvgKm = (goodRides.map { it.dropoffDistance }.averageOrZero() * wGood) +
+            (avgRides.map { it.dropoffDistance }.averageOrZero() * wAvg) +
+            (badRides.map { it.dropoffDistance }.averageOrZero() * wBad)
+        val mixedAvgDuration = (goodRides.map { it.rideDuration }.averageOrZero() * wGood) +
+            (avgRides.map { it.rideDuration }.averageOrZero() * wAvg) +
+            (badRides.map { it.rideDuration }.averageOrZero() * wBad)
 
         val mixTotalRides = (allRides.size * multiplier).toInt().coerceAtLeast(1)
         val mixTotalEarnings = mixedAvgValue * mixTotalRides
@@ -344,22 +352,30 @@ class ProjectionEngine(
 
     private fun calculateTireCost(vehicle: VehicleProfileEntity?, km: Double): Double {
         if (vehicle == null || vehicle.tireLifeKm <= 0 || vehicle.tireCost <= 0) return 0.0
-        return (km / vehicle.tireLifeKm) * vehicle.tireCost
+        val isElectric = vehicle.vehicleType == "ELECTRIC"
+        val effectiveLifeKm = if (isElectric) (vehicle.tireLifeKm * 0.75).toInt() else vehicle.tireLifeKm
+        return (km / effectiveLifeKm) * vehicle.tireCost
     }
 
     private fun calculateBrakeCost(vehicle: VehicleProfileEntity?, km: Double): Double {
         if (vehicle == null || vehicle.brakepadLifeKm <= 0 || vehicle.brakepadCost <= 0) return 0.0
-        return (km / vehicle.brakepadLifeKm) * vehicle.brakepadCost
+        val isElectric = vehicle.vehicleType == "ELECTRIC"
+        val effectiveLifeKm = if (isElectric) (vehicle.brakepadLifeKm * 2.0).toInt() else vehicle.brakepadLifeKm
+        return (km / effectiveLifeKm) * vehicle.brakepadCost
     }
 
     private fun calculateOilCost(vehicle: VehicleProfileEntity?, km: Double): Double {
         if (vehicle == null || vehicle.oilChangeKm <= 0 || vehicle.oilChangeCost <= 0) return 0.0
-        return (km / vehicle.oilChangeKm) * vehicle.oilChangeCost
+        val isElectric = vehicle.vehicleType == "ELECTRIC"
+        val effectiveLifeKm = if (isElectric) (vehicle.oilChangeKm * 3.0).toInt() else vehicle.oilChangeKm
+        return (km / effectiveLifeKm) * vehicle.oilChangeCost
     }
 
     private fun calculateMaintenanceCost(vehicle: VehicleProfileEntity?, km: Double): Double {
         if (vehicle == null || vehicle.maintenanceIntervalKm <= 0 || vehicle.maintenanceCost <= 0) return 0.0
-        return (km / vehicle.maintenanceIntervalKm) * vehicle.maintenanceCost
+        val isElectric = vehicle.vehicleType == "ELECTRIC"
+        val effectiveCost = if (isElectric) vehicle.maintenanceCost * 0.6 else vehicle.maintenanceCost
+        return (km / vehicle.maintenanceIntervalKm) * effectiveCost
     }
 
     private fun getDepreciationPerKm(vehicle: VehicleProfileEntity?): Double {
