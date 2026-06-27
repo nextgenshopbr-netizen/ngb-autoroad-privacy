@@ -216,7 +216,8 @@ fun AddVehicleProfileDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (existing != null) "Editar Veículo" else "Cadastrar Veículo") },
         text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            Surface(color = MaterialTheme.colorScheme.surface) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(value = brand, onValueChange = { brand = it }, label = { Text("Marca") }, modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(4.dp))
                 OutlinedTextField(value = model, onValueChange = { model = it }, label = { Text("Modelo") }, modifier = Modifier.fillMaxWidth())
@@ -298,6 +299,7 @@ fun AddVehicleProfileDialog(
                     }
                 }
             }
+          }
         },
         confirmButton = {
             Button(onClick = {
@@ -515,7 +517,8 @@ fun AddIndividualExpenseDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (isEdit) "Editar Despesa" else "Cadastrar Despesa") },
         text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            Surface(color = MaterialTheme.colorScheme.surface) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Título (ex: IPVA 2026)") }, modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -607,6 +610,7 @@ fun AddIndividualExpenseDialog(
                     Text("Incluir no Lucro Líquido e Score", fontSize = 12.sp)
                 }
             }
+          }
         },
         confirmButton = {
             Button(onClick = {
@@ -658,7 +662,6 @@ fun ProjectionTab(
         return
     }
 
-    val scope = rememberCoroutineScope()
     var selectedPeriod by remember { mutableStateOf("MES") }
     var projection by remember { mutableStateOf<FinancialProjection?>(null) }
     var whatIfResults by remember { mutableStateOf<List<WhatIfResult>>(emptyList()) }

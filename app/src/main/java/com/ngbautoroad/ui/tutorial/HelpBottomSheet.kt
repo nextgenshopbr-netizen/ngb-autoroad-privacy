@@ -42,7 +42,9 @@ fun HelpButton(screenId: String) {
     if (showSheet) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(onDismissRequest = { showSheet = false }, sheetState = sheetState) {
-            HelpContent(screenId = screenId, onDismiss = { showSheet = false })
+            Surface(color = MaterialTheme.colorScheme.surface) {
+                HelpContent(screenId = screenId, onDismiss = { showSheet = false })
+            }
         }
     }
 }
