@@ -80,6 +80,15 @@ class GpsTrackingEngine(private val context: Context) : LocationListener, Sensor
         private const val MIN_ACCURACY_METERS = 50f    // Ignorar pontos com accuracy > 50m
         private const val SPEED_THRESHOLD_MS = 1.5f    // 1.5 m/s = 5.4 km/h (andando rápido)
         private const val ACCEL_MOVEMENT_THRESHOLD = 1.2f // m/s² acima de gravidade
+
+        @Volatile
+        private var instance: GpsTrackingEngine? = null
+
+        fun getInstance(context: Context): GpsTrackingEngine {
+            return instance ?: synchronized(this) {
+                instance ?: GpsTrackingEngine(context.applicationContext).also { instance = it }
+            }
+        }
     }
 
     private val prefs: SharedPreferences = context.getSharedPreferences("gps_tracking_prefs", Context.MODE_PRIVATE)
@@ -93,6 +102,10 @@ class GpsTrackingEngine(private val context: Context) : LocationListener, Sensor
 
     // Histórico de validações
     private val validations = mutableListOf<KmValidation>()
+
+    init {
+        loadState()
+    }
 
     /**
      * Inicia o rastreamento GPS (chamado ao iniciar turno).
