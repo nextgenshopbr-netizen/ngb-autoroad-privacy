@@ -142,7 +142,7 @@ class FinanceDREEngine(
         val custosVariaveis = combustivelCost + desgasteCost
 
         // Margem de Contribuição
-        val margemContribuicao = receitaBruta - custosVariaveis
+        val margemContribuicao = if (receitaBruta > 0) receitaBruta - custosVariaveis else 0.0
         val margemContribuicaoPct = if (receitaBruta > 0) (margemContribuicao / receitaBruta) * 100.0 else 0.0
 
         // Custos Fixos (rateados para o período)
@@ -308,8 +308,8 @@ class FinanceDREEngine(
         val currentWeekFuel = expenseDao.getTotalByCategorySync("Combustível", weekStart, endDate) ?: 0.0
 
         if (weeklyTotals.size >= 4 && weeklyTotals.any { it > 0 }) {
-            val avg = weeklyTotals.average()
-            val variance = weeklyTotals.map { (it - avg) * (it - avg) }.average()
+            val avg = if (weeklyTotals.isNotEmpty()) weeklyTotals.average() else 0.0
+            val variance = if (weeklyTotals.isNotEmpty()) weeklyTotals.map { (it - avg) * (it - avg) }.average() else 0.0
             val stdDev = kotlin.math.sqrt(variance).coerceAtLeast(1.0)
             val zScore = if (stdDev > 0) (currentWeekFuel - avg) / stdDev else 0.0
 
