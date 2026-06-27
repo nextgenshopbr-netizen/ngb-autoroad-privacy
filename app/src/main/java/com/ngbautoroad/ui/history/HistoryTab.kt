@@ -62,7 +62,7 @@ enum class HistoryFilter(val label: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
+fun HistoryTab(database: AppDatabase) {
     val scope = rememberCoroutineScope()
     val dao = remember { database.rideHistoryDao() }
 
@@ -187,7 +187,7 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
                         searchQuery = ""
                         showSearch = false
                     },
-                    label = { Text(filter.label, fontSize = 11.sp) },
+                    label = { Text(filter.label, style = MaterialTheme.typography.labelSmall) },
                     modifier = Modifier.height(32.dp),
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = when (filter) {
@@ -225,24 +225,24 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(10.dp),
+                        .padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("${rides.size}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("corridas", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${rides.size}", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text("corridas", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("R$ %.2f".format(totalValue), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ScoreGreen)
-                        Text("ganhos", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("R$ %.2f".format(totalValue), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, color = ScoreGreen)
+                        Text("ganhos", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("%.0f".format(avgScore), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = ScoreYellow)
-                        Text("score médio", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("%.0f".format(avgScore), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, color = ScoreYellow)
+                        Text("score médio", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("%.2f".format(avgVkm), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text("R$/km", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("%.2f".format(avgVkm), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text("R$/km", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -280,7 +280,7 @@ fun HistoryTab(prefsManager: PrefsManager, database: AppDatabase) {
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(rides, key = { it.id }) { ride ->
                     RideHistoryItem(
@@ -346,14 +346,14 @@ fun RideHistoryItem(ride: RideHistoryEntity, onClick: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Score circle
             Box(
                 modifier = Modifier
-                    .size(46.dp)
-                    .clip(RoundedCornerShape(23.dp))
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(24.dp))
                     .background(scoreColor.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
@@ -442,8 +442,7 @@ fun RideHistoryItem(ride: RideHistoryEntity, onClick: () -> Unit) {
                     Text(
                         "Dados parciais (${ride.criteriaUsed}/${ride.totalCriteria} critérios)",
                         style = MaterialTheme.typography.labelSmall,
-                        color = ScoreYellow.copy(alpha = 0.8f),
-                        fontSize = 9.sp
+                        color = ScoreYellow.copy(alpha = 0.8f)
                     )
                 }
             }
@@ -586,7 +585,7 @@ fun RideDetailDialog(
                         ) {
                             Icon(Icons.Default.Check, contentDescription = "Confirmar", modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Confirmar", fontSize = 12.sp)
+                            Text("Confirmar", style = MaterialTheme.typography.labelMedium)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                     }
@@ -599,7 +598,7 @@ fun RideDetailDialog(
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = "Excluir", modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Excluir", fontSize = 12.sp)
+                        Text("Excluir", style = MaterialTheme.typography.labelMedium)
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -609,7 +608,7 @@ fun RideDetailDialog(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Fechar", fontSize = 12.sp)
+                        Text("Fechar", style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }
