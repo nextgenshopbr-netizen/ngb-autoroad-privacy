@@ -39,6 +39,7 @@ import com.ngbautoroad.ui.theme.ScoreYellow
 import com.ngbautoroad.ui.theme.ScoreOrange
 import com.ngbautoroad.ui.theme.ScoreRed
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -273,26 +274,25 @@ fun PesosSubTab(prefsManager: PrefsManager, scope: kotlinx.coroutines.CoroutineS
             scope.launch { prefsManager.saveCriteriaWeights(weights.copy(intermediateStops = newVal)) }
         }
         // v6.4.1: Slider de avaliação com ícone info (tabela de multiplicadores)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(modifier = Modifier.weight(1f)) {
-                CriteriaSlider("Avaliação do Passageiro", weights.passengerRating, maxForCriteria(weights.passengerRating)) { newVal ->
-                    scope.launch { prefsManager.saveCriteriaWeights(weights.copy(passengerRating = newVal)) }
+        CriteriaSlider(
+            label = "Avaliação do Passageiro",
+            value = weights.passengerRating,
+            maxValue = maxForCriteria(weights.passengerRating),
+            infoIcon = {
+                IconButton(
+                    onClick = { showRatingPenaltyInfo = true },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = "Ver tabela de penalidades",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
-            IconButton(
-                onClick = { showRatingPenaltyInfo = true },
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    Icons.Default.Info,
-                    contentDescription = "Ver tabela de penalidades",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+        ) { newVal ->
+            scope.launch { prefsManager.saveCriteriaWeights(weights.copy(passengerRating = newVal)) }
         }
 
         // Dialog: Tabela de multiplicadores de penalidade por rating
@@ -989,6 +989,7 @@ fun CriteriaSlider(
     label: String,
     value: Int,
     maxValue: Int,
+    infoIcon: @Composable (() -> Unit)? = null,
     onValueChange: (Int) -> Unit
 ) {
     val sliderRange = maxValue.toFloat().coerceAtLeast(0f)
@@ -1000,13 +1001,20 @@ fun CriteriaSlider(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (infoIcon != null) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    infoIcon()
+                }
+            }
             Row {
                 Text(
                     text = "$value pts",
@@ -1219,6 +1227,21 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
                                 prefsManager.saveAutoPilotMinScore(profile.minAcceptScore)
                                 prefsManager.saveAutoPilotMaxRefuseScore(profile.maxRefuseScore)
                                 prefsManager.saveActiveProfileId(profile.id)
+                                // Restaurar bairros bloqueados e zonas do perfil carregado
+                                val pickupList = profile.blockedPickupJson.split(";").filter { it.isNotBlank() }.mapNotNull {
+                                    val parts = it.split(":")
+                                    if (parts.size == 2) parts[0] to (parts[1].toIntOrNull() ?: 1) else null
+                                }
+                                prefsManager.saveBlockedPickup(pickupList)
+                                
+                                val dropoffList = profile.blockedDropoffJson.split(";").filter { it.isNotBlank() }.mapNotNull {
+                                    val parts = it.split(":")
+                                    if (parts.size == 2) parts[0] to (parts[1].toIntOrNull() ?: 1) else null
+                                }
+                                prefsManager.saveBlockedDropoff(dropoffList)
+                                
+                                prefsManager.saveZoneMapData(profile.zoneMapData)
+                                
                             }
                         }) {
                             Icon(
@@ -1270,7 +1293,10 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
                                     thresholds = thresholds,
                                     autoPilotMode = currentAutoPilotForSave,
                                     minAcceptScore = currentMinForSave,
-                                    maxRefuseScore = currentMaxForSave
+                                    maxRefuseScore = currentMaxForSave,
+                                    blockedPickupJson = try { prefsManager.blockedPickupFlow.first().joinToString(";") { "${it.first}:${it.second}" } } catch (_: Exception) { "" },
+                                    blockedDropoffJson = try { prefsManager.blockedDropoffFlow.first().joinToString(";") { "${it.first}:${it.second}" } } catch (_: Exception) { "" },
+                                    zoneMapData = prefsManager.zoneMapDataFlow.first()
                                 )
                             } else p
                         }
@@ -1383,7 +1409,10 @@ fun ProfilesSection(prefsManager: PrefsManager, scope: kotlinx.coroutines.Corout
                                 thresholds = thresholds,
                                 autoPilotMode = autoPilotMode,
                                 minAcceptScore = minScore,
-                                maxRefuseScore = maxRefuse
+                                maxRefuseScore = maxRefuse,
+                                blockedPickupJson = try { prefsManager.blockedPickupFlow.first().joinToString(";") { "${it.first}:${it.second}" } } catch (_: Exception) { "" },
+                                blockedDropoffJson = try { prefsManager.blockedDropoffFlow.first().joinToString(";") { "${it.first}:${it.second}" } } catch (_: Exception) { "" },
+                                zoneMapData = prefsManager.zoneMapDataFlow.first()
                             )
                             val updated = profiles + newProfile
                             val json = kotlinx.serialization.json.Json.encodeToString(
@@ -1416,5 +1445,8 @@ data class SavedProfile(
     val thresholds: DriverThresholds,
     val autoPilotMode: String = "OFF",
     val minAcceptScore: Int = 75,
-    val maxRefuseScore: Int = 40
+    val maxRefuseScore: Int = 40,
+    val blockedPickupJson: String = "",
+    val blockedDropoffJson: String = "",
+    val zoneMapData: String = ""
 )
