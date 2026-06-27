@@ -199,7 +199,7 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     // Lista clicável de cada permissão faltante
                     missingPerms.forEach { perm ->
                         Row(
@@ -293,8 +293,7 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
                         Text(
                             aiState!!.suggestion,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            lineHeight = 16.sp
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
@@ -362,7 +361,7 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
         // Stats grid
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             StatCard(
                 modifier = Modifier.weight(1f),
@@ -390,7 +389,7 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
         // Corridas do dia
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             MiniStatCard(
                 modifier = Modifier.weight(1f),
@@ -602,8 +601,8 @@ fun FinancialSummarySection() {
                         progress = progress.toFloat(),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp)),
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
                         color = progressColor,
                         trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
@@ -1959,7 +1958,7 @@ private fun MaintenanceAdvisorCard(context: android.content.Context) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 // Explicação do que é a reserva de manutenção
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     "A reserva de manutenção é um valor separado por km rodado para cobrir revisões, pneus e peças. Ajuste em Finanças → Veículos.",
                     style = MaterialTheme.typography.labelSmall,
