@@ -725,15 +725,14 @@ fun ProjectionTab(
 
         // Filtro de período
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             listOf("DIA" to "Diário", "SEMANA" to "Semanal", "MES" to "Mensal", "ANO" to "Anual").forEach { (key, label) ->
                 FilterChip(
                     selected = selectedPeriod == key,
                     onClick = { selectedPeriod = key },
-                    label = { Text(label, fontSize = 11.sp, maxLines = 1) },
-                    modifier = Modifier.weight(1f)
+                    label = { Text(label, fontSize = 11.sp, maxLines = 1) }
                 )
             }
         }

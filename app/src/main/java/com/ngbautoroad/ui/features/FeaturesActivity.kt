@@ -29,6 +29,8 @@ import com.ngbautoroad.domain.ReportGenerator
 import com.ngbautoroad.domain.ReportData
 import com.ngbautoroad.domain.DataExporter
 import com.ngbautoroad.ui.theme.NGBAutoRoadTheme
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -81,7 +83,6 @@ fun FeaturesScreen() {
 @Composable
 fun ShiftTab() {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     var todayRides by remember { mutableStateOf(0) }
     var todayEarnings by remember { mutableStateOf(0.0) }
     var avgScore by remember { mutableStateOf(0.0) }
@@ -173,7 +174,10 @@ fun RankingTab() {
             Text("Ranking de Bairros", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Text("Baseado no seu histórico real de corridas", color = Color.Gray, fontSize = 12.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 FilterChip(selected = sortBy == "avgValue", onClick = { sortBy = "avgValue" }, label = { Text("Valor Médio") })
                 FilterChip(selected = sortBy == "avgPerKm", onClick = { sortBy = "avgPerKm" }, label = { Text("R$/Km") })
                 FilterChip(selected = sortBy == "rides", onClick = { sortBy = "rides" }, label = { Text("Corridas") })
@@ -330,7 +334,10 @@ fun ReportTab() {
             Text("Relatório PDF", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Text("Gere relatórios financeiros com dados reais", color = Color.Gray, fontSize = 12.sp)
             Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 FilterChip(selected = selectedPeriod == "weekly", onClick = { selectedPeriod = "weekly" }, label = { Text("Semanal") })
                 FilterChip(selected = selectedPeriod == "monthly", onClick = { selectedPeriod = "monthly" }, label = { Text("Mensal") })
                 FilterChip(selected = selectedPeriod == "yearly", onClick = { selectedPeriod = "yearly" }, label = { Text("Anual") })
@@ -362,7 +369,6 @@ fun ReportTab() {
                         }
                         val totalExpenses = variableExpenses + (monthlyFixed * periodMonths)
                         val totalRides = appDb.rideHistoryDao().countSince(startDate)
-                        val avgPerKm = appDb.rideHistoryDao().averageValuePerKmSince(startDate) ?: 0.0
                         val topNeighborhoods = appDb.rideHistoryDao().topDropoffNeighborhoods()
                         val platformSummary = finDb.earningDao().getEarningsByPlatformSummary(startDate, endDate)
 
