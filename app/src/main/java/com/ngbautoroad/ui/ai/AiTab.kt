@@ -38,11 +38,11 @@ import com.ngbautoroad.ui.history.HistoryTab
 import com.ngbautoroad.ui.features.HeatmapTab
 
 @Composable
-fun AiTab(prefsManager: PrefsManager, database: AppDatabase) {
+fun AiTab(database: AppDatabase) {
     val context = LocalContext.current
     val financeDb = remember { FinanceDatabase.getInstance(context) }
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Turno", "Ranking", "IA Local", "Projeção", "Histórico", "Heatmap", "Relatório", "Exportar")
+    val tabs = listOf("Turno", "Ranking", "IA Local", "Projeção", "Corridas", "Heatmap", "Relatório", "Exportar")
 
     Column(
         modifier = Modifier
@@ -89,8 +89,8 @@ fun AiTab(prefsManager: PrefsManager, database: AppDatabase) {
                     rideHistoryDao = rideHistoryDao
                 )
             }
-            4 -> HistoryTab(prefsManager = prefsManager, database = database)
-            5 -> HeatmapTab(database = database)
+            4 -> HistoryTab(database = database)
+            5 -> HeatmapTab()
             6 -> ReportTab()
             7 -> ExportTab()
         }
