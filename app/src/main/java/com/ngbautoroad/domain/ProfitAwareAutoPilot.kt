@@ -65,8 +65,12 @@ class ProfitAwareAutoPilot(private val context: Context) {
             val monthStartMs = cal.timeInMillis
             val nowMs = System.currentTimeMillis()
 
-            // Ganhos do mês
-            val monthEarnings = earningDao.getTotalEarningsSync(monthStartMs, nowMs) ?: 0.0
+            // Ganhos do mês e custos variáveis
+            val grossEarnings = earningDao.getTotalEarningsSync(monthStartMs, nowMs) ?: 0.0
+            val totalKm = earningDao.getTotalDistanceWithPickupSync(monthStartMs, nowMs) ?: 0.0
+            val vehicle = finDb.vehicleProfileDao().getActiveVehicleSync()
+            val costPerKm = vehicle?.costPerKm ?: 0.30
+            val monthEarnings = grossEarnings - (totalKm * costPerKm)
 
             // Custos fixos mensais (rateados)
             val monthlyFixed = individualExpenseDao.getTotalMonthlyRatedSync() ?: 0.0
