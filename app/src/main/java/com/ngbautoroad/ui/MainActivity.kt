@@ -60,6 +60,8 @@ class MainActivity : ComponentActivity() {
 
         // Agendar worker de despesas recorrentes (1x/dia)
         com.ngbautoroad.service.RecurringExpenseWorker.schedule(applicationContext)
+        
+        handleIntent(intent)
 
         // Check overlay permission
         if (!Settings.canDrawOverlays(this)) {
@@ -132,6 +134,19 @@ class MainActivity : ComponentActivity() {
         super.onPause()
         com.ngbautoroad.service.BubbleService.setAppInForeground(false)
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra("from_bubble", false) == true) {
+            // Se veio da bolha, forçar a aba Dashboard (índice 2)
+            NavigationManager.selectedTab.value = 2
+        }
+    }
 }
 
 // v6.3.4: Nova ordem de abas — CRITÉRIOS | IA | INICIO | FINANÇAS | CONFIG
@@ -144,10 +159,14 @@ enum class TabItem(val title: String, val icon: ImageVector) {
     SETTINGS("Config", Icons.Default.Settings)
 }
 
+object NavigationManager {
+    val selectedTab = kotlinx.coroutines.flow.MutableStateFlow(2)
+}
+
 @Composable
 fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
     // v6.3.0: App sempre inicia na aba INICIO (índice 2 = centro)
-    var selectedTab by remember { mutableStateOf(2) }
+    val selectedTab by NavigationManager.selectedTab.collectAsState()
     val tabs = TabItem.entries.toTypedArray()
 
     // v6.9.7: Setup Wizard (primeiro uso)
@@ -157,7 +176,6 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
     // Com initial=false, o wizard abre imediatamente e fecha quando DataStore confirmar.
     val setupWizardCompleted by prefsManager.setupWizardCompletedFlow.collectAsState(initial = false)
     var showSetupWizard by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(setupWizardCompleted) {
         if (!setupWizardCompleted) {
@@ -211,7 +229,7 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
                         icon = { Icon(tab.icon, contentDescription = tab.title) },
                         label = { Text(tab.title) },
                         selected = selectedTab == index,
-                        onClick = { selectedTab = index },
+                        onClick = { NavigationManager.selectedTab.value = index },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
@@ -229,13 +247,14 @@ fun MainScreen(prefsManager: PrefsManager, database: AppDatabase) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            val ctx = LocalContext.current
-            when (selectedTab) {
-                0 -> CriteriaTab(prefsManager = prefsManager)
-                1 -> AiTab(prefsManager = prefsManager, database = database)
-                2 -> DashboardTab(prefsManager = prefsManager, database = database)
-                3 -> FinanceTab(prefsManager = prefsManager, database = database)
-                4 -> SettingsTab(prefsManager = prefsManager, database = database)
+            androidx.compose.animation.Crossfade(targetState = selectedTab, label = "Tab Fade") { tab ->
+                when (tab) {
+                    0 -> CriteriaTab(prefsManager = prefsManager)
+                    1 -> AiTab(database = database)
+                    2 -> DashboardTab(prefsManager = prefsManager, database = database)
+                    3 -> FinanceTab(prefsManager = prefsManager)
+                    4 -> SettingsTab(prefsManager = prefsManager, database = database)
+                }
             }
         }
     }
