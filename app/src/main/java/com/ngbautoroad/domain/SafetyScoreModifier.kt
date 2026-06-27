@@ -188,7 +188,14 @@ object SafetyScoreModifierStatic {
         if (isLowRating && isNight) penalty += 8.0 // Cascata: rating baixo + noite
 
         // Fator bairro perigoso + noite
-        val isInBlockedArea = blockedNeighborhoods.isNotEmpty() // Simplificado
+        val pickup = pickupNeighborhood.lowercase().trim()
+        val dropoff = dropoffNeighborhood.lowercase().trim()
+        val isInBlockedArea = blockedNeighborhoods.any {
+            val blockedName = (it as? com.ngbautoroad.data.model.BlockedNeighborhood)?.name?.lowercase()?.trim() ?: it.toString().lowercase().trim()
+            if (blockedName.isNotEmpty()) {
+                pickup.contains(blockedName) || dropoff.contains(blockedName)
+            } else false
+        }
         if (isInBlockedArea && isNight && isLowRating) penalty += 10.0 // Triplo fator
 
         return penalty.coerceAtMost(25.0) // Cap para não duplicar com penalidade de bairro
