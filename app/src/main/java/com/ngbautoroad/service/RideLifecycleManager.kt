@@ -77,7 +77,7 @@ class RideLifecycleManager(private val context: Context) {
         private val UBER_COMPLETED_TEXTS = listOf(
             "viagem concluída", "trip completed", "viaje completado",
             "corrida finalizada", "avalie o passageiro", "rate rider",
-            "como foi a viagem", "how was the trip"
+            "como foi a viagem", "how was the trip", "avaliar usuário", "avaliar o usuário"
         )
         private val UBER_CANCELLED_TEXTS = listOf(
             "viagem cancelada", "trip cancelled", "corrida cancelada",
@@ -187,10 +187,9 @@ class RideLifecycleManager(private val context: Context) {
      * - Conclusão ("Viagem concluída")
      * - Cancelamento ("Cancelada")
      *
-     * @param texts Lista de textos coletados da árvore de acessibilidade
-     * @param packageName Package do app que gerou o evento
+     * @param texts Lista de textos visíveis na tela
      */
-    fun onTextsDetected(texts: List<String>, packageName: String) {
+    fun onTextsDetected(texts: List<String>) {
         if (currentPhase == RidePhase.IDLE) return
         if (currentRide == null) return
 
@@ -244,7 +243,7 @@ class RideLifecycleManager(private val context: Context) {
 
         // v6.6.0: Iniciar rastreamento GPS da corrida
         try {
-            val gps = GpsTrackingEngine(context)
+            val gps = GpsTrackingEngine.getInstance(context)
             gps.startRide()
             Log.d(TAG, "│  📍 GPS: Rastreamento da corrida iniciado")
         } catch (e: Exception) {
@@ -262,6 +261,14 @@ class RideLifecycleManager(private val context: Context) {
                 val db = AppDatabase.getInstance(context)
                 db.rideHistoryDao().updateStatusById(currentRideDbId, "ACCEPTED")
                 Log.d(TAG, "│  DB: Status atualizado para ACCEPTED (id=$currentRideDbId)")
+                
+                // Salvar corrida ativa no Dashboard
+                currentRide?.let {
+                    // Need to cast to the exact serializable type or use the imported extension function
+                    // Let's use the serializer explicitly to avoid import issues
+                    val json = kotlinx.serialization.json.Json.encodeToString(com.ngbautoroad.data.model.RideData.serializer(), it)
+                    PrefsManager(context).saveActiveRideJson(json)
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "│  ✖ Erro ao atualizar status ACCEPTED: ${e.message}")
             }
@@ -295,11 +302,15 @@ class RideLifecycleManager(private val context: Context) {
         } catch (e: Exception) { /* non-critical */ }
 
         // v6.3.5: Atualizar status via query direta (sem carregar tabela inteira)
+        // Atualizar DB (v6.3.5 usava insertOrUpdate, agora fazemos updateStatus)
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
                 db.rideHistoryDao().updateStatusById(currentRideDbId, "REFUSED")
                 Log.d(TAG, "│  DB: Status atualizado para REFUSED (id=$currentRideDbId)")
+                
+                // Limpar corrida ativa do Dashboard
+                PrefsManager(context).saveActiveRideJson(null)
             } catch (e: Exception) {
                 Log.e(TAG, "│  ✖ Erro ao atualizar status REFUSED: ${e.message}")
             }
@@ -323,7 +334,7 @@ class RideLifecycleManager(private val context: Context) {
         // v6.6.0: Encerrar rastreamento GPS e validar KM
         var gpsRideKm = 0.0
         try {
-            val gps = GpsTrackingEngine(context)
+            val gps = GpsTrackingEngine.getInstance(context)
             gpsRideKm = gps.endRide()
             Log.d(TAG, "│  📍 GPS: Corrida encerrada. KM GPS: ${String.format("%.2f", gpsRideKm)}")
         } catch (e: Exception) {
@@ -336,7 +347,7 @@ class RideLifecycleManager(private val context: Context) {
         // v6.6.0: Validar KM da Uber vs GPS
         if (gpsRideKm > 0.5) { // Só validar se GPS mediu algo significativo
             try {
-                val gps = GpsTrackingEngine(context)
+                val gps = GpsTrackingEngine.getInstance(context)
                 val validation = gps.validateRideKm(ride.dropoffDistance)
                 if (validation.isUberUnderreporting) {
                     Log.w(TAG, "│  ⚠️ KM DIVERGENTE: GPS=${String.format("%.1f", validation.gpsDistanceKm)}km vs Uber=${String.format("%.1f", validation.uberReportedKm)}km (${String.format("%.1f", validation.differencePercent)}% a menos)")
@@ -345,18 +356,22 @@ class RideLifecycleManager(private val context: Context) {
         }
 
         // v6.3.5: Atualizar status + valor via query direta (sem carregar tabela inteira)
+        val rideId = currentRideDbId
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
-                db.rideHistoryDao().updateStatusAndValueById(currentRideDbId, "COMPLETED", actualValue)
-                Log.d(TAG, "│  DB: Status atualizado para COMPLETED (id=$currentRideDbId, valor=R$$actualValue)")
+                db.rideHistoryDao().updateStatusAndValueById(rideId, "COMPLETED", actualValue)
+                Log.d(TAG, "│  DB: Status atualizado para COMPLETED (id=$rideId, valor=R$$actualValue)")
+                
+                // Limpar corrida ativa do Dashboard
+                PrefsManager(context).saveActiveRideJson(null)
 
                 // ═══ REGISTRAR GANHO — SÓ AQUI! ═══
                 // v6.1.1: Respeitar toggle de auto-import
                 val prefs = PrefsManager(context)
                 val autoImportEnabled = prefs.autoImportEarningsFlow.first()
                 if (autoImportEnabled) {
-                    registerEarning(ride, actualValue)
+                    registerEarning(ride, actualValue, rideId)
                 } else {
                     Log.d(TAG, "│  ⊜ Auto-import desativado — ganho NÃO registrado")
                 }
@@ -390,18 +405,22 @@ class RideLifecycleManager(private val context: Context) {
         transitionTo(RidePhase.CANCELLED)
 
         // v6.3.5: Atualizar status via query direta (sem carregar tabela inteira)
+        val rideId = currentRideDbId
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
-                db.rideHistoryDao().updateStatusById(currentRideDbId, "CANCELLED")
-                Log.d(TAG, "│  DB: Status atualizado para CANCELLED (id=$currentRideDbId)")
+                db.rideHistoryDao().updateStatusById(rideId, "CANCELLED")
+                Log.d(TAG, "│  DB: Status atualizado para CANCELLED (id=$rideId)")
+                
+                // Limpar corrida ativa do Dashboard
+                PrefsManager(context).saveActiveRideJson(null)
 
                 // Se já havia ganho registrado (caso raro), reverter
                 val financeDb = FinanceDatabase.getInstance(context)
-                val existingEarning = financeDb.earningDao().countAutoImportedByRideId(currentRideDbId)
+                val existingEarning = financeDb.earningDao().countAutoImportedByRideId(rideId)
                 if (existingEarning > 0) {
-                    financeDb.earningDao().deleteByRideHistoryId(currentRideDbId)
-                    Log.d(TAG, "│  DB: Ganho revertido para corrida cancelada (id=$currentRideDbId)")
+                    financeDb.earningDao().deleteByRideHistoryId(rideId)
+                    Log.d(TAG, "│  DB: Ganho revertido para corrida cancelada (id=$rideId)")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "│  ✖ Erro ao cancelar corrida: ${e.message}")
@@ -468,14 +487,14 @@ class RideLifecycleManager(private val context: Context) {
      * SÓ é chamado quando corrida é COMPLETED.
      * Verifica duplicatas antes de inserir.
      */
-    private suspend fun registerEarning(ride: RideData, actualValue: Double) {
+    private suspend fun registerEarning(ride: RideData, actualValue: Double, rideId: Long) {
         try {
             val financeDb = FinanceDatabase.getInstance(context)
 
             // Verificar se já foi importado (evitar duplicata)
-            val alreadyImported = financeDb.earningDao().countAutoImportedByRideId(currentRideDbId)
+            val alreadyImported = financeDb.earningDao().countAutoImportedByRideId(rideId)
             if (alreadyImported > 0) {
-                Log.d(TAG, "│  ⊊ Ganho já registrado para id=$currentRideDbId — ignorando duplicata")
+                Log.d(TAG, "│  ⊊ Ganho já registrado para id=$rideId — ignorando duplicata")
                 return
             }
 
@@ -488,7 +507,7 @@ class RideLifecycleManager(private val context: Context) {
                 description = "Auto-import (lifecycle)",
                 period = "DIA",
                 isAutoImported = true,
-                rideHistoryId = currentRideDbId,
+                rideHistoryId = rideId,
                 score = currentRideScore,
                 pickupDistance = ride.pickupDistance // v6.6.0: KM morto
             )
@@ -709,6 +728,8 @@ class RideLifecycleManager(private val context: Context) {
      * Retorna ID da corrida atual no banco
      */
     fun getCurrentRideDbId(): Long = currentRideDbId
+
+    fun getCurrentRideScore(): Double = currentRideScore
 
     /**
      * Cleanup ao destruir
