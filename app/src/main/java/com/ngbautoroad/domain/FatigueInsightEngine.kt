@@ -204,7 +204,8 @@ class FatigueInsightEngine(private val context: Context) {
         // Agrupar ganhos por faixa horária
         val hourlyEarnings = mutableMapOf<Int, MutableList<Double>>()
         shifts.forEach { shift ->
-            val startHour = ((shift.startTimeMs % 86_400_000L) / 3_600_000L).toInt()
+            val cal = java.util.Calendar.getInstance().apply { timeInMillis = shift.startTimeMs }
+            val startHour = cal.get(java.util.Calendar.HOUR_OF_DAY)
             val endHour = startHour + shift.durationHours.toInt()
             val perHour = shift.totalEarned / shift.durationHours.coerceAtLeast(1.0)
             for (h in startHour until endHour.coerceAtMost(24)) {
@@ -380,7 +381,7 @@ class FatigueInsightEngine(private val context: Context) {
     /**
      * Carrega histórico de turnos do banco de dados.
      */
-    private fun loadShiftHistory(): List<ShiftData> {
+    private suspend fun loadShiftHistory(): List<ShiftData> {
         return try {
             val db = FinanceDatabase.getInstance(context)
             val cursor = db.openHelper.readableDatabase.query(
@@ -405,7 +406,7 @@ class FatigueInsightEngine(private val context: Context) {
                     totalEarned = earned,
                     ridesCount = rides,
                     dayOfWeek = dayOfWeek,
-                    hourlyBreakdown = estimateHourlyBreakdown(earned, durationMin / 60.0)
+                    hourlyBreakdown = getRealHourlyBreakdown(startTime, endTime, durationMin / 60.0)
                 ))
             }
             cursor.close()
@@ -416,25 +417,24 @@ class FatigueInsightEngine(private val context: Context) {
     }
 
     /**
-     * Estima a distribuição de ganhos por hora do turno.
-     * Usa curva de fadiga: primeiras horas rendem mais, últimas rendem menos.
-     * Baseado em pesquisas de produtividade de motoristas de app.
+     * Calcula a distribuição real de ganhos por hora do turno usando RideHistoryDao.
      */
-    private fun estimateHourlyBreakdown(totalEarned: Double, durationHours: Double): List<Double> {
-        if (durationHours < 2) return listOf(totalEarned)
-
+    private suspend fun getRealHourlyBreakdown(startTime: Long, endTime: Long, durationHours: Double): List<Double> {
+        if (durationHours < 1.0) return listOf(0.0)
         val hours = durationHours.toInt()
-        // Curva de fadiga: 100% na 1ª hora, decai 5% por hora após a 4ª
-        val weights = (0 until hours).map { h ->
-            when {
-                h < 4 -> 1.0
-                h < 8 -> 1.0 - (h - 4) * 0.08  // Queda suave: 92%, 84%, 76%, 68%
-                else -> 0.6 - (h - 8) * 0.05     // Queda forte: 55%, 50%, 45%...
-            }.coerceAtLeast(0.3)
+        val rides = try {
+            com.ngbautoroad.data.db.AppDatabase.getInstance(context).rideHistoryDao().getRidesByPeriodSync(startTime, endTime).filter { it.status == "COMPLETED" }
+        } catch (e: Exception) {
+            emptyList()
         }
+        if (rides.isEmpty()) return List(hours) { 0.0 }
 
-        val totalWeight = weights.sum()
-        return weights.map { (it / totalWeight) * totalEarned / 1.0 } // R$/h estimado por hora
+        val breakdown = MutableList(hours) { 0.0 }
+        rides.forEach { ride ->
+            val hourIndex = ((ride.timestamp - startTime) / 3600000L).toInt().coerceIn(0, hours - 1)
+            breakdown[hourIndex] += ride.rideValue
+        }
+        return breakdown
     }
 
     /**
