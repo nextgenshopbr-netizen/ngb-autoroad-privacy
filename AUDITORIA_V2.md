@@ -124,3 +124,27 @@ As falhas estão classificadas de acordo com as seguintes prioridades:
 - **Módulo afetado:** [OverlayService.kt](file:///c:/Users/ovand/ngb-autoroad-privacy/app/src/main/java/com/ngbautoroad/service/OverlayService.kt#L171)
 - **Problema:** No manipulador global de exceções não capturadas do overlay, o `TelemetryLogger` é chamado passando `applicationContext`. Isso é seguro, mas em sub-atividades do simulador é comum passar o contexto da `Activity`, o que pode causar vazamentos de referência curtos se a atividade for destruída durante o processo de escrita assíncrona do log.
 - **Solução proposta:** Forçar o uso de `context.applicationContext` em todas as chamadas de inicialização do logger.
+
+---
+
+## 📊 FASE 2: SIMULAÇÕES E EDGE CASES
+
+Após a execução do script de simulação `scripts/simulate_1_year_audit.py` (simulando 1 ano de trabalho com 4.000 corridas e injeção de anomalias), os seguintes comportamentos e inconsistências foram identificados no cruzamento de dados:
+
+### 1. Propagação de NaN (Not a Number) no FinanceDRE
+- **Módulo afetado:** `FinanceDRE.kt` / Cálculos de Médias
+- **Problema:** Quando os fatores de calibração ou listas de dados estão vazios, a chamada de `.average()` nativa do Kotlin (ou divisão por 0 em listas vazias) retorna `NaN`. Este valor, se multiplicado por fatores como `150.0`, resulta em `NaN`.
+- **Impacto:** **CRÍTICO**. Se esse valor for persistido, ele corrompe os dados daquele dia no banco de dados local (Room) e causa falhas de exibição no Dashboard.
+- **Solução:** Adicionar proteções e fallbacks para garantir que agregações em listas vazias retornem `0.0` ao invés de `NaN`.
+
+### 2. Margem de Contribuição Distorcida por Faturamento Negativo ou Zerado
+- **Módulo afetado:** `FinanceDRE.kt`
+- **Problema:** A injeção de corridas com receita zerada ou valores negativos (ex: estornos, taxas maiores que ganhos) gera uma margem de contribuição (R$) válida, porém o cálculo percentual da margem resulta em zero ou valores distorcidos.
+- **Impacto:** **ALTO**. Pode distorcer as métricas do motorista no Dashboard de rentabilidade.
+- **Solução:** Validar se a receita bruta é `<= 0` antes de calcular a margem percentual; caso seja, predefinir a margem percentual para `0.0` controladamente.
+
+### 3. Faltas de Validação para Corridas Incomuns (Distância e Duração) no Score
+- **Módulo afetado:** `RideScorer.kt`
+- **Problema:** Corridas com duração zero ou distâncias anômalas (ex: 15.000 km devido a falhas de GPS) podem provocar comportamento errático. Além disso, se uma corrida anômala passar pelo motor de *Score* com distância 0 e não houver um `if` apropriado (caso a checagem falhe ou falte), uma divisão por zero pode ocorrer gerando `Infinity`.
+- **Impacto:** **MÉDIO**. Afeta a precisão da avaliação das corridas da IA.
+- **Solução:** Adicionar um filtro robusto para remover ou isolar corridas com distância ou duração irreais (como `dropoffDistance == 0`) antes do cálculo do Score.
