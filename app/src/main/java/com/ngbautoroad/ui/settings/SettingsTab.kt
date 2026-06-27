@@ -20,6 +20,7 @@ import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -46,7 +47,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.ngbautoroad.ui.theme.*
 import com.ngbautoroad.data.backup.BackupManager
-import com.ngbautoroad.ui.card.CardTab
+import com.ngbautoroad.data.model.*
+
 import kotlinx.coroutines.launch
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -59,9 +61,9 @@ import androidx.lifecycle.LifecycleEventObserver
 fun SettingsTab(prefsManager: PrefsManager, database: AppDatabase) {
     val context = LocalContext.current
 
-    // Sub-abas: APP | SISTEMA | CARDS | ADICIONAIS
+    // Sub-abas: APP | SISTEMA | ADICIONAIS
     var selectedSubTab by remember { mutableIntStateOf(0) }
-    val subTabs = listOf("App", "Sistema", "Cards", "Mais")
+    val subTabs = listOf("App", "Sistema", "Mais")
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -84,8 +86,7 @@ fun SettingsTab(prefsManager: PrefsManager, database: AppDatabase) {
         when (selectedSubTab) {
             0 -> SettingsAppContent(prefsManager = prefsManager)
             1 -> SettingsSystemContent(prefsManager = prefsManager)
-            2 -> CardTab(prefsManager = prefsManager)
-            3 -> SettingsAdicionaisContent(prefsManager = prefsManager, database = database)
+            2 -> SettingsAdicionaisContent(prefsManager = prefsManager, database = database)
         }
     }
     // v6.3.0: Tutorial guiado no primeiro acesso
@@ -106,6 +107,7 @@ private fun SettingsAppContent(prefsManager: PrefsManager) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val keepScreenOn by prefsManager.keepScreenOnFlow.collectAsState(initial = false)
+    val aiVoiceEnabled by prefsManager.aiVoiceEnabledFlow.collectAsState(initial = false)
 
     Column(
         modifier = Modifier
@@ -189,33 +191,76 @@ private fun SettingsAppContent(prefsManager: PrefsManager) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.Brightness7,
-                        contentDescription = null,
-                        tint = if (keepScreenOn) ScoreYellow else MaterialTheme.colorScheme.onSurfaceVariant
+                Icon(
+                    Icons.Default.Brightness7,
+                    contentDescription = null,
+                    tint = if (keepScreenOn) ScoreYellow else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                ) {
+                    Text(
+                        "Manter Tela Ligada",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                        Text(
-                            "Manter Tela Ligada",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            if (keepScreenOn) "Tela nao apagara automaticamente" else "Comportamento padrao do sistema",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        if (keepScreenOn) "Tela nao apagara automaticamente" else "Comportamento padrao do sistema",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Switch(
                     checked = keepScreenOn,
                     onCheckedChange = { enabled ->
                         scope.launch { prefsManager.setKeepScreenOn(enabled) }
+                    }
+                )
+            }
+        }
+
+        // === ANÚNCIOS POR VOZ (IA) ===
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.RecordVoiceOver,
+                    contentDescription = null,
+                    tint = if (aiVoiceEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                ) {
+                    Text(
+                        "Anúncios por Voz (IA)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        if (aiVoiceEnabled) "A Inteligência Viva falará os insights em voz alta" else "A IA usará apenas os alertas visuais no Card",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = aiVoiceEnabled,
+                    onCheckedChange = { enabled ->
+                        scope.launch { prefsManager.setAiVoiceEnabled(enabled) }
                     }
                 )
             }
@@ -470,6 +515,16 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
     val overlayWidth by prefsManager.overlayWidthFlow.collectAsState(initial = 320)
     val overlayFontScale by prefsManager.overlayFontScaleFlow.collectAsState(initial = 1.0f)
 
+    // Variáveis de Customização do Card
+    val overlayCardType by prefsManager.overlayCardTypeFlow.collectAsState(initial = "STANDARD")
+    val showScore by prefsManager.overlayShowScoreFlow.collectAsState(initial = true)
+    val showValuePerKm by prefsManager.overlayShowValuePerKmFlow.collectAsState(initial = true)
+    val showValuePerHour by prefsManager.overlayShowValuePerHourFlow.collectAsState(initial = true)
+    val showRideValue by prefsManager.overlayShowRideValueFlow.collectAsState(initial = true)
+    val showDuration by prefsManager.overlayShowDurationFlow.collectAsState(initial = true)
+    val showTotalKm by prefsManager.overlayShowTotalKmFlow.collectAsState(initial = true)
+    val showNeighborhoods by prefsManager.overlayShowNeighborhoodsFlow.collectAsState(initial = true)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -490,28 +545,29 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Shield,
-                            contentDescription = null,
-                            tint = if (protectionEnabled) ScoreGreen else MaterialTheme.colorScheme.onSurfaceVariant
+                    Icon(
+                        Icons.Default.Shield,
+                        contentDescription = null,
+                        tint = if (protectionEnabled) ScoreGreen else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    ) {
+                        Text(
+                            text = "Protecao",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "Protecao",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = if (protectionEnabled) "Ativa - modo furtivo" else "Desativada",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (protectionEnabled) ScoreGreen else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Text(
+                            text = if (protectionEnabled) "Ativa - modo furtivo" else "Desativada",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (protectionEnabled) ScoreGreen else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                     Switch(
                         checked = protectionEnabled,
@@ -553,50 +609,18 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Overlay Service Toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text("Overlay", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            "Exibir card sobre apps",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = serviceEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled && !Settings.canDrawOverlays(context)) {
-                                Toast.makeText(context, "Permissao de overlay necessaria", Toast.LENGTH_LONG).show()
-                                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
-                                context.startActivity(intent)
-                            } else {
-                                scope.launch {
-                                    prefsManager.setServiceEnabled(enabled)
-                                    if (enabled) {
-                                        OverlayService.start(context)
-                                    } else {
-                                        OverlayService.stop(context)
-                                    }
-                                }
-                            }
-                        }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
+                // Overlay (Redundante removido - inicialização automática pelo RideAccessibilityService)
 
                 // OCR Toggle
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    ) {
                         Text("OCR (ML Kit)", style = MaterialTheme.typography.bodyMedium)
                         Text(
                             "Leitura de tela via captura",
@@ -628,40 +652,124 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
             }
         }
 
-        // === OVERLAY - LAYOUT (Sprint 2) ===
+        // === TESTES E FERRAMENTAS ===
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = "Overlay - Layout",
+                    text = "Testes e Ferramentas",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                val showScore by prefsManager.overlayShowScoreFlow.collectAsState(initial = true)
-                val showMeta by prefsManager.overlayShowMetaFlow.collectAsState(initial = true)
-                val showAccessibility by prefsManager.overlayShowAccessibilityFlow.collectAsState(initial = true)
-                val showClose by prefsManager.overlayShowCloseFlow.collectAsState(initial = true)
+                Button(
+                    onClick = {
+                        if (!Settings.canDrawOverlays(context)) {
+                            Toast.makeText(context, "Permissao de overlay necessaria", Toast.LENGTH_LONG).show()
+                            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                            context.startActivity(intent)
+                            return@Button
+                        }
+                        
+                        val simRide = RideData(
+                            platform = Platform.UBER,
+                            rideType = RideType.UBER_X,
+                            rideValue = 28.50,
+                            rideDuration = 12.0,
+                            pickupDistance = 1.5,
+                            dropoffDistance = 7.0,
+                            pickupNeighborhood = "Centro",
+                            dropoffNeighborhood = "Bairro Alto",
+                            passengerRating = 4.95,
+                            isSimulation = true,
+                            timestamp = System.currentTimeMillis()
+                        )
+                        OverlayService.start(context, simRide)
+                        Toast.makeText(context, "Simulando chamada...", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Simular")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Simular Corrida")
+                }
+            }
+        }
 
-                @Composable
-                fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(label, style = MaterialTheme.typography.bodyMedium)
-                        Switch(checked = checked, onCheckedChange = onCheckedChange)
-                    }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // === CUSTOMIZACAO COMERCIAL DO CARD ===
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Personalizacao do Card",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Tipo de Card
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = overlayCardType == "STANDARD",
+                        onClick = { scope.launch { prefsManager.setOverlayCardType("STANDARD") } },
+                        label = { Text("Padrão", fontSize = 12.sp) }
+                    )
+                    FilterChip(
+                        selected = overlayCardType == "CUSTOMIZABLE",
+                        onClick = { scope.launch { prefsManager.setOverlayCardType("CUSTOMIZABLE") } },
+                        label = { Text("Customizável", fontSize = 12.sp) }
+                    )
+                    FilterChip(
+                        selected = overlayCardType == "AI_DRIVEN",
+                        onClick = { scope.launch { prefsManager.setOverlayCardType("AI_DRIVEN") } },
+                        label = { Text("✨ IA Smart", fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                    )
                 }
 
-                ToggleRow("Exibir Score", showScore) { scope.launch { prefsManager.setOverlayShowScore(it) } }
-                ToggleRow("Exibir Meta", showMeta) { scope.launch { prefsManager.setOverlayShowMeta(it) } }
-                ToggleRow("Exibir Botão Acessibilidade", showAccessibility) { scope.launch { prefsManager.setOverlayShowAccessibility(it) } }
-                ToggleRow("Exibir Botão Fechar", showClose) { scope.launch { prefsManager.setOverlayShowClose(it) } }
+                if (overlayCardType == "CUSTOMIZABLE") {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("Escolha quais dados exibir:", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    val toggleItems = listOf(
+                        "Score da Corrida" to Pair(showScore) { v: Boolean -> scope.launch { prefsManager.setOverlayShowScore(v) } },
+                        "Valor (R$)" to Pair(showRideValue) { v: Boolean -> scope.launch { prefsManager.setOverlayShowRideValue(v) } },
+                        "Ganhos R$/km" to Pair(showValuePerKm) { v: Boolean -> scope.launch { prefsManager.setOverlayShowValuePerKm(v) } },
+                        "Ganhos R$/h" to Pair(showValuePerHour) { v: Boolean -> scope.launch { prefsManager.setOverlayShowValuePerHour(v) } },
+                        "Tempo (min)" to Pair(showDuration) { v: Boolean -> scope.launch { prefsManager.setOverlayShowDuration(v) } },
+                        "KM Total" to Pair(showTotalKm) { v: Boolean -> scope.launch { prefsManager.setOverlayShowTotalKm(v) } },
+                        "Bairros (Origem -> Destino)" to Pair(showNeighborhoods) { v: Boolean -> scope.launch { prefsManager.setOverlayShowNeighborhoods(v) } }
+                    )
+                    
+                    toggleItems.forEach { (label, data) ->
+                        val (checked, onCheckedChange) = data
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable { onCheckedChange(!checked) }.padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(checked = checked, onCheckedChange = { onCheckedChange(it) })
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(label, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                } else {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "O modo Padrão exibe um design moderno inspirado na Gigu com fundo translúcido (Glassmorphism) e borda inteligente.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 
@@ -752,10 +860,15 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Ativar bubble", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "Ativar bubble",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    )
                     Switch(
                         checked = bubbleEnabled,
                         onCheckedChange = { enabled ->
@@ -783,12 +896,16 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 val androidAutoEnabled by prefsManager.androidAutoEnabledFlow.collectAsState(initial = false)
+                val androidAutoAutoDetect by prefsManager.androidAutoAutoDetectFlow.collectAsState(initial = false)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    ) {
                         Text("Android Auto", style = MaterialTheme.typography.bodyMedium)
                         Text(
                             "Exibir overlay no Android Auto",
@@ -800,6 +917,32 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                         checked = androidAutoEnabled,
                         onCheckedChange = { enabled ->
                             scope.launch { prefsManager.setAndroidAutoEnabled(enabled) }
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    ) {
+                        Text("Modo Automático", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Ativar notificações apenas quando conectado ao Android Auto",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = androidAutoAutoDetect,
+                        onCheckedChange = { enabled ->
+                            scope.launch { prefsManager.setAndroidAutoAutoDetect(enabled) }
                         }
                     )
                 }
