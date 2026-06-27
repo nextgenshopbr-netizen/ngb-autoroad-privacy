@@ -190,7 +190,12 @@ class RideNotificationListener : NotificationListenerService() {
                     // v6.2.0: Canal primário ativo e AccessibilityService indisponível
                     // (bloqueado pelo AAPM ou não concedido)
                     Log.i(TAG, "├─ ★ CANAL PRIMÁRIO: AccessibilityService indisponível, processando via NotificationListener")
-                    OverlayService.onRideDetected?.invoke(rideData)
+                    if (!OverlayService.isRunning()) {
+                        Log.w(TAG, "│  ⚠️ OverlayService não está rodando. Auto-iniciando...")
+                        OverlayService.start(this, rideData)
+                    } else {
+                        OverlayService.onRideDetected?.invoke(rideData)
+                    }
                 }
                 isPrimaryChannel -> {
                     // v6.2.0: Canal primário ativo mas AccessibilityService também está ativo
@@ -199,8 +204,17 @@ class RideNotificationListener : NotificationListenerService() {
                     Log.d(TAG, "├─ Canal primário ativo mas AS também disponível: ignorando (AS tem prioridade)")
                 }
                 else -> {
-                    // Ghost Mode inativo e canal secundário — enviar normalmente para overlay
-                    OverlayService.onRideDetected?.invoke(rideData)
+                    if (accessibilityAvailable) {
+                        Log.d(TAG, "├─ AccessibilityService ativo e Ghost Mode OFF: ignorando notificação (AS tem prioridade)")
+                    } else {
+                        // Ghost Mode inativo e canal secundário — enviar normalmente para overlay
+                        if (!OverlayService.isRunning()) {
+                            Log.w(TAG, "│  ⚠️ OverlayService não está rodando. Auto-iniciando...")
+                            OverlayService.start(this, rideData)
+                        } else {
+                            OverlayService.onRideDetected?.invoke(rideData)
+                        }
+                    }
                 }
             }
 
