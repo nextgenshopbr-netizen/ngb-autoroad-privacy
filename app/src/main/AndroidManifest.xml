@@ -98,7 +98,7 @@
         <service
             android:name=".service.OverlayService"
             android:exported="false"
-            android:foregroundServiceType="specialUse" />
+            android:foregroundServiceType="specialUse|location" />
 
         <!-- OCR Capture Service -->
         <service
@@ -151,6 +151,44 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+
+
+        <!-- v6.9.8: FileProvider para exportação de telemetria, logs e critérios -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- v6.9.15: Serviço do Android Auto (CarAppService) -->
+        <service
+            android:name=".service.NgbCarAppService"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="androidx.car.app.CarAppService" />
+                <!-- NAVIGATION: categoria correta para app de motorista/assistência de condução -->
+                <category android:name="androidx.car.app.category.NAVIGATION" />
+            </intent-filter>
+            <!-- Obrigatório: Android Auto não exibe o app sem esta declaração -->
+            <meta-data
+                android:name="androidx.car.app.minCarApiLevel"
+                android:value="1" />
+        </service>
+
+        <!-- TestReceiver for simulation -->
+        <receiver
+            android:name=".service.TestReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.ngbautoroad.ACTION_SIMULATE_RIDE" />
             </intent-filter>
         </receiver>
     </application>
