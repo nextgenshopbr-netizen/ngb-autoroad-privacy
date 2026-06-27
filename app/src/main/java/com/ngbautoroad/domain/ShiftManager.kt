@@ -130,7 +130,9 @@ class ShiftManager(private val context: Context) {
             goalValue = goal,
             vehicleId = vehicleId
         )
-        saveState(s); return s
+        saveState(s)
+        GpsTrackingEngine.getInstance(context).startTracking()
+        return s
     }
 
     fun pauseShift(c: ShiftState): ShiftState = synchronized(lock) {
@@ -145,7 +147,10 @@ class ShiftManager(private val context: Context) {
     }
 
     fun endShift(): ShiftState = synchronized(lock) {
-        val e = ShiftState(); saveState(e); return e
+        val e = ShiftState()
+        saveState(e)
+        GpsTrackingEngine.getInstance(context).stopTracking()
+        return e
     }
 
     /**
