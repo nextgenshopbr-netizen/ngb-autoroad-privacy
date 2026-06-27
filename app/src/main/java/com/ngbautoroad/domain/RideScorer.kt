@@ -62,21 +62,22 @@ class RideScorer(
         // Fórmula: ride.rideValue / ride.dropoffDistance
         // Normalização: linear entre ScoringThresholds.minValuePerKm e maxValuePerKm
         if (weights.valuePerKm > 0 && ride.dropoffDistance > 0) {
-            val normalized = normalizeValuePerKm(ride.valuePerKm)
+            val safeValuePerKm = if (ride.dropoffDistance > 0) ride.rideValue / ride.dropoffDistance else 0.0
+            val normalized = normalizeValuePerKm(safeValuePerKm)
             criteriaScores["valuePerKm"] = CriteriaScore(
                 name = "Valor/KM",
-                rawValue = ride.valuePerKm,
+                rawValue = safeValuePerKm,
                 normalizedScore = normalized,
                 weight = weights.valuePerKm,
                 weightedScore = normalized * weights.valuePerKm / 100.0,
                 level = getLevel(normalized)
             )
             // Penalidade: se abaixo do mínimo desejado pelo motorista
-            if (driverThresholds.isValuePerKmActive() && ride.valuePerKm < driverThresholds.minValuePerKm) {
+            if (driverThresholds.isValuePerKmActive() && safeValuePerKm < driverThresholds.minValuePerKm) {
                 val penalty = weights.valuePerKm * 0.5
                 violations.add(ThresholdViolation(
                     criteriaName = "Valor/KM",
-                    currentValue = ride.valuePerKm,
+                    currentValue = safeValuePerKm,
                     minimumRequired = driverThresholds.minValuePerKm,
                     penaltyApplied = penalty
                 ))
@@ -88,20 +89,21 @@ class RideScorer(
         // Fórmula: ride.rideValue / (ride.rideDuration / 60)
         // Normalização: linear entre ScoringThresholds.minValuePerHour e maxValuePerHour
         if (weights.valuePerHour > 0 && ride.rideDuration > 0) {
-            val normalized = normalizeValuePerHour(ride.valuePerHour)
+            val safeValuePerHour = if (ride.rideDuration > 0) ride.rideValue / (ride.rideDuration / 60.0) else 0.0
+            val normalized = normalizeValuePerHour(safeValuePerHour)
             criteriaScores["valuePerHour"] = CriteriaScore(
                 name = "Valor/Hora",
-                rawValue = ride.valuePerHour,
+                rawValue = safeValuePerHour,
                 normalizedScore = normalized,
                 weight = weights.valuePerHour,
                 weightedScore = normalized * weights.valuePerHour / 100.0,
                 level = getLevel(normalized)
             )
-            if (driverThresholds.isValuePerHourActive() && ride.valuePerHour < driverThresholds.minValuePerHour) {
+            if (driverThresholds.isValuePerHourActive() && safeValuePerHour < driverThresholds.minValuePerHour) {
                 val penalty = weights.valuePerHour * 0.5
                 violations.add(ThresholdViolation(
                     criteriaName = "Valor/Hora",
-                    currentValue = ride.valuePerHour,
+                    currentValue = safeValuePerHour,
                     minimumRequired = driverThresholds.minValuePerHour,
                     penaltyApplied = penalty
                 ))
@@ -259,7 +261,8 @@ class RideScorer(
         // Fórmula: (rideValue / dropoffDistance) - costPerKm = lucro líquido por km
         // Normalização: 0 = prejuízo, 100 = lucro >= 2x o custo
         if (costPerKm > 0.0 && ride.dropoffDistance > 0) {
-            val profitPerKm = ride.valuePerKm - costPerKm
+            val safeValuePerKm = if (ride.dropoffDistance > 0) ride.rideValue / ride.dropoffDistance else 0.0
+            val profitPerKm = safeValuePerKm - costPerKm
             val maxProfit = costPerKm * 2.0 // Lucro excelente = 2x o custo
             val normalized = ((profitPerKm / maxProfit) * 100.0).coerceIn(0.0, 100.0)
             // Peso implícito: usa 10% do peso de valuePerKm (não altera soma de pesos do usuário)
@@ -321,7 +324,7 @@ class RideScorer(
             .filter { it.type == NeighborhoodType.DROPOFF && it.name.equals(ride.dropoffNeighborhood, ignoreCase = true) }
             .maxOfOrNull { it.penaltyWeight } ?: 0
 
-        totalScore -= (pickupPenalty + dropoffPenalty)
+        totalScore -= (pickupPenalty + dropoffPenalty).toDouble()
 
         // ====================================================================
         // v6.6.0: Modificador de Segurança Multi-Fator
