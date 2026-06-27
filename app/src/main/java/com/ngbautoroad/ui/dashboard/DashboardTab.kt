@@ -114,6 +114,25 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
         }
     }.collectAsState(initial = DashboardData())
 
+    // NGB Assistant AI State
+    var aiState by remember { mutableStateOf<com.ngbautoroad.ai.AiBrainRepository.BrainState?>(null) }
+    LaunchedEffect(Unit) {
+        try {
+            val dbF = com.ngbautoroad.data.db.FinanceDatabase.getInstance(context)
+            val fatigue = com.ngbautoroad.domain.FatigueInsightEngine(context)
+            val repo = com.ngbautoroad.ai.AiBrainRepository(dbF, fatigue)
+            aiState = repo.getCognitiveStateNow()
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    // Active Ride for Dashboard
+    val activeRideJson by prefsManager.activeRideJsonFlow.collectAsState(initial = null)
+    val activeRide = remember(activeRideJson) {
+        if (activeRideJson.isNullOrBlank()) null else {
+            try { kotlinx.serialization.json.Json.decodeFromString(com.ngbautoroad.data.model.RideData.serializer(), activeRideJson!!) } catch(e:Exception) { null }
+        }
+    }
+
     val scrollState = rememberScrollState()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -246,10 +265,52 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
             Spacer(modifier = Modifier.height(8.dp))
         }
 
+        // === ASSISTENTE NGB (IA) ===
+        if (aiState != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.AutoAwesome,
+                        contentDescription = "IA",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            "Assistente NGB",
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            aiState!!.suggestion,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+            }
+        }
+
         // v6.1.1: Seletor rápido de perfil antes de iniciar turno
         ProfileQuickSelector(prefsManager, scope)
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        // v6.9.17: Corrida Ativa (Pós-Aceite)
+        if (activeRide != null) {
+            ActiveRideDashboardCard(activeRide)
+            Spacer(modifier = Modifier.height(8.dp))
+        }
 
         // v5.2.0: Card de Turno integrado na Dashboard
         ShiftDashboardCard(context, scope, prefsManager)
@@ -396,7 +457,7 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
 
                 Spacer(modifier = Modifier.height(12.dp))
         // Resumo financeiro e metas
-        FinancialSummarySection(database)
+        FinancialSummarySection()
 
         Spacer(modifier = Modifier.height(12.dp))
         // v6.9.0: Card de insight de fadiga (não intrusivo, apenas dados)
@@ -424,7 +485,7 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
 }
 
 @Composable
-fun FinancialSummarySection(database: AppDatabase) {
+fun FinancialSummarySection() {
     val context = LocalContext.current
     val financeDb = remember {
         com.ngbautoroad.data.db.FinanceDatabase.getInstance(context)
@@ -830,6 +891,7 @@ fun PeriodColumn(period: String, rides: Int, earnings: Double, avgScore: Double)
 // v5.2.0: CARD DE TURNO NA DASHBOARD
 // Integrado com ShiftManager e meta financeira
 // ============================================================================
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShiftDashboardCard(
     context: android.content.Context,
@@ -841,6 +903,58 @@ fun ShiftDashboardCard(
     var goalInput by remember { mutableStateOf(shiftState.goalValue.let { if (it > 0) it.toInt().toString() else "" }) }
     var showGoalEdit by remember { mutableStateOf(false) }
     var showGoalRequiredDialog by remember { mutableStateOf(false) }
+
+    val finDb = remember { FinanceDatabase.getInstance(context) }
+    val goalDao = remember { finDb.financialGoalDao() }
+    val earningDao = remember { finDb.earningDao() }
+    val expenseDao = remember { finDb.expenseDao() }
+    val individualExpenseDao = remember { finDb.individualExpenseDao() }
+
+    val activeGoals by goalDao.getActiveGoals().collectAsState(initial = emptyList())
+    val dailyGoal = activeGoals.firstOrNull { it.period == "DIA" }
+
+    // Timestamps do dia de hoje para cálculo de lucro líquido / ganho bruto
+    val todayStart = remember {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        cal.timeInMillis
+    }
+    val todayEnd = remember {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 23)
+        cal.set(Calendar.MINUTE, 59)
+        cal.set(Calendar.SECOND, 59)
+        cal.set(Calendar.MILLISECOND, 999)
+        cal.timeInMillis
+    }
+
+    val todayEarnings by earningDao.getTotalEarnings(todayStart, todayEnd).collectAsState(initial = 0.0)
+    val todayExpenses by expenseDao.getTotalExpenses(todayStart, todayEnd).collectAsState(initial = 0.0)
+    val monthlyFixedCosts by individualExpenseDao.getTotalMonthlyRated().collectAsState(initial = 0.0)
+    val fixedMonthly = monthlyFixedCosts ?: 0.0
+
+    var goalTypeInput by remember { mutableStateOf("BRUTO") }
+    
+    // Sincronizar inputs quando a meta diária for carregada do DB
+    LaunchedEffect(dailyGoal) {
+        dailyGoal?.let {
+            goalInput = it.targetAmount.toInt().toString()
+            goalTypeInput = it.goalType
+        }
+    }
+
+    val isLiquido = dailyGoal?.goalType == "LIQUIDO"
+    val goalValue = dailyGoal?.targetAmount ?: shiftState.goalValue
+    val currentGoalAmount = if (isLiquido) {
+        (todayEarnings ?: 0.0) - (todayExpenses ?: 0.0) - (fixedMonthly / 30.0)
+    } else {
+        todayEarnings ?: 0.0
+    }
+    val goalProgress = if (goalValue > 0) (currentGoalAmount / goalValue).coerceIn(0.0, 1.5).toFloat() else 0f
+    val goalReached = currentGoalAmount >= goalValue
 
     // Atualizar estado a cada 30s quando turno ativo
     LaunchedEffect(shiftState.isActive, shiftState.isPaused) {
@@ -854,7 +968,7 @@ fun ShiftDashboardCard(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = when {
-                shiftState.isActive && shiftState.goalReached -> Color(0xFF1B5E20)
+                shiftState.isActive && goalReached -> Color(0xFF1B5E20)
                 shiftState.isActive -> MaterialTheme.colorScheme.primaryContainer
                 else -> MaterialTheme.colorScheme.surfaceVariant
             }
@@ -879,8 +993,9 @@ fun ShiftDashboardCard(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
+                        val goalTypeLabel = if (goalTypeInput == "LIQUIDO") "Líquido" else "Bruto"
                         Text(
-                            "Meta: R$ $goalInput",
+                            "Meta: R$ $goalInput ($goalTypeLabel)",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -893,29 +1008,28 @@ fun ShiftDashboardCard(
                         // Botão Iniciar Turno
                         Button(
                             onClick = {
-                                val goalValue = goalInput.toDoubleOrNull()
+                                val parsedGoalValue = goalInput.toDoubleOrNull()
                                 // Verificar se meta foi configurada (obrigatório)
-                                if (goalValue == null || goalValue <= 0.0) {
+                                if (parsedGoalValue == null || parsedGoalValue <= 0.0) {
                                     showGoalRequiredDialog = true
                                     return@Button
                                 }
-                                shiftState = shiftManager.startShift(goalValue)
+                                shiftState = shiftManager.startShift(parsedGoalValue)
                                 // Criar meta diária automática no módulo financeiro
                                 scope.launch {
                                     try {
-                                        val finDb = FinanceDatabase.getInstance(context)
-                                        val goalDao = finDb.financialGoalDao()
                                         val today = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
                                         val existingGoals = goalDao.getActiveGoalsSync()
-                                        val dailyGoal = existingGoals.firstOrNull { it.period == "DIA" }
-                                        if (dailyGoal != null) {
-                                            goalDao.update(dailyGoal.copy(targetAmount = goalValue))
+                                        val existingDailyGoal = existingGoals.firstOrNull { it.period == "DIA" }
+                                        if (existingDailyGoal != null) {
+                                            goalDao.update(existingDailyGoal.copy(targetAmount = parsedGoalValue, goalType = goalTypeInput))
                                         } else {
                                             goalDao.insert(
                                                 com.ngbautoroad.data.db.FinancialGoalEntity(
                                                     title = "Meta Diária - $today",
-                                                    targetAmount = goalValue,
+                                                    targetAmount = parsedGoalValue,
                                                     period = "DIA",
+                                                    goalType = goalTypeInput,
                                                     isActive = true
                                                 )
                                             )
@@ -941,51 +1055,72 @@ fun ShiftDashboardCard(
                 // Campo de edição de meta
                 if (showGoalEdit) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        OutlinedTextField(
-                            value = goalInput,
-                            onValueChange = { goalInput = it.filter { c -> c.isDigit() || c == '.' } },
-                            label = { Text("Meta do dia (R$)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
-                        )
-                        Button(onClick = {
-                            showGoalEdit = false
-                            // Sincronizar meta com financeiro
-                            scope.launch {
-                                try {
-                                    val finDb = FinanceDatabase.getInstance(context)
-                                    val goalDao = finDb.financialGoalDao()
-                                    val goalValue = goalInput.toDoubleOrNull() ?: 200.0
-                                    // Verificar se já existe meta diária
-                                    val existingGoals = goalDao.getActiveGoalsSync()
-                                    val dailyGoal = existingGoals.firstOrNull { it.period == "DIA" }
-                                    if (dailyGoal != null) {
-                                        goalDao.update(dailyGoal.copy(targetAmount = goalValue))
-                                    } else {
-                                        goalDao.insert(
-                                            com.ngbautoroad.data.db.FinancialGoalEntity(
-                                                title = "Meta Diária",
-                                                targetAmount = goalValue,
-                                                period = "DIA",
-                                                isActive = true
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = goalInput,
+                                onValueChange = { goalInput = it.filter { c -> c.isDigit() || c == '.' } },
+                                label = { Text("Meta do dia (R$)") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f),
+                                singleLine = true
+                            )
+                            Button(onClick = {
+                                showGoalEdit = false
+                                // Sincronizar meta com financeiro
+                                scope.launch {
+                                    try {
+                                        val parsedGoalValueEdit = goalInput.toDoubleOrNull() ?: 200.0
+                                        // Verificar se já existe meta diária
+                                        val existingGoals = goalDao.getActiveGoalsSync()
+                                        val existingDailyGoalEdit = existingGoals.firstOrNull { it.period == "DIA" }
+                                        if (existingDailyGoalEdit != null) {
+                                            goalDao.update(existingDailyGoalEdit.copy(targetAmount = parsedGoalValueEdit, goalType = goalTypeInput))
+                                        } else {
+                                            val today = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+                                            goalDao.insert(
+                                                com.ngbautoroad.data.db.FinancialGoalEntity(
+                                                    title = "Meta Diária - $today",
+                                                    targetAmount = parsedGoalValueEdit,
+                                                    period = "DIA",
+                                                    goalType = goalTypeInput,
+                                                    isActive = true
+                                                )
                                             )
-                                        )
-                                    }
-                                } catch (_: Exception) {}
+                                        }
+                                    } catch (_: Exception) {}
+                                }
+                            }) {
+                                Text("Salvar")
                             }
-                        }) {
-                            Text("Salvar")
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            FilterChip(
+                                selected = goalTypeInput == "BRUTO",
+                                onClick = { goalTypeInput = "BRUTO" },
+                                label = { Text("Ganho Bruto", fontSize = 11.sp) }
+                            )
+                            FilterChip(
+                                selected = goalTypeInput == "LIQUIDO",
+                                onClick = { goalTypeInput = "LIQUIDO" },
+                                label = { Text("Lucro Líquido", fontSize = 11.sp) }
+                            )
                         }
                     }
                 }
             } else {
                 // === TURNO ATIVO: Mostrar progresso ===
-                val textColor = if (shiftState.goalReached) Color.White else Color.Unspecified
+                val textColor = if (goalReached) Color.White else Color.Unspecified
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -997,7 +1132,7 @@ fun ShiftDashboardCard(
                         fontWeight = FontWeight.Bold,
                         color = textColor
                     )
-                    if (shiftState.goalReached) {
+                    if (goalReached) {
                         Text(
                             "META ATINGIDA!",
                             style = MaterialTheme.typography.labelMedium,
@@ -1009,20 +1144,21 @@ fun ShiftDashboardCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 // Barra de progresso da meta
                 LinearProgressIndicator(
-                    progress = shiftState.goalProgress.coerceIn(0f, 1f),
+                    progress = goalProgress.coerceIn(0f, 1f),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp)),
-                    color = if (shiftState.goalReached) Color(0xFF76FF03) else ScoreGreen,
-                    trackColor = if (shiftState.goalReached) Color.White.copy(alpha = 0.3f)
+                    color = if (goalReached) Color(0xFF76FF03) else ScoreGreen,
+                    trackColor = if (goalReached) Color.White.copy(alpha = 0.3f)
                         else MaterialTheme.colorScheme.surfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+                val currentLabel = if (isLiquido) "Líquido" else "Bruto"
                 Text(
-                    "R$ ${"%.2f".format(shiftState.totalEarned)} / R$ ${"%.0f".format(shiftState.goalValue)}",
+                    "R$ ${"%.2f".format(currentGoalAmount)} / R$ ${"%.0f".format(goalValue)} ($currentLabel)",
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (shiftState.goalReached) Color.White.copy(alpha = 0.8f)
+                    color = if (goalReached) Color.White.copy(alpha = 0.8f)
                         else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -1031,39 +1167,59 @@ fun ShiftDashboardCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Tempo", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.7f))
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Tempo", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, maxLines = 1, color = textColor.copy(alpha = 0.7f))
                         Text(
                             "${shiftState.elapsedMinutes} min",
                             style = MaterialTheme.typography.bodyMedium,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
+                            maxLines = 1,
                             color = textColor
                         )
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("R$/h", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.7f))
+                    Column(
+                        modifier = Modifier.weight(1.1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("R$/h", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, maxLines = 1, color = textColor.copy(alpha = 0.7f))
                         Text(
                             "R$ ${"%.2f".format(shiftState.valuePerHour)}",
                             style = MaterialTheme.typography.bodyMedium,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
+                            maxLines = 1,
                             color = textColor
                         )
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Corridas", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.7f))
+                    Column(
+                        modifier = Modifier.weight(0.9f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Corridas", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, maxLines = 1, color = textColor.copy(alpha = 0.7f))
                         Text(
                             "${shiftState.ridesCount}",
                             style = MaterialTheme.typography.bodyMedium,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
+                            maxLines = 1,
                             color = textColor
                         )
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Aceitas/Rec.", style = MaterialTheme.typography.labelSmall, color = textColor.copy(alpha = 0.7f))
+                    Column(
+                        modifier = Modifier.weight(1.1f),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Aceitas/Rec.", style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, maxLines = 1, color = textColor.copy(alpha = 0.7f))
                         Text(
                             "${shiftState.ridesAccepted}/${shiftState.ridesRejected}",
                             style = MaterialTheme.typography.bodyMedium,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
+                            maxLines = 1,
                             color = textColor
                         )
                     }
@@ -1099,7 +1255,6 @@ fun ShiftDashboardCard(
                             // Salvar histórico do turno antes de encerrar
                             scope.launch {
                                 try {
-                                    val finDb = FinanceDatabase.getInstance(context)
                                     val shiftHistoryPrefs = context.getSharedPreferences("shift_history", android.content.Context.MODE_PRIVATE)
                                     val historyCount = shiftHistoryPrefs.getInt("count", 0)
                                     shiftHistoryPrefs.edit()
@@ -1151,30 +1306,50 @@ fun ShiftDashboardCard(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Tipo da meta:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FilterChip(
+                            selected = goalTypeInput == "BRUTO",
+                            onClick = { goalTypeInput = "BRUTO" },
+                            label = { Text("Ganho Bruto", fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = goalTypeInput == "LIQUIDO",
+                            onClick = { goalTypeInput = "LIQUIDO" },
+                            label = { Text("Lucro Líquido", fontSize = 11.sp) }
+                        )
+                    }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val goalValue = goalInput.toDoubleOrNull()
-                        if (goalValue != null && goalValue > 0.0) {
+                        val parsedGoalValueDialog = goalInput.toDoubleOrNull()
+                        if (parsedGoalValueDialog != null && parsedGoalValueDialog > 0.0) {
                             showGoalRequiredDialog = false
-                            shiftState = shiftManager.startShift(goalValue)
+                            shiftState = shiftManager.startShift(parsedGoalValueDialog)
                             scope.launch {
                                 try {
-                                    val finDb = FinanceDatabase.getInstance(context)
-                                    val goalDao = finDb.financialGoalDao()
+                                    val finDbDialog = FinanceDatabase.getInstance(context)
+                                    val goalDaoDialog = finDbDialog.financialGoalDao()
                                     val today = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
-                                    val existingGoals = goalDao.getActiveGoalsSync()
-                                    val dailyGoal = existingGoals.firstOrNull { it.period == "DIA" }
-                                    if (dailyGoal != null) {
-                                        goalDao.update(dailyGoal.copy(targetAmount = goalValue))
+                                    val existingGoals = goalDaoDialog.getActiveGoalsSync()
+                                    val existingDailyGoalDialog = existingGoals.firstOrNull { it.period == "DIA" }
+                                    if (existingDailyGoalDialog != null) {
+                                        goalDaoDialog.update(existingDailyGoalDialog.copy(targetAmount = parsedGoalValueDialog, goalType = goalTypeInput))
                                     } else {
-                                        goalDao.insert(
+                                        goalDaoDialog.insert(
                                             com.ngbautoroad.data.db.FinancialGoalEntity(
                                                 title = "Meta Diária - $today",
-                                                targetAmount = goalValue,
+                                                targetAmount = parsedGoalValueDialog,
                                                 period = "DIA",
+                                                goalType = goalTypeInput,
                                                 isActive = true
                                             )
                                         )
@@ -1790,6 +1965,73 @@ private fun MaintenanceAdvisorCard(context: android.content.Context) {
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun ActiveRideDashboardCard(ride: com.ngbautoroad.data.model.RideData) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.DirectionsCar,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Corrida em Andamento",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Text(
+                    ride.platform.displayName,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("Ganhos por KM", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
+                    Text("R$ ${"%.2f".format(ride.valuePerKm)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("Valor Total", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
+                    Text("R$ ${"%.2f".format(ride.rideValue)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (ride.pickupNeighborhood.isNotBlank() || ride.dropoffNeighborhood.isNotBlank()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f))
+                        .padding(10.dp)
+                ) {
+                    Text(
+                        "${ride.pickupNeighborhood} ➔ ${ride.dropoffNeighborhood}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
             }
         }
     }
