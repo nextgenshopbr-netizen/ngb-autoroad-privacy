@@ -71,7 +71,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.RideHistoryEntity
-import com.ngbautoroad.ui.editor.CustomCardLayout
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 
 /**
  * Serviço de overlay flutuante.
@@ -103,8 +104,6 @@ class OverlayService : Service(),
     private var isOverlayVisible = false
     private var currentRide: RideData? = null
     private var currentScore: RideScore? = null
-    private var currentGalleryCard: CardGallery.GalleryCard? = null
-    private var currentCustomLayout: com.ngbautoroad.ui.editor.CustomCardLayout? = null
     private var overlayWidth = 320
     private var overlayHeight = 0  // 0 = WRAP_CONTENT; >0 = saved height in dp
     private var currentFontScale = 1.0f
@@ -135,8 +134,21 @@ class OverlayService : Service(),
         var instance: OverlayService? = null
             private set
 
-        fun start(context: Context) {
-            val intent = Intent(context, OverlayService::class.java)
+        fun start(context: Context, rideData: RideData? = null) {
+            val intent = Intent(context, OverlayService::class.java).apply {
+                if (rideData != null) {
+                    try {
+                        val json = kotlinx.serialization.json.Json.encodeToString(rideData)
+                        putExtra("EXTRA_RIDE_DATA_JSON", json)
+                    } catch (e: Exception) {
+                        com.ngbautoroad.domain.TelemetryLogger.getInstance(context.applicationContext).log(
+                            com.ngbautoroad.domain.TelemetryLogger.Category.LIFECYCLE,
+                            com.ngbautoroad.domain.TelemetryLogger.Level.ERROR,
+                            "OverlayService start crash: ${e.message}"
+                        )
+                    }
+                }
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
@@ -157,6 +169,17 @@ class OverlayService : Service(),
 
     override fun onCreate() {
         super.onCreate()
+        val oldHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, exception ->
+            android.util.Log.e("NGB_OVERLAY", "CRASH NO OVERLAY: ${exception.message}", exception)
+            com.ngbautoroad.domain.TelemetryLogger.getInstance(applicationContext).log(
+                com.ngbautoroad.domain.TelemetryLogger.Category.LIFECYCLE, 
+                com.ngbautoroad.domain.TelemetryLogger.Level.ERROR, 
+                "Overlay Crash: ${exception.message}"
+            )
+            oldHandler?.uncaughtException(thread, exception)
+        }
+
         savedStateRegistryController.performRestore(null)
         lifecycleRegistry.currentState = Lifecycle.State.CREATED
         prefsManager = PrefsManager(applicationContext)
@@ -170,17 +193,40 @@ class OverlayService : Service(),
             currentFontScale = prefsManager.overlayFontScaleFlow.first()
         }
 
+        var debounceJob: kotlinx.coroutines.Job? = null
+
         onRideDetected = { ride ->
-            serviceScope.launch {
-                // v6.9.14: Hash de deduplicação estável — baseado apenas em platform, value e rideType
-                val rideHash = "${ride.platform}_${ride.rideValue}_${ride.rideType}".hashCode()
+            debounceJob?.cancel()
+            debounceJob = serviceScope.launch {
+                // v6.9.17: Debounce para aguardar a UI da Uber carregar completamente o destino.
+                // Evita que o AutoPilot tome decisão precoce (verde) antes do destino (vermelho) aparecer.
+                if (ride.dropoffNeighborhood.isBlank()) {
+                    kotlinx.coroutines.delay(800)
+                } else {
+                    kotlinx.coroutines.delay(150)
+                }
+
+                // Incluir dropoffNeighborhood no hash para atualizar caso o destino apareça depois
+                val rideHash = "${ride.platform}_${ride.rideValue}_${ride.rideType}_${ride.dropoffNeighborhood}".hashCode()
                 val now = System.currentTimeMillis()
-                if (rideHash == lastRideHash && (now - lastRideTime) < DUPLICATE_WINDOW_MS) {
+                if (!ride.isSimulation && rideHash == lastRideHash && (now - lastRideTime) < DUPLICATE_WINDOW_MS) {
                     return@launch // Ignorar duplicata
                 }
-                lastRideHash = rideHash
-                lastRideTime = now
+                if (!ride.isSimulation) {
+                    lastRideHash = rideHash
+                    lastRideTime = now
+                }
                 showOverlay(ride)
+            }
+        }
+
+        // v6.9.16: Se o serviço for reiniciado e houver uma corrida ativa em fase PENDING, exibi-la imediatamente
+        val activeManager = RideAccessibilityService.instance?.lifecycleManager
+        val activeRide = activeManager?.getCurrentRide()
+        if (activeRide != null && activeManager.getCurrentPhase() == RideLifecycleManager.RidePhase.PENDING) {
+            android.util.Log.i("NGB_OVERLAY", "[OnCreate] Restaurando overlay para corrida ativa pendente...")
+            serviceScope.launch {
+                showOverlay(activeRide)
             }
         }
 
@@ -227,6 +273,21 @@ class OverlayService : Service(),
             startForeground(NOTIFICATION_ID, createNotification())
         }
         lifecycleRegistry.currentState = Lifecycle.State.STARTED
+
+        // Processar corrida passada pelo Intent (caso o serviço tenha sido auto-iniciado agora)
+        val json = intent?.getStringExtra("EXTRA_RIDE_DATA_JSON")
+        if (!json.isNullOrBlank()) {
+            try {
+                val ride = kotlinx.serialization.json.Json.decodeFromString<RideData>(json)
+                android.util.Log.i("NGB_OVERLAY", "Corrida recebida via Intent: R$ ${ride.rideValue}")
+                serviceScope.launch {
+                    onRideDetected?.invoke(ride)
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("NGB_OVERLAY", "Erro ao deserializar RideData do Intent: ${e.message}")
+            }
+        }
+
         return START_STICKY
     }
 
@@ -261,51 +322,11 @@ class OverlayService : Service(),
         // Ler critérios reais do DataStore
         val weights = prefsManager.criteriaWeightsFlow.first()
         val thresholds = prefsManager.driverThresholdsFlow.first()
-        val activeSlot = prefsManager.activeCardSlotFlow.first()
         currentFontScale = prefsManager.overlayFontScaleFlow.first()
         overlayWidth = prefsManager.overlayWidthFlow.first()
         overlayHeight = prefsManager.overlayHeightFlow.first()
 
-        // Obter card da galeria baseado no slot ativo (tipo correto: GalleryCard)
-        currentCustomLayout = null // limpar por padrão
-        currentGalleryCard = when (activeSlot) {
-            1 -> CardGallery.getById(prefsManager.card1ModelIdFlow.first())
-            2 -> CardGallery.getById(prefsManager.card2ModelIdFlow.first())
-            3 -> {
-                // Slot 3 = Custom: carregar CustomCardLayout COMPLETO (posições, fontes, estilos)
-                val card3 = prefsManager.card3CustomFlow.first()
-                val layoutJson = prefsManager.card3LayoutJsonFlow.first()
-                val jsonParser = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
-
-                // Salvar layout completo para o OverlayCard usar no modo custom
-                currentCustomLayout = try {
-                    if (layoutJson.isNotBlank()) jsonParser.decodeFromString<CustomCardLayout>(layoutJson)
-                    else null
-                } catch (_: Exception) { null }
-
-                // GalleryCard como fallback (caso customLayout seja nulo)
-                val fields = currentCustomLayout?.fields
-                    ?.mapNotNull { f -> try { CardGallery.CardField.valueOf(f.fieldType) } catch (_: Exception) { null } }
-                    ?.ifEmpty { CardGallery.CardField.entries }
-                    ?: CardGallery.CardField.entries
-
-                CardGallery.GalleryCard(
-                    id = -1,
-                    name = "Custom",
-                    description = "Card customizado",
-                    category = CardGallery.CardCategory.STANDARD,
-                    fields = fields,
-                    backgroundColor = card3.backgroundColor,
-                    textColor = card3.textColor,
-                    accentColor = card3.accentColor,
-                    borderColor = card3.borderColor,
-                    borderRadius = card3.borderRadius,
-                    fontSize = card3.fontSize,
-                    showBorder = true
-                )
-            }
-            else -> null
-        }
+        // Cards configuration loaded (if needed in the future)
 
         // Item 1.1: Carregar bairros bloqueados do DataStore
         val blockedPickup = prefsManager.blockedPickupFlow.first()
@@ -391,7 +412,7 @@ class OverlayService : Service(),
                     // v6.9.9: Iniciar UserActionDetector para detectar cliques do motorista
                     val service = RideAccessibilityService.instance
                     if (service?.userActionDetector == null) {
-                        service?.initUserActionDetector(rideId)
+                        service?.initUserActionDetector()
                     }
                     service?.userActionDetector?.startMonitoring(ride.platform)
 
@@ -409,12 +430,18 @@ class OverlayService : Service(),
         }
 
         // v6.9.9: Notificação de corrida para Android Auto e tela de bloqueio
-        showRideNotification(ride, currentScore)
+        val androidAutoEnabled = prefsManager.androidAutoEnabledFlow.first()
+        val androidAutoAutoDetect = prefsManager.androidAutoAutoDetectFlow.first()
+        val uiModeManager = getSystemService(Context.UI_MODE_SERVICE) as? android.app.UiModeManager
+        val isCarMode = uiModeManager?.currentModeType == android.content.res.Configuration.UI_MODE_TYPE_CAR
+        if (androidAutoEnabled || (androidAutoAutoDetect && isCarMode)) {
+            showRideNotification(ride, currentScore)
+        }
 
         withContext(Dispatchers.Main) {
             // v5.0.0: Se overlay já visível, remover antes de recriar (evita duplicata)
             if (isOverlayVisible) {
-                hideOverlay()
+                hideOverlay(isReplacing = true)
             }
             try {
                 createOverlay()
@@ -426,7 +453,7 @@ class OverlayService : Service(),
         }
     }
 
-    fun hideOverlay() {
+    fun hideOverlay(isReplacing: Boolean = false) {
         autoDismissJob?.cancel() // v5.0.0: Cancelar timer ao fechar
         overlayView?.let {
             try {
@@ -439,13 +466,13 @@ class OverlayService : Service(),
 
         // v6.1.1: Notificar lifecycle que overlay foi fechado sem ação do motorista
         val ride = currentRide
-        if (ride != null && !ride.isSimulation) {
+        if (!isReplacing && ride != null && !ride.isSimulation) {
             com.ngbautoroad.service.RideAccessibilityService.instance?.lifecycleManager?.onOverlayDismissed()
         }
 
         // v6.0.0: Se era simulação (editor de cards), trazer o app de volta ao foco
         // Isso resolve o bug onde o app ficava minimizado após fechar o card de teste
-        if (ride != null && ride.isSimulation) {
+        if (!isReplacing && ride != null && ride.isSimulation) {
             try {
                 val intent = packageManager.getLaunchIntentForPackage(packageName)
                 if (intent != null) {
@@ -473,11 +500,11 @@ class OverlayService : Service(),
                 val dismissSeconds = kotlinx.coroutines.withTimeoutOrNull(3000L) {
                     prefsManager.autoDismissSecondsFlow.first()
                 } ?: 30 // Fallback: 30s se DataStore não responder em 3s
-                val dismissMs = dismissSeconds * 1000L
-                android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Timer iniciado: ${dismissSeconds}s")
+                val dismissMs = if (dismissSeconds > 0) (dismissSeconds * 1000L) + 2000L else 0L
+                android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Timer iniciado: ${dismissSeconds}s + 2s de tolerância")
                 if (dismissMs > 0) { // 0 = nunca auto-dismiss
                     delay(dismissMs)
-                    android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Fechando overlay após ${dismissSeconds}s")
+                    android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Fechando overlay após ${dismissSeconds + 2}s")
                     hideOverlay()
                 } else {
                     android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Desativado (0s configurado)")
@@ -498,7 +525,7 @@ class OverlayService : Service(),
         val savedX = 0
         val savedY = 0
 
-        val heightParam = if (overlayHeight > 0) (overlayHeight * density).toInt() else WindowManager.LayoutParams.WRAP_CONTENT
+        val heightParam = WindowManager.LayoutParams.WRAP_CONTENT
         val params = WindowManager.LayoutParams(
             widthPx,
             heightParam,
@@ -513,6 +540,7 @@ class OverlayService : Service(),
             gravity = Gravity.TOP or Gravity.START
             x = savedX
             y = savedY
+            alpha = 0f // Inicie o card invisível até o X/Y carregar
         }
 
         // Usar o Service diretamente como contexto (Theme.kt já protege contra cast para Activity)
@@ -527,11 +555,16 @@ class OverlayService : Service(),
                     val ride = currentRide
                     val score = currentScore
                     if (ride != null && score != null) {
-                        val shiftState = ShiftManager(applicationContext).loadState()
+                        // val shiftState = ShiftManager(applicationContext).loadState() // (Removed because it was unused)
                         val showScore by prefsManager.overlayShowScoreFlow.collectAsState(initial = true)
-                        val showMeta by prefsManager.overlayShowMetaFlow.collectAsState(initial = true)
-                        val showAccessibility by prefsManager.overlayShowAccessibilityFlow.collectAsState(initial = true)
-                        val showClose by prefsManager.overlayShowCloseFlow.collectAsState(initial = true)
+                        val showValuePerKm by prefsManager.overlayShowValuePerKmFlow.collectAsState(initial = true)
+                        val showValuePerHour by prefsManager.overlayShowValuePerHourFlow.collectAsState(initial = true)
+                        val showRideValue by prefsManager.overlayShowRideValueFlow.collectAsState(initial = true)
+                        val showDuration by prefsManager.overlayShowDurationFlow.collectAsState(initial = true)
+                        val showTotalKm by prefsManager.overlayShowTotalKmFlow.collectAsState(initial = true)
+                        val showNeighborhoods by prefsManager.overlayShowNeighborhoodsFlow.collectAsState(initial = true)
+                        val overlayCardType by prefsManager.overlayCardTypeFlow.collectAsState(initial = "STANDARD")
+                        
                         val isPinned by prefsManager.overlayPinnedFlow.collectAsState(initial = false)
 
                         LaunchedEffect(isPinned) {
@@ -545,60 +578,32 @@ class OverlayService : Service(),
                         OverlayCard(
                             ride = ride,
                             score = score,
-                            galleryCard = currentGalleryCard,
                             fontScale = currentFontScale,
-                            goalProgress = shiftState.goalProgress,
-                            goalEarned = shiftState.totalEarned,
-                            goalTarget = shiftState.goalValue,
-                            customLayout = currentCustomLayout,
+                            cardType = overlayCardType,
                             showScore = showScore,
-                            showMeta = showMeta,
-                            showAccessibility = showAccessibility,
-                            showClose = showClose,
-                            isPinned = isPinned,
-                            onTogglePin = { serviceScope.launch { prefsManager.setOverlayPinned(!isPinned) } },
+                            showValuePerKm = showValuePerKm,
+                            showValuePerHour = showValuePerHour,
+                            showRideValue = showRideValue,
+                            showDuration = showDuration,
+                            showTotalKm = showTotalKm,
+                            showNeighborhoods = showNeighborhoods,
                             onDismiss = { hideOverlay() },
-                            onFontScaleChange = { newScale ->
-                                currentFontScale = newScale
-                                serviceScope.launch { prefsManager.saveOverlayFontScale(newScale) }
-                                updateOverlayContent()
-                            },
-                            onResize = { deltaX, deltaY ->
+                            onDrag = { deltaX, deltaY ->
                                 val screenWidth = resources.displayMetrics.widthPixels
                                 val screenHeight = resources.displayMetrics.heightPixels
-
-                                // Capturar altura natural na PRIMEIRA interação
-                                if (naturalOverlayHeight == 0) {
-                                    val measured = overlayView?.height ?: 0
-                                    naturalOverlayHeight = if (measured > 50) measured else (250 * density).toInt()
-                                }
-
-                                // Largura: mínimo 100dp, máximo = tela
-                                val minW = (100 * density).toInt()
-                                val newWidth = (params.width + deltaX.toInt()).coerceIn(minW, screenWidth)
-                                params.width = newWidth
-
-                                // v6.3.6: Altura livre — mínimo 60dp, máximo = tela inteira
-                                val minH = (60 * density).toInt()
-                                val currentH = if (params.height <= 0 || params.height == WindowManager.LayoutParams.WRAP_CONTENT) {
-                                    overlayView?.height?.takeIf { it > 50 } ?: naturalOverlayHeight
-                                } else {
-                                    params.height
-                                }
-                                val newHeight = (currentH + deltaY.toInt()).coerceIn(minH, screenHeight)
-                                params.height = newHeight
-
-                                // v6.3.6: Auto-zoom REMOVIDO — fontScale não muda ao redimensionar
-
+                                
+                                var newX = params.x + deltaX.toInt()
+                                var newY = params.y + deltaY.toInt()
+                                
+                                newX = newX.coerceIn(0, screenWidth - params.width)
+                                newY = newY.coerceIn(0, screenHeight - (params.height.takeIf { it > 0 } ?: (200 * density).toInt()))
+                                
+                                params.x = newX
+                                params.y = newY
+                                
                                 try {
                                     windowManager?.updateViewLayout(overlayView, params)
                                 } catch (_: Exception) {}
-                                overlayWidth = (newWidth / density).toInt()
-                                overlayHeight = (newHeight / density).toInt()
-                                serviceScope.launch {
-                                    prefsManager.saveOverlaySize(overlayWidth, overlayHeight)
-                                }
-                                updateOverlayContent()
                             }
                         )
                     }
@@ -654,6 +659,29 @@ class OverlayService : Service(),
         android.util.Log.d("NGB_TESTAR_CARD", "[OVERLAY] View adicionada ao WindowManager com sucesso")
         overlayView = view
         isOverlayVisible = true
+
+        // v6.9.20: Carregar X/Y assíncrono e restaurar alpha
+        serviceScope.launch {
+            try {
+                val posX = prefsManager.overlayPositionXFlow.first()
+                val posY = prefsManager.overlayPositionYFlow.first()
+                withContext(Dispatchers.Main) {
+                    params.x = posX
+                    params.y = posY
+                    params.alpha = 1f
+                    try {
+                        windowManager?.updateViewLayout(view, params)
+                    } catch (e: Exception) {
+                        android.util.Log.e("OverlayService", "Erro ao atualizar layout: ${e.message}")
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    params.alpha = 1f
+                    try { windowManager?.updateViewLayout(view, params) } catch (_: Exception) {}
+                }
+            }
+        }
     }
 
     private fun updateOverlayContent() {
@@ -663,11 +691,15 @@ class OverlayService : Service(),
                 val ride = currentRide
                 val score = currentScore
                 if (ride != null && score != null) {
-                        val shiftState = ShiftManager(applicationContext).loadState()
                         val showScore by prefsManager.overlayShowScoreFlow.collectAsState(initial = true)
-                        val showMeta by prefsManager.overlayShowMetaFlow.collectAsState(initial = true)
-                        val showAccessibility by prefsManager.overlayShowAccessibilityFlow.collectAsState(initial = true)
-                        val showClose by prefsManager.overlayShowCloseFlow.collectAsState(initial = true)
+                        val showValuePerKm by prefsManager.overlayShowValuePerKmFlow.collectAsState(initial = true)
+                        val showValuePerHour by prefsManager.overlayShowValuePerHourFlow.collectAsState(initial = true)
+                        val showRideValue by prefsManager.overlayShowRideValueFlow.collectAsState(initial = true)
+                        val showDuration by prefsManager.overlayShowDurationFlow.collectAsState(initial = true)
+                        val showTotalKm by prefsManager.overlayShowTotalKmFlow.collectAsState(initial = true)
+                        val showNeighborhoods by prefsManager.overlayShowNeighborhoodsFlow.collectAsState(initial = true)
+                        val overlayCardType by prefsManager.overlayCardTypeFlow.collectAsState(initial = "STANDARD")
+                        
                         val isPinned by prefsManager.overlayPinnedFlow.collectAsState(initial = false)
 
                         LaunchedEffect(isPinned) {
@@ -681,64 +713,36 @@ class OverlayService : Service(),
                         OverlayCard(
                             ride = ride,
                             score = score,
-                            galleryCard = currentGalleryCard,
                             fontScale = currentFontScale,
-                            goalProgress = shiftState.goalProgress,
-                            goalEarned = shiftState.totalEarned,
-                            goalTarget = shiftState.goalValue,
-                            customLayout = currentCustomLayout,
+                            cardType = overlayCardType,
                             showScore = showScore,
-                            showMeta = showMeta,
-                            showAccessibility = showAccessibility,
-                            showClose = showClose,
-                            isPinned = isPinned,
-                            onTogglePin = { serviceScope.launch { prefsManager.setOverlayPinned(!isPinned) } },
+                            showValuePerKm = showValuePerKm,
+                            showValuePerHour = showValuePerHour,
+                            showRideValue = showRideValue,
+                            showDuration = showDuration,
+                            showTotalKm = showTotalKm,
+                            showNeighborhoods = showNeighborhoods,
                             onDismiss = { hideOverlay() },
-                        onFontScaleChange = { newScale ->
-                            currentFontScale = newScale
-                            serviceScope.launch { prefsManager.saveOverlayFontScale(newScale) }
-                            updateOverlayContent()
-                        },
-                        onResize = { deltaX, deltaY ->
-                            val screenWidth = resources.displayMetrics.widthPixels
-                            val screenHeight = resources.displayMetrics.heightPixels
-                            val view = overlayView ?: return@OverlayCard
-                            val lp = view.layoutParams as? WindowManager.LayoutParams ?: return@OverlayCard
-
-                            // Capturar altura natural na PRIMEIRA interação
-                            if (naturalOverlayHeight == 0) {
-                                val measured = view.height
-                                naturalOverlayHeight = if (measured > 50) measured else (250 * density).toInt()
+                            onDrag = { deltaX, deltaY ->
+                                val screenWidth = resources.displayMetrics.widthPixels
+                                val screenHeight = resources.displayMetrics.heightPixels
+                                val view = overlayView ?: return@OverlayCard
+                                val lp = view.layoutParams as? WindowManager.LayoutParams ?: return@OverlayCard
+                                
+                                var newX = lp.x + deltaX.toInt()
+                                var newY = lp.y + deltaY.toInt()
+                                
+                                newX = newX.coerceIn(0, screenWidth - lp.width)
+                                newY = newY.coerceIn(0, screenHeight - (lp.height.takeIf { it > 0 } ?: (200 * density).toInt()))
+                                
+                                lp.x = newX
+                                lp.y = newY
+                                
+                                try {
+                                    windowManager?.updateViewLayout(view, lp)
+                                } catch (_: Exception) {}
                             }
-
-                            // Largura: mínimo 100dp, máximo = tela
-                            val minW = (100 * density).toInt()
-                            val newWidth = (lp.width + deltaX.toInt()).coerceIn(minW, screenWidth)
-                            lp.width = newWidth
-
-                            // v6.3.6: Altura livre — mínimo 60dp, máximo = tela inteira
-                            val minH = (60 * density).toInt()
-                            val currentH = if (lp.height <= 0 || lp.height == WindowManager.LayoutParams.WRAP_CONTENT) {
-                                view.height.takeIf { it > 50 } ?: naturalOverlayHeight
-                            } else {
-                                lp.height
-                            }
-                            val newHeight = (currentH + deltaY.toInt()).coerceIn(minH, screenHeight)
-                            lp.height = newHeight
-
-                            // v6.3.6: Auto-zoom REMOVIDO — fontScale não muda ao redimensionar
-
-                            try {
-                                windowManager?.updateViewLayout(view, lp)
-                            } catch (_: Exception) {}
-                            overlayWidth = (newWidth / density).toInt()
-                            overlayHeight = (newHeight / density).toInt()
-                            serviceScope.launch {
-                                prefsManager.saveOverlaySize(overlayWidth, overlayHeight)
-                            }
-                            updateOverlayContent()
-                        }
-                    )
+                        )
                 }
             }
         }
