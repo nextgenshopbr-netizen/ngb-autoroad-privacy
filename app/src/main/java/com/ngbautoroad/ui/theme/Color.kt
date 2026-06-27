@@ -42,11 +42,11 @@ val LightOnSurfaceVariant = Color(0xFF44465A)
 val LightError = Color(0xFFBA1A1A)
 val LightOnError = Color(0xFFFFFFFF)
 
-// Score Colors (usadas em ambos os temas)
-val ScoreGreen = Color(0xFF4CAF50)
-val ScoreYellow = Color(0xFFFFC107)
-val ScoreOrange = Color(0xFFFF9800)
-val ScoreRed = Color(0xFFF44336)
+// Score Colors (Ajustadas para melhor contraste MD3)
+val ScoreGreen = Color(0xFF388E3C)
+val ScoreYellow = Color(0xFFFBC02D)
+val ScoreOrange = Color(0xFFF57C00)
+val ScoreRed = Color(0xFFD32F2F)
 
 // Overlay Card Colors
 val OverlayBackground = Color(0xE6101830)  // Fundo semi-transparente escuro
