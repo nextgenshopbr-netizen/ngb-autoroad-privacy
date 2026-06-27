@@ -77,11 +77,14 @@ class ReturnFactorEngine(private val context: Context) {
     /**
      * Obtém o fator de retorno para um bairro de destino.
      * @param dropoffNeighborhood Bairro de destino da corrida
+     * @param isNightShift Se é turno da noite (verdadeiro) ou dia (falso)
      * @return Fator entre 0.5 e 1.0 (1.0 = sem penalidade, 0.5 = volta vazia certa)
      */
-    fun getReturnFactor(dropoffNeighborhood: String): Double {
+    fun getReturnFactor(dropoffNeighborhood: String, isNightShift: Boolean = false): Double {
         if (dropoffNeighborhood.isBlank()) return 0.85 // Sem dados: assume 15% desconto
-        val data = loadNeighborhoodData(dropoffNeighborhood.lowercase().trim())
+        val shiftStr = if (isNightShift) "noite" else "dia"
+        val key = "${dropoffNeighborhood.lowercase().trim()}_$shiftStr"
+        val data = loadNeighborhoodData(key)
         return data?.calculateReturnFactor() ?: 0.85
     }
 
@@ -90,10 +93,12 @@ class ReturnFactorEngine(private val context: Context) {
      * @param dropoffNeighborhood Bairro de destino
      * @param hadReturnRide Se o motorista pegou corrida na volta (true) ou voltou vazio (false)
      * @param returnKm Distância de retorno estimada
+     * @param isNightShift Se é turno da noite (verdadeiro) ou dia (falso)
      */
-    fun registerTrip(dropoffNeighborhood: String, hadReturnRide: Boolean, returnKm: Double = 0.0) {
+    fun registerTrip(dropoffNeighborhood: String, hadReturnRide: Boolean, returnKm: Double = 0.0, isNightShift: Boolean = false) {
         if (dropoffNeighborhood.isBlank()) return
-        val key = dropoffNeighborhood.lowercase().trim()
+        val shiftStr = if (isNightShift) "noite" else "dia"
+        val key = "${dropoffNeighborhood.lowercase().trim()}_$shiftStr"
         val data = loadNeighborhoodData(key) ?: NeighborhoodReturnData(neighborhood = key)
 
         data.totalTrips++
