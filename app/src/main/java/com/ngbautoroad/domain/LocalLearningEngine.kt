@@ -159,20 +159,10 @@ class LocalLearningEngine(context: Context? = null) {
     }
 
     private fun persistPatterns() {
-        prefs ?: return
-        try {
-            val arr = JSONArray()
-            val toSave = synchronized(patterns) { patterns.takeLast(1000) }
-            for (p in toSave) {
-                arr.put(JSONObject().apply {
-                    put("h", p.hour); put("d", p.dayOfWeek)
-                    put("n", p.neighborhood); put("v", p.valuePerKm)
-                    put("a", p.accepted); put("t", p.timestamp)
-                    put("rt", p.rideType)
-                })
-            }
-            prefs.edit().putString("patterns_json_v2", arr.toString()).apply()
-        } catch (_: Exception) {}
+        // [V2 AI ARCHITECTURE UPDATE]
+        // Persistência em JSON/SharedPreferences removida para economizar bateria e I/O.
+        // O motor heurístico agora atua 100% de forma "stateless", lendo do SQLite via seedFromDatabase()
+        // e cruzando dados com o AiBrainRepository de forma reativa e sob demanda.
     }
 
     /**

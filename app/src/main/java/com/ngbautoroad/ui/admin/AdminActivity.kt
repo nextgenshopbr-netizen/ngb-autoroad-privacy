@@ -8,7 +8,7 @@ package com.ngbautoroad.ui.admin
 //   - AdminScreen (L60): Controle de autenticação por PIN
 //   - PinScreen (L130): Tela de digitação do PIN
 //   - AdminPanel (L200): Painel principal com simulador e controles
-//   - UberStyleCard (L420): Card visual idêntico ao overlay real (como GigU)
+//   - UberStyleCard (L420): Card visual idêntico ao overlay real
 //   - simulateRide (L580): Geração de dados simulados com score real
 // DEPENDÊNCIAS:
 //   - domain/RideScorer.kt → cálculo de score real
@@ -618,7 +618,7 @@ fun AdminPanel(
 
 // ============================================================================
 // BLOCO: UberStyleCard — Card visual IDÊNTICO ao overlay real
-// Layout baseado na imagem do GigU:
+// Layout baseado na referência de mercado:
 //   ┌─────────────────────────────────────────────┐
 //   │  R$/Km    R$/Hora   Lucro/hr    Nota        │
 //   │  |1,11    |30,60    |1,11       |4,95       │  (barras de cor)
@@ -646,7 +646,7 @@ fun UberStyleCard(result: SimulationResult) {
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // Linha principal com métricas (como GigU)
+            // Linha principal com métricas
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly

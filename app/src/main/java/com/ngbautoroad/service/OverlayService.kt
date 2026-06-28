@@ -591,16 +591,26 @@ class OverlayService : Service(),
                             onDrag = { deltaX, deltaY ->
                                 val screenWidth = resources.displayMetrics.widthPixels
                                 val screenHeight = resources.displayMetrics.heightPixels
-                                
+
                                 var newX = params.x + deltaX.toInt()
                                 var newY = params.y + deltaY.toInt()
-                                
-                                newX = newX.coerceIn(0, screenWidth - params.width)
-                                newY = newY.coerceIn(0, screenHeight - (params.height.takeIf { it > 0 } ?: (200 * density).toInt()))
-                                
+
+                                // fix: params.width e params.height podem ser negativos (WRAP_CONTENT = -2)
+                                // usar naturalOverlayHeight medido ou fallback seguro de 200dp
+                                val safeWidth = if (params.width > 0) params.width else (overlayWidth * density).toInt()
+                                val safeHeight = if (naturalOverlayHeight > 0) naturalOverlayHeight
+                                                 else if (params.height > 0) params.height
+                                                 else (200 * density).toInt()
+
+                                val maxX = (screenWidth - safeWidth).coerceAtLeast(0)
+                                val maxY = (screenHeight - safeHeight).coerceAtLeast(0)
+
+                                newX = newX.coerceIn(0, maxX)
+                                newY = newY.coerceIn(0, maxY)
+
                                 params.x = newX
                                 params.y = newY
-                                
+
                                 try {
                                     windowManager?.updateViewLayout(overlayView, params)
                                 } catch (_: Exception) {}
@@ -633,9 +643,18 @@ class OverlayService : Service(),
                         // Drag livre: mover card
                         var newX = initialX + (event.rawX - touchX).toInt()
                         var newY = initialY + (event.rawY - touchY).toInt()
-                        // Respeitar bordas do celular
-                        newX = newX.coerceIn(0, screenWidth - params.width)
-                        newY = newY.coerceIn(0, screenHeight - (params.height.takeIf { it > 0 } ?: (200 * density).toInt()))
+
+                        // fix: params.width/height podem ser negativos (WRAP_CONTENT = -2)
+                        val safeWidth = if (params.width > 0) params.width else (overlayWidth * density).toInt()
+                        val safeHeight = if (naturalOverlayHeight > 0) naturalOverlayHeight
+                                         else if (params.height > 0) params.height
+                                         else (200 * density).toInt()
+
+                        val maxX = (screenWidth - safeWidth).coerceAtLeast(0)
+                        val maxY = (screenHeight - safeHeight).coerceAtLeast(0)
+
+                        newX = newX.coerceIn(0, maxX)
+                        newY = newY.coerceIn(0, maxY)
                         params.x = newX
                         params.y = newY
                         windowManager?.updateViewLayout(view, params)
@@ -728,16 +747,25 @@ class OverlayService : Service(),
                                 val screenHeight = resources.displayMetrics.heightPixels
                                 val view = overlayView ?: return@OverlayCard
                                 val lp = view.layoutParams as? WindowManager.LayoutParams ?: return@OverlayCard
-                                
+
                                 var newX = lp.x + deltaX.toInt()
                                 var newY = lp.y + deltaY.toInt()
-                                
-                                newX = newX.coerceIn(0, screenWidth - lp.width)
-                                newY = newY.coerceIn(0, screenHeight - (lp.height.takeIf { it > 0 } ?: (200 * density).toInt()))
-                                
+
+                                // fix: lp.width/height podem ser negativos (WRAP_CONTENT = -2)
+                                val safeWidth = if (lp.width > 0) lp.width else (overlayWidth * density).toInt()
+                                val safeHeight = if (naturalOverlayHeight > 0) naturalOverlayHeight
+                                                 else if (lp.height > 0) lp.height
+                                                 else (200 * density).toInt()
+
+                                val maxX = (screenWidth - safeWidth).coerceAtLeast(0)
+                                val maxY = (screenHeight - safeHeight).coerceAtLeast(0)
+
+                                newX = newX.coerceIn(0, maxX)
+                                newY = newY.coerceIn(0, maxY)
+
                                 lp.x = newX
                                 lp.y = newY
-                                
+
                                 try {
                                     windowManager?.updateViewLayout(view, lp)
                                 } catch (_: Exception) {}

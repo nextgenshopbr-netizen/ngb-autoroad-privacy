@@ -153,6 +153,11 @@ class TelemetryLogger private constructor(private val context: Context) {
         dropoffKm: Double,
         duration: Double,
         rating: Double,
+        stops: Int,
+        pickupNeighborhood: String,
+        dropoffNeighborhood: String,
+        valuePerKm: Double,
+        valuePerHour: Double,
         hasAcceptButton: Boolean,
         accepted: Boolean,
         hash: Int
@@ -164,6 +169,11 @@ class TelemetryLogger private constructor(private val context: Context) {
             "dropoffKm" to String.format("%.1f", dropoffKm),
             "duration" to String.format("%.0f", duration),
             "rating" to String.format("%.2f", rating),
+            "stops" to stops,
+            "pickupNeighborhood" to pickupNeighborhood,
+            "dropoffNeighborhood" to dropoffNeighborhood,
+            "valuePerKm" to String.format("%.2f", valuePerKm),
+            "valuePerHour" to String.format("%.2f", valuePerHour),
             "hasAcceptButton" to hasAcceptButton,
             "accepted" to accepted,
             "hash" to hash

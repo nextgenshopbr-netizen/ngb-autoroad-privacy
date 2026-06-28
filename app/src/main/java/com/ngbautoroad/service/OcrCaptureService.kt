@@ -36,6 +36,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import com.google.mlkit.vision.common.InputImage
@@ -123,14 +124,18 @@ class OcrCaptureService : Service() {
         val projectionManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         mediaProjection = projectionManager.getMediaProjection(resultCode, data)
 
+        val scale = 0.5f
+        val targetWidth = (screenWidth * scale).toInt()
+        val targetHeight = (screenHeight * scale).toInt()
+
         imageReader = ImageReader.newInstance(
-            screenWidth, screenHeight,
+            targetWidth, targetHeight,
             PixelFormat.RGBA_8888, 2
         )
 
         virtualDisplay = mediaProjection?.createVirtualDisplay(
             "NGBAutoRoad_OCR",
-            screenWidth, screenHeight, screenDensity,
+            targetWidth, targetHeight, screenDensity,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
             imageReader?.surface, null, handler
         )
@@ -167,17 +172,20 @@ class OcrCaptureService : Service() {
             val buffer = planes[0].buffer
             val pixelStride = planes[0].pixelStride
             val rowStride = planes[0].rowStride
-            val rowPadding = rowStride - pixelStride * screenWidth
+            val scale = 0.5f
+            val targetWidth = (screenWidth * scale).toInt()
+            val targetHeight = (screenHeight * scale).toInt()
+            val rowPadding = rowStride - pixelStride * targetWidth
 
             val bitmap = Bitmap.createBitmap(
-                screenWidth + rowPadding / pixelStride,
-                screenHeight,
+                targetWidth + rowPadding / pixelStride,
+                targetHeight,
                 Bitmap.Config.ARGB_8888
             )
             bitmap.copyPixelsFromBuffer(buffer)
 
             // Crop to actual screen size
-            val croppedBitmap = Bitmap.createBitmap(bitmap, 0, 0, screenWidth, screenHeight)
+            val croppedBitmap = Bitmap.createBitmap(bitmap, 0, 0, targetWidth, targetHeight)
             if (croppedBitmap != bitmap) bitmap.recycle()
 
             processWithMlKit(croppedBitmap)
@@ -196,7 +204,12 @@ class OcrCaptureService : Service() {
                     val rideData = parseOcrText(fullText)
                     if (rideData != null && (rideData.rideValue > 0 || rideData.dropoffDistance > 0)) {
                         consecutiveNoRide = 0
-                        OverlayService.onRideDetected?.invoke(rideData)
+                        if (!OverlayService.isRunning()) {
+                            Log.w("OcrCaptureService", "⚠️ OverlayService não está rodando. Auto-iniciando...")
+                            OverlayService.start(this@OcrCaptureService, rideData)
+                        } else {
+                            OverlayService.onRideDetected?.invoke(rideData)
+                        }
                     } else {
                         consecutiveNoRide++
                     }
@@ -225,22 +238,20 @@ class OcrCaptureService : Service() {
              return null
         }
 
-        var platform = Platform.UNKNOWN
-        var rideValue = 0.0
-        var distance = 0.0
-        var pickupDistance = 0.0
-        var duration = 0.0
-        var rating = 0.0
-        var stops = 0
-
-        // Detectar plataforma
-        platform = when {
+        val platform = when {
             lowerText.contains("uber") || lowerText.contains("uberdrive") -> Platform.UBER
             lowerText.contains("99") || lowerText.contains("ninety") -> Platform.NINETY_NINE
             lowerText.contains("indrive") || lowerText.contains("indriver") -> Platform.INDRIVE
             lowerText.contains("cabify") -> Platform.CABIFY
             else -> Platform.UNKNOWN
         }
+
+        var rideValue = 0.0
+        var distance = 0.0
+        var pickupDistance = 0.0
+        var duration = 0.0
+        var rating = 0.0
+        var stops = 0
 
         var pickupNeighborhood = ""
         var dropoffNeighborhood = ""

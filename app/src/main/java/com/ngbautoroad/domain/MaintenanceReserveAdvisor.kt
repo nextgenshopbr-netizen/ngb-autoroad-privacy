@@ -3,6 +3,9 @@ package com.ngbautoroad.domain
 import android.content.Context
 import android.content.SharedPreferences
 import com.ngbautoroad.data.db.VehicleProfileEntity
+import com.ngbautoroad.data.prefs.PrefsManager
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 
 // ============================================================================
 // ARQUIVO: MaintenanceReserveAdvisor.kt
@@ -87,6 +90,15 @@ class MaintenanceReserveAdvisor(private val context: Context) {
 
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    // v6.9.18: Adicionar suporte para atualizar a taxa de reserva de manutenção
+    fun updateReserveRate(newRate: Double) {
+        prefs.edit().putFloat("maintenance_reserve_per_km", newRate.toFloat()).apply()
+    }
+
+    fun getReserveRate(): Double {
+        return prefs.getFloat("maintenance_reserve_per_km", 0.03f).toDouble()
+    }
+
     /**
      * Analisa a situação atual e gera sugestão se necessário.
      * @param vehicle Perfil do veículo ativo
@@ -105,10 +117,27 @@ class MaintenanceReserveAdvisor(private val context: Context) {
         if (vehicle == null) return null
 
         val baseTable = getMaintenanceTable(vehicle.fuelType)
+
+        // v6.9.18: Filtrar os itens de manutenção baseando-se nas escolhas do motorista
+        val prefsManager = PrefsManager(context)
+        val monitorTires = runBlocking { prefsManager.monitorTiresFlow.first() }
+        val monitorBrakes = runBlocking { prefsManager.monitorBrakesFlow.first() }
+        val monitorOil = runBlocking { prefsManager.monitorOilFlow.first() }
+        val monitorGeneral = runBlocking { prefsManager.monitorGeneralFlow.first() }
+
+        val filteredBaseTable = baseTable.filter { item ->
+            when (item.name) {
+                "Troca de pneus" -> monitorTires
+                "Pastilhas de freio", "Fluido de freio" -> monitorBrakes
+                "Troca de óleo" -> monitorOil
+                "Revisão geral" -> monitorGeneral
+                else -> true
+            }
+        }
         
         // v6.9.15: Calibrar estimativas usando os custos REAIS registrados pelo motorista (Sprint 3)
         val maintenanceTable = if (records.isNotEmpty()) {
-            baseTable.map { item ->
+            filteredBaseTable.map { item ->
                 val matched = records.filter { 
                     it.replacedParts.contains(item.name, ignoreCase = true) || 
                     it.notes.contains(item.name, ignoreCase = true) 
@@ -118,10 +147,10 @@ class MaintenanceReserveAdvisor(private val context: Context) {
                     item.copy(estimatedCost = realAvg)
                 } else item
             }
-        } else baseTable
+        } else filteredBaseTable
 
-        // costPerKm é o custo de combustível/km; para reserva de manutenção usamos 3% do costPerKm como taxa padrão
-        val currentRate = if (vehicle.costPerKm > 0) (vehicle.costPerKm * 0.03).coerceAtLeast(0.03) else 0.03
+        // v6.9.18: Ler taxa de reserva salva do SharedPreferences
+        val currentRate = getReserveRate()
 
         // Encontrar a próxima manutenção mais cara que a reserva não cobrirá
         val nextMaintenance = findNextUnfundedMaintenance(

@@ -242,8 +242,7 @@ class RideAccessibilityService : AccessibilityService() {
             // Flags para máxima visibilidade da árvore
             flags = AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS or
                     AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
-                    AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
-                    AccessibilityServiceInfo.FLAG_REQUEST_ENHANCED_WEB_ACCESSIBILITY
+                    AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
 
             // ZERO timeout para não perder eventos rápidos
             notificationTimeout = 0
@@ -271,49 +270,55 @@ class RideAccessibilityService : AccessibilityService() {
     // =========================================================================
     // v6.9.9: Inicializa UserActionDetector com callbacks para atualizar status
     // =========================================================================
-    fun initUserActionDetector(currentRideId: Long) {
+    fun initUserActionDetector() {
         val context = applicationContext
         userActionDetector = UserActionDetector(
             context = context,
             onAccepted = {
+                val currentId = lifecycleManager?.getCurrentRideDbId() ?: 0L
                 Log.i("NGB_ACTION", "✅ CORRIDA ACEITA (UserActionDetector)")
                 TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
-                    "UserActionDetector: ACEITA rideId=$currentRideId")
+                    "UserActionDetector: ACEITA rideId=$currentId")
                 lifecycleManager?.onRideAccepted()
                 // Fechar overlay atual (mas serviço continua ativo para novas ofertas)
                 OverlayService.onRideAccepted?.invoke()
             },
             onRefused = {
+                val currentId = lifecycleManager?.getCurrentRideDbId() ?: 0L
                 Log.i("NGB_ACTION", "❌ CORRIDA RECUSADA/EXPIRADA (UserActionDetector)")
                 TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
-                    "UserActionDetector: RECUSADA/EXPIRADA rideId=$currentRideId")
+                    "UserActionDetector: RECUSADA/EXPIRADA rideId=$currentId")
                 lifecycleManager?.onRideRefused()
                 OverlayService.onRideAccepted?.invoke() // Fechar overlay também
                 userActionDetector?.stopMonitoring()
             },
             onCompleted = {
+                val currentId = lifecycleManager?.getCurrentRideDbId() ?: 0L
                 Log.i("NGB_ACTION", "🏁 CORRIDA FINALIZADA (UserActionDetector)")
                 TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
-                    "UserActionDetector: FINALIZADA rideId=$currentRideId")
+                    "UserActionDetector: FINALIZADA rideId=$currentId")
                 lifecycleManager?.onRideCompleted()
                 userActionDetector?.stopMonitoring()
             },
             onCancelled = {
+                val currentId = lifecycleManager?.getCurrentRideDbId() ?: 0L
                 Log.i("NGB_ACTION", "🚫 CORRIDA CANCELADA (UserActionDetector)")
                 TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
-                    "UserActionDetector: CANCELADA rideId=$currentRideId")
+                    "UserActionDetector: CANCELADA rideId=$currentId")
                 lifecycleManager?.onRideCancelled()
                 userActionDetector?.stopMonitoring()
             },
             onTripStarted = {
+                val currentId = lifecycleManager?.getCurrentRideDbId() ?: 0L
                 Log.i("NGB_ACTION", "🚗 VIAGEM INICIADA (UserActionDetector)")
                 TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
-                    "UserActionDetector: VIAGEM INICIADA rideId=$currentRideId")
+                    "UserActionDetector: VIAGEM INICIADA rideId=$currentId")
             },
             onArrived = {
+                val currentId = lifecycleManager?.getCurrentRideDbId() ?: 0L
                 Log.i("NGB_ACTION", "📍 CHEGOU NO LOCAL (UserActionDetector)")
                 TelemetryLogger.getInstance(context).log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
-                    "UserActionDetector: CHEGOU NO LOCAL rideId=$currentRideId")
+                    "UserActionDetector: CHEGOU NO LOCAL rideId=$currentId")
             }
         )
     }
@@ -401,7 +406,7 @@ class RideAccessibilityService : AccessibilityService() {
                     userActionDetector?.onTextsAfterAccepted(textsForLifecycle)
                 }
                 // Legacy lifecycle (mantido para compatibilidade)
-                lifecycleManager?.onTextsDetected(textsForLifecycle, packageName)
+                lifecycleManager?.onTextsDetected(textsForLifecycle)
             }
         }
     }
@@ -438,8 +443,20 @@ class RideAccessibilityService : AccessibilityService() {
         // PARSING: Extrair dados da corrida
         // ─────────────────────────────────────────────────────────────────────
         try {
+            val allNodes = mutableListOf<NodeData>()
+            try {
+                windows?.forEach { w -> 
+                    w.root?.let { r -> 
+                        allNodes.addAll(GeometryParser.extractNodes(r))
+                        // recycle() was deprecated
+                    } 
+                }
+            } catch (e: Exception) {
+                Log.w(TAG_TREE, "│  ⚠ Erro ao extrair nós geométricos: ${e.message}")
+            }
+
             val rideData = when (platform) {
-                Platform.UBER -> parseUberRide(allTexts)
+                Platform.UBER -> parseUberRide(allTexts, allNodes)
                 Platform.NINETY_NINE -> parse99Ride(allTexts)
                 Platform.INDRIVE -> parseInDriveRide(allTexts)
                 Platform.CABIFY -> parseCabifyRide(allTexts)
@@ -454,13 +471,6 @@ class RideAccessibilityService : AccessibilityService() {
                 if (hash == lastRideHash && (now - lastRideHashTime) < DUPLICATE_WINDOW_MS) {
                     Log.d(TAG_DEDUP, "│  ⊊ Duplicata ignorada (hash=$hash, Δt=${now - lastRideHashTime}ms)")
                     TelemetryLogger.getInstance(this).logDuplicate(rideData.platform.displayName, rideData.rideValue, "hash_duplicado_${DUPLICATE_WINDOW_MS/1000}s")
-                    return
-                }
-
-                // v6.9.8: Debounce por valor — mesmo R$ dentro de 30s = releitura
-                if (rideData.rideValue == lastRideValue && (now - lastRideValueTime) < VALUE_DEBOUNCE_MS) {
-                    Log.d(TAG_DEDUP, "│  ⊊ Mesmo valor R$${String.format("%.2f", rideData.rideValue)} dentro de ${VALUE_DEBOUNCE_MS/1000}s — ignorando")
-                    TelemetryLogger.getInstance(this).logDuplicate(rideData.platform.displayName, rideData.rideValue, "valor_duplicado_${VALUE_DEBOUNCE_MS/1000}s")
                     return
                 }
 
@@ -487,13 +497,23 @@ class RideAccessibilityService : AccessibilityService() {
                     dropoffKm = rideData.dropoffDistance,
                     duration = rideData.rideDuration,
                     rating = rideData.passengerRating,
+                    stops = rideData.intermediateStops,
+                    pickupNeighborhood = rideData.pickupNeighborhood,
+                    dropoffNeighborhood = rideData.dropoffNeighborhood,
+                    valuePerKm = rideData.valuePerKm,
+                    valuePerHour = rideData.valuePerHour,
                     hasAcceptButton = true, // só chega aqui se hasAcceptButton=true
                     accepted = false,
                     hash = hash
                 )
 
-                // Enviar para o overlay
-                OverlayService.onRideDetected?.invoke(rideData)
+                // v6.9.16: Auto-iniciar OverlayService se ele não estiver rodando (Android mata serviços em bg por memória)
+                if (!OverlayService.isRunning()) {
+                    Log.w(TAG_ENGINE, "│  ⚠️ OverlayService não está rodando. Auto-iniciando...")
+                    OverlayService.start(this, rideData)
+                } else {
+                    OverlayService.onRideDetected?.invoke(rideData)
+                }
             } else {
                 Log.d(TAG_PARSE, "│  ○ Sem dados suficientes para corrida (valor=${rideData?.rideValue ?: 0.0})")
                 // Se não encontrou dados mas é TYPE_WINDOW_STATE_CHANGED, tentar screenshot
@@ -549,7 +569,7 @@ class RideAccessibilityService : AccessibilityService() {
                         Log.d(TAG_TREE, "│    Window[$windowsProcessed] pkg=$windowPackage: ${windowTexts.size} textos, $count nós")
                     }
                 }
-                try { windowRoot.recycle() } catch (_: Exception) {}
+                // recycle() was deprecated
             }
         } catch (e: Exception) {
             Log.w(TAG_TREE, "│  ⚠ getWindows() falhou: ${e.message}")
@@ -565,7 +585,7 @@ class RideAccessibilityService : AccessibilityService() {
                     nodesTraversed += count
                     allTexts.addAll(rootTexts)
                     Log.d(TAG_TREE, "│  rootInActiveWindow: ${rootTexts.size} textos, $count nós")
-                    try { root.recycle() } catch (_: Exception) {}
+                    // recycle() was deprecated
                 }
             } catch (e: Exception) {
                 Log.w(TAG_TREE, "│  ⚠ rootInActiveWindow falhou: ${e.message}")
@@ -582,7 +602,7 @@ class RideAccessibilityService : AccessibilityService() {
                     nodesTraversed += count
                     allTexts.addAll(sourceTexts)
                     Log.d(TAG_TREE, "│  event.source: ${sourceTexts.size} textos, $count nós")
-                    try { source.recycle() } catch (_: Exception) {}
+                    // recycle() was deprecated
                 }
             } catch (e: Exception) {
                 Log.w(TAG_TREE, "│  ⚠ event.source falhou: ${e.message}")
@@ -700,15 +720,15 @@ class RideAccessibilityService : AccessibilityService() {
                             val now = System.currentTimeMillis()
 
                             if (hash != lastRideHash || (now - lastRideHashTime) >= DUPLICATE_WINDOW_MS) {
-                                // v6.9.8: Debounce por valor também no OCR
-                                if (rideData.rideValue == lastRideValue && (now - lastRideValueTime) < VALUE_DEBOUNCE_MS) {
-                                    Log.d(TAG_OCR, "│  ⊊ OCR: Mesmo valor dentro de ${VALUE_DEBOUNCE_MS/1000}s — ignorando")
+                                lastRideHash = hash
+                                lastRideHashTime = now
+                                lastRideValue = rideData.rideValue
+                                lastRideValueTime = now
+                                Log.i(TAG_OCR, "│  ✅ CORRIDA VIA OCR! R$${String.format("%.2f", rideData.rideValue)}")
+                                if (!OverlayService.isRunning()) {
+                                    Log.w(TAG_OCR, "│  ⚠️ OverlayService não está rodando. Auto-iniciando...")
+                                    OverlayService.start(this@RideAccessibilityService, rideData)
                                 } else {
-                                    lastRideHash = hash
-                                    lastRideHashTime = now
-                                    lastRideValue = rideData.rideValue
-                                    lastRideValueTime = now
-                                    Log.i(TAG_OCR, "│  ✅ CORRIDA VIA OCR! R$${String.format("%.2f", rideData.rideValue)}")
                                     OverlayService.onRideDetected?.invoke(rideData)
                                 }
                             }
@@ -787,7 +807,7 @@ class RideAccessibilityService : AccessibilityService() {
         }
 
         // ── NÍVEL 3: Polling para detectar saída do banco ──
-        startGhostModePolling(bankPackage)
+        startGhostModePolling()
     }
 
     /**
@@ -825,7 +845,12 @@ class RideAccessibilityService : AccessibilityService() {
         if (pending != null) {
             Log.i(TAG_GHOST, "│  📨 Corrida pendente do Ghost Mode — enviando ao OverlayService")
             RideNotificationListener.instance?.pendingGhostRide = null
-            OverlayService.onRideDetected?.invoke(pending)
+            if (!OverlayService.isRunning()) {
+                Log.w(TAG_GHOST, "│  ⚠️ OverlayService não está rodando. Auto-iniciando...")
+                OverlayService.start(this@RideAccessibilityService, pending)
+            } else {
+                OverlayService.onRideDetected?.invoke(pending)
+            }
         }
     }
 
@@ -837,7 +862,7 @@ class RideAccessibilityService : AccessibilityService() {
      * Intervalo: 2 segundos
      * Timeout: 5 minutos (segurança contra Ghost Mode preso)
      */
-    private fun startGhostModePolling(bankPackage: String) {
+    private fun startGhostModePolling() {
         stopGhostModePolling() // Limpar polling anterior se houver
 
         ghostPollingRunnable = object : Runnable {
@@ -915,7 +940,7 @@ class RideAccessibilityService : AccessibilityService() {
     //   "Selecionar" ou "Aceitar" (botão)
     //   "1 parada" (paradas intermediárias)
     // =========================================================================
-    private fun parseUberRide(allText: List<String>): RideData? {
+    private fun parseUberRide(allText: List<String>, allNodes: List<NodeData> = emptyList()): RideData? {
         if (isEarningsScreen(allText)) {
             Log.d(TAG_PARSE, "│    [UBER] ✖ Tela de Ganhos detectada — descartando")
             return null
@@ -924,8 +949,14 @@ class RideAccessibilityService : AccessibilityService() {
             Log.d(TAG_PARSE, "│    [UBER] ✖ Tela de Notificações detectada — descartando")
             return null
         }
-        if (isNavigationScreen(allText)) {
-            Log.d(TAG_PARSE, "│    [UBER] ✖ Tela de Navegação detectada — descartando")
+        
+        // v6.9.15: Permitir o processamento se for uma oferta back-to-back (contém botão de aceitar)
+        val hasAcceptButtonInText = allText.any { text ->
+            val trimmed = text.trim().lowercase()
+            trimmed == "aceitar" || trimmed == "selecionar" || trimmed == "accept" || trimmed == "select" || trimmed == "aceptar"
+        }
+        if (isNavigationScreen(allText) && !hasAcceptButtonInText) {
+            Log.d(TAG_PARSE, "│    [UBER] ✖ Tela de Navegação detectada (sem botão Aceitar) — descartando")
             return null
         }
 
@@ -1027,27 +1058,60 @@ class RideAccessibilityService : AccessibilityService() {
             }
 
             // ── BAIRROS (extrair do endereço) ──
-            // Formato Uber: "Rua X, Bairro / Cidade" ou "R. X - Bairro, Cidade - UF"
+            // Formato Uber: "Rua X, Bairro / Cidade" ou "R. X - Bairro, Cidade - UF" ou apenas "Efapi"
             if (pickupNeighborhood.isBlank() && foundPickupContext && !foundTripContext) {
                 val neighborhoodMatch = Regex("""[/\-,]\s*([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+){0,3})""").find(text)
-                if (neighborhoodMatch != null) {
-                    val candidate = neighborhoodMatch.groupValues[1].trim()
-                    // Filtrar palavras comuns que não são bairros
-                    if (!isCommonWord(candidate)) {
-                        pickupNeighborhood = candidate.take(30)
-                        Log.d(TAG_PARSE, "│    [UBER] Bairro pickup: \"$pickupNeighborhood\"")
-                    }
+                var candidate = neighborhoodMatch?.groupValues?.get(1)?.trim() ?: ""
+                
+                if (candidate.isEmpty() && text.trim().matches(Regex("""^[A-ZÀ-Úa-zà-ú\s]+$""")) && text.length in 3..40) {
+                    candidate = text.trim()
+                }
+
+                if (candidate.isNotBlank() && !isCommonWord(candidate)) {
+                    pickupNeighborhood = candidate.take(30)
+                    Log.d(TAG_PARSE, "│    [UBER] Bairro pickup: \"$pickupNeighborhood\"")
                 }
             }
             if (dropoffNeighborhood.isBlank() && foundTripContext) {
                 val neighborhoodMatch = Regex("""[/\-,]\s*([A-ZÀ-Ú][a-zà-ú]+(?:\s+[A-ZÀ-Ú][a-zà-ú]+){0,3})""").find(text)
-                if (neighborhoodMatch != null) {
-                    val candidate = neighborhoodMatch.groupValues[1].trim()
-                    if (!isCommonWord(candidate) && candidate != pickupNeighborhood) {
-                        dropoffNeighborhood = candidate.take(30)
-                        Log.d(TAG_PARSE, "│    [UBER] Bairro dropoff: \"$dropoffNeighborhood\"")
-                    }
+                var candidate = neighborhoodMatch?.groupValues?.get(1)?.trim() ?: ""
+                
+                if (candidate.isEmpty() && text.trim().matches(Regex("""^[A-ZÀ-Úa-zà-ú\s]+$""")) && text.length in 3..40) {
+                    candidate = text.trim()
                 }
+
+                if (candidate.isNotBlank() && !isCommonWord(candidate) && candidate != pickupNeighborhood) {
+                    dropoffNeighborhood = candidate.take(30)
+                    Log.d(TAG_PARSE, "│    [UBER] Bairro dropoff: \"$dropoffNeighborhood\"")
+                }
+            }
+        }
+
+        // =====================================================================
+        // FALLBACK GEOMÉTRICO (v7.0) - Anti-Detection da Uber
+        // Se a Uber separou os textos em várias views, o Regex acima falha.
+        // =====================================================================
+        if (rideValue == 0.0 && allNodes.isNotEmpty()) {
+            val geomValue = GeometryParser.findValueNearAnchor(allNodes, "R$")
+            if (geomValue in 2.0..999.0) {
+                rideValue = geomValue
+                Log.d(TAG_PARSE, "│    [UBER] Valor (Geometria): R$ $geomValue")
+            }
+        }
+
+        if (dropoffDistance == 0.0 && allNodes.isNotEmpty()) {
+            val geomDist = GeometryParser.findDistanceNearAnchor(allNodes, "km")
+            if (geomDist > 0.0) {
+                dropoffDistance = geomDist
+                Log.d(TAG_PARSE, "│    [UBER] Trip KM (Geometria): $geomDist km")
+            }
+        }
+
+        if (duration == 0.0 && allNodes.isNotEmpty()) {
+            val geomDur = GeometryParser.findDistanceNearAnchor(allNodes, "min")
+            if (geomDur > 0.0) {
+                duration = geomDur
+                Log.d(TAG_PARSE, "│    [UBER] Trip Min (Geometria): $geomDur min")
             }
         }
 
@@ -1108,6 +1172,11 @@ class RideAccessibilityService : AccessibilityService() {
             RideType.UBER_X
         }
 
+        val isRadar = allText.any { text ->
+            val normalized = text.lowercase()
+            normalized.contains("radar") || normalized.contains("viagens por perto") || normalized.contains("trip radar")
+        }
+
         return RideData(
             platform = Platform.UBER,
             rideType = detectedType,
@@ -1118,7 +1187,8 @@ class RideAccessibilityService : AccessibilityService() {
             passengerRating = rating,
             intermediateStops = stops,
             pickupNeighborhood = pickupNeighborhood,
-            dropoffNeighborhood = dropoffNeighborhood
+            dropoffNeighborhood = dropoffNeighborhood,
+            metadata = mapOf("isRadar" to isRadar.toString())
         )
     }
 
@@ -1418,7 +1488,7 @@ class RideAccessibilityService : AccessibilityService() {
                 try {
                     nodesVisited += traverseNode(child, texts, depth + 1)
                 } finally {
-                    try { child.recycle() } catch (_: Exception) {}
+                    // recycle() was deprecated
                 }
             } catch (_: Exception) {
                 // Nó pode ter sido reciclado por outro thread — ignorar
@@ -1484,10 +1554,10 @@ class RideAccessibilityService : AccessibilityService() {
 
     /**
      * Gera hash único para uma corrida (para deduplicação).
-     * Combina: plataforma + valor + distância trip + bairro pickup
+     * Combina: plataforma + valor + pickup km + dropoff km + bairro pickup
      */
     private fun generateRideHash(ride: RideData): Int {
-        return "${ride.platform}_${String.format("%.2f", ride.rideValue)}_${ride.pickupNeighborhood}".hashCode()
+        return "${ride.platform}_${String.format("%.2f", ride.rideValue)}_${String.format("%.1f", ride.pickupDistance)}_${String.format("%.1f", ride.dropoffDistance)}_${ride.pickupNeighborhood}".hashCode()
     }
 
     /**

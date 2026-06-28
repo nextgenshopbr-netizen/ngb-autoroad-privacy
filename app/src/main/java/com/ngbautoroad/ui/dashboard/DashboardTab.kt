@@ -54,6 +54,7 @@ import com.ngbautoroad.domain.ShiftState
 import com.ngbautoroad.service.OverlayService
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardOptions
@@ -265,7 +266,23 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
             Spacer(modifier = Modifier.height(8.dp))
         }
 
+        // v6.1.1: Seletor rápido de perfil antes de iniciar turno
+        ProfileQuickSelector(prefsManager, scope)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // v5.2.0: Card de Turno integrado na Dashboard
+        ShiftDashboardCard(context, scope, prefsManager)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // v6.9.18: Painel de Corridas Vigente e Próxima (ActiveRidesHub)
+        ActiveRidesHub(database)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         // === ASSISTENTE NGB (IA) ===
+        // Movido para baixo do card de turno e corridas para não cobrir informações críticas
         if (aiState != null) {
             Card(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -299,20 +316,6 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
                 }
             }
         }
-
-        // v6.1.1: Seletor rápido de perfil antes de iniciar turno
-        ProfileQuickSelector(prefsManager, scope)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // v6.9.17: Corrida Ativa (Pós-Aceite)
-        if (activeRide != null) {
-            ActiveRideDashboardCard(activeRide)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        // v5.2.0: Card de Turno integrado na Dashboard
-        ShiftDashboardCard(context, scope, prefsManager)
 
 
 
@@ -556,6 +559,25 @@ fun FinancialSummarySection() {
                         fontWeight = FontWeight.Bold,
                         color = if (netMonth >= 0) ScoreGreen else ScoreRed
                     )
+                }
+            }
+
+            // Alerta de Break-Even
+            if (netToday < 0) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                ) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Atenção: Sua margem está negativa. Você ainda não atingiu o break-even diário.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
                 }
             }
 
@@ -981,74 +1003,78 @@ fun ShiftDashboardCard(
         ) {
             if (!shiftState.isActive) {
                 // === TURNO INATIVO: Botão Iniciar ===
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
                             "Turno",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        val goalTypeLabel = if (goalTypeInput == "LIQUIDO") "Líquido" else "Bruto"
-                        Text(
-                            "Meta: R$ $goalInput ($goalTypeLabel)",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        // Botão editar meta
-                        IconButton(onClick = { showGoalEdit = !showGoalEdit }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Editar meta")
-                        }
-                        // Botão Iniciar Turno
-                        Button(
-                            onClick = {
-                                val parsedGoalValue = goalInput.toDoubleOrNull()
-                                // Verificar se meta foi configurada (obrigatório)
-                                if (parsedGoalValue == null || parsedGoalValue <= 0.0) {
-                                    showGoalRequiredDialog = true
-                                    return@Button
-                                }
-                                shiftState = shiftManager.startShift(parsedGoalValue)
-                                // Criar meta diária automática no módulo financeiro
-                                scope.launch {
-                                    try {
-                                        val today = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
-                                        val existingGoals = goalDao.getActiveGoalsSync()
-                                        val existingDailyGoal = existingGoals.firstOrNull { it.period == "DIA" }
-                                        if (existingDailyGoal != null) {
-                                            goalDao.update(existingDailyGoal.copy(targetAmount = parsedGoalValue, goalType = goalTypeInput))
-                                        } else {
-                                            goalDao.insert(
-                                                com.ngbautoroad.data.db.FinancialGoalEntity(
-                                                    title = "Meta Diária - $today",
-                                                    targetAmount = parsedGoalValue,
-                                                    period = "DIA",
-                                                    goalType = goalTypeInput,
-                                                    isActive = true
-                                                )
-                                            )
-                                        }
-                                    } catch (_: Exception) {}
-                                    // Ativar todos os serviços ao iniciar turno
-                                    prefsManager.setServiceEnabled(true)
-                                    prefsManager.setProtectionEnabled(true)
-                                    try { OverlayService.start(context) } catch (_: Exception) {}
-                                    try { com.ngbautoroad.service.BubbleService.start(context) } catch (_: Exception) {}
-                                }
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = ScoreGreen
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val goalTypeLabel = if (goalTypeInput == "LIQUIDO") "Líquido" else "Bruto"
+                            Text(
+                                "Meta: R$ $goalInput ($goalTypeLabel)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = "Iniciar")
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Iniciar Turno", color = Color.White)
+                            IconButton(
+                                onClick = { showGoalEdit = !showGoalEdit },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "Editar meta",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            val parsedGoalValue = goalInput.toDoubleOrNull()
+                            if (parsedGoalValue == null || parsedGoalValue <= 0.0) {
+                                showGoalRequiredDialog = true
+                                return@Button
+                            }
+                            shiftState = shiftManager.startShift(parsedGoalValue)
+                            scope.launch {
+                                try {
+                                    val today = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+                                    val existingGoals = goalDao.getActiveGoalsSync()
+                                    val existingDailyGoal = existingGoals.firstOrNull { it.period == "DIA" }
+                                    if (existingDailyGoal != null) {
+                                        goalDao.update(existingDailyGoal.copy(targetAmount = parsedGoalValue, goalType = goalTypeInput))
+                                    } else {
+                                        goalDao.insert(
+                                            com.ngbautoroad.data.db.FinancialGoalEntity(
+                                                title = "Meta Diária - $today",
+                                                targetAmount = parsedGoalValue,
+                                                period = "DIA",
+                                                goalType = goalTypeInput,
+                                                isActive = true
+                                            )
+                                        )
+                                    }
+                                } catch (_: Exception) {}
+                                prefsManager.setServiceEnabled(true)
+                                prefsManager.setProtectionEnabled(true)
+                                try { OverlayService.start(context) } catch (_: Exception) {}
+                                try { com.ngbautoroad.service.BubbleService.start(context) } catch (_: Exception) {}
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = ScoreGreen)
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Iniciar")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Iniciar Turno", color = Color.White)
                     }
                 }
                 // Campo de edição de meta
@@ -1897,8 +1923,8 @@ private fun ActivityStateCard(context: android.content.Context) {
 private fun MaintenanceAdvisorCard(context: android.content.Context) {
     val scope = rememberCoroutineScope()
     var suggestion by remember { mutableStateOf<com.ngbautoroad.domain.ReserveAdjustmentSuggestion?>(null) }
-
     var vehicleCostPerKm by remember { mutableStateOf(0.0) }
+    var visible by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         scope.launch(kotlinx.coroutines.Dispatchers.IO) {
@@ -1909,15 +1935,20 @@ private fun MaintenanceAdvisorCard(context: android.content.Context) {
                     vehicleCostPerKm = active.costPerKm
                     val advisor = com.ngbautoroad.domain.MaintenanceReserveAdvisor(context)
                     val odometer = active.currentOdometer
-                    val reserve = active.costPerKm * odometer * 0.03 // Reserva estimada: 3% do custo/km
+                    // v6.9.18: Usar a taxa de reserva real salva em SharedPreferences
+                    val currentRate = advisor.getReserveRate()
+                    val reserve = currentRate * odometer
                     suggestion = advisor.analyze(active, odometer, reserve)
                 }
             } catch (_: Exception) { }
         }
     }
 
+    if (!visible) return
+
     suggestion?.let { data ->
-        if (!com.ngbautoroad.domain.MaintenanceReserveAdvisor(context).shouldShowSuggestion(data.nextMaintenanceName)) return
+        val advisor = remember { com.ngbautoroad.domain.MaintenanceReserveAdvisor(context) }
+        if (!advisor.shouldShowSuggestion(data.nextMaintenanceName)) return
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -1937,7 +1968,7 @@ private fun MaintenanceAdvisorCard(context: android.content.Context) {
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        if (data.isUrgent) "Reserva de manutenção insuficiente" else "Sugestão de reserva para manutenção",
+                        if (data.isUrgent) "Reserva de manutenção insuficiente" else "💡 IA Advisor — Reserva de Manutenção",
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -1946,7 +1977,7 @@ private fun MaintenanceAdvisorCard(context: android.content.Context) {
                 // Aviso se custo/km não configurado (usando valor padrão R$0,03)
                 if (vehicleCostPerKm <= 0.0) {
                     Text(
-                        "⚠ Custo/km do veículo não configurado. Usando estimativa padrão (R\$ 0,03/km). Configure em Finanças → Veículos para cálculos precisos.",
+                        "⚠ Custo/km do veículo não configurado. Configure em Finanças → Veículos para cálculos de combustível precisos.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(bottom = 6.dp)
@@ -1960,76 +1991,198 @@ private fun MaintenanceAdvisorCard(context: android.content.Context) {
                 // Explicação do que é a reserva de manutenção
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "A reserva de manutenção é um valor separado por km rodado para cobrir revisões, pneus e peças. Ajuste em Finanças → Veículos.",
+                    "A reserva de manutenção é uma provisão por km rodado para cobrir despesas futuras com o veículo.",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = {
+                        scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                            advisor.markSuggestionAccepted(data.nextMaintenanceName)
+                        }
+                        visible = false
+                    }) {
+                        Text("Ignorar", color = MaterialTheme.colorScheme.outline)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            scope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                advisor.updateReserveRate(data.suggestedRatePerKm)
+                                advisor.markSuggestionAccepted(data.nextMaintenanceName)
+                            }
+                            visible = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Aplicar R$ ${"%.2f".format(data.suggestedRatePerKm)}/km", color = MaterialTheme.colorScheme.onPrimary)
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun ActiveRideDashboardCard(ride: com.ngbautoroad.data.model.RideData) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
+fun ActiveRidesHub(database: AppDatabase) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val dao = remember { database.rideHistoryDao() }
+
+    val allRides by dao.getAllFlow().collectAsState(initial = emptyList())
+    val activeRides = remember(allRides) {
+        val sinceTime = System.currentTimeMillis() - 12 * 60 * 60 * 1000L
+        allRides.filter { it.status == "ACCEPTED" && it.timestamp >= sinceTime }
+            .sortedBy { it.timestamp } // oldest first (current ride is first, queued next is second)
+    }
+
+    if (activeRides.isEmpty()) return
+
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        activeRides.forEachIndexed { index, ride ->
+            val isCurrent = index == 0
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isCurrent) MaterialTheme.colorScheme.primaryContainer 
+                                     else MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Default.DirectionsCar,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "Corrida em Andamento",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Text(
-                    ride.platform.displayName,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.DirectionsCar,
+                                contentDescription = null,
+                                tint = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer 
+                                       else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isCurrent) "Corrida em Andamento" else "Próxima Corrida (Fila)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer 
+                                       else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Text(
+                            text = ride.platform,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer 
+                                   else MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("Ganhos por KM", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
-                    Text("R$ ${"%.2f".format(ride.valuePerKm)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("Valor Total", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f))
-                    Text("R$ ${"%.2f".format(ride.rideValue)}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column {
+                            Text("Valor Total", style = MaterialTheme.typography.labelSmall, color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("R$ ${"%.2f".format(ride.rideValue)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("R$/KM", style = MaterialTheme.typography.labelSmall, color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("R$ ${"%.2f".format(ride.valuePerKm)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text("R$/Hora", style = MaterialTheme.typography.labelSmall, color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                            val rpH = if (ride.rideDuration > 0) (ride.rideValue / ride.rideDuration) * 60.0 else 0.0
+                            Text("R$ ${"%.2f".format(rpH)}/h", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Divider(color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-            if (ride.pickupNeighborhood.isNotBlank() || ride.dropoffNeighborhood.isNotBlank()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f))
-                        .padding(10.dp)
-                ) {
-                    Text(
-                        "${ride.pickupNeighborhood} ➔ ${ride.dropoffNeighborhood}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(
+                            "Busca: ${"%.1f".format(ride.pickupDistance)} km",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Destino: ${"%.1f".format(ride.dropoffDistance)} km",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Duração: ${ride.rideDuration.toInt()} min",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (ride.pickupNeighborhood.isNotBlank() || ride.dropoffNeighborhood.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                                .padding(8.dp)
+                        ) {
+                            Text(
+                                "${ride.pickupNeighborhood.trim()} ➔ ${ride.dropoffNeighborhood.trim()}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Avaliação: ⭐ ${"%.2f".format(ride.passengerRating)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "Score IA: ${ride.score.toInt()} pts",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                ride.score >= 70 -> ScoreGreen
+                                ride.score >= 50 -> ScoreYellow
+                                else -> ScoreRed
+                            }
+                        )
+                    }
+
+                    if (isCurrent) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    scope.launch(Dispatchers.IO) {
+                                        dao.updateStatusById(ride.id, "COMPLETED")
+                                        val rlm = com.ngbautoroad.service.RideAccessibilityService.instance?.lifecycleManager
+                                        if (rlm != null) {
+                                            rlm.onRideCompleted(ride.rideValue)
+                                        }
+                                    }
+                                },
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f))
+                            ) {
+                                Text("Finalizar Viagem", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            }
+                        }
+                    }
                 }
             }
         }

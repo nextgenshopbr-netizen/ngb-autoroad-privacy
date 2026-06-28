@@ -29,6 +29,7 @@ package com.ngbautoroad.data.model
 /**
  * Dados extraídos de uma corrida via OCR/Accessibility
  */
+@kotlinx.serialization.Serializable
 data class RideData(
     val platform: Platform = Platform.UNKNOWN,
     val rideType: RideType = RideType.UNKNOWN, // Tipo da corrida (UberX, Comfort, Black, etc.)
@@ -59,6 +60,7 @@ data class RideData(
 // LÓGICA: Cada plataforma tem displayName (UI) e packageName (detecção automática)
 // DEPENDENTE: RideAccessibilityService detecta plataforma pelo packageName
 // ============================================================================
+@kotlinx.serialization.Serializable
 enum class Platform(val displayName: String, val packageName: String) {
     UBER("Uber", "com.ubercab.driver"),
     // v6.9.7: Package real do 99 Motorista na Play Store é com.app99.driver
@@ -77,6 +79,7 @@ enum class Platform(val displayName: String, val packageName: String) {
 // DETECÇÃO: Parser do AccessibilityService lê o badge no topo do card da Uber
 // DEPENDENTE: OverlayCard exibe tipo, RideScorer pode usar como critério futuro
 // ============================================================================
+@kotlinx.serialization.Serializable
 enum class RideType(val displayName: String, val platform: Platform) {
     // Uber
     UBER_X("UberX", Platform.UBER),
@@ -178,13 +181,13 @@ data class CriteriaWeights(
 // ============================================================================
 @kotlinx.serialization.Serializable
 data class DriverThresholds(
-    val minValuePerKm: Double = 0.0,        // R$/km mínimo desejado (0=desativado)
-    val minValuePerHour: Double = 0.0,      // R$/hora mínimo desejado (0=desativado)
+    val minValuePerKm: Double = 2.00,        // R$/km mínimo desejado (padrão 2.00)
+    val minValuePerHour: Double = 42.00,      // R$/hora mínimo desejado (padrão 42.00)
     val minRideValue: Double = 0.0,         // Valor mínimo da corrida R$ (0=desativado)
     val maxPickupDistance: Double = 0.0,    // Distância máxima até embarque km (0=desativado)
-    val minPassengerRating: Double = 0.0,   // Avaliação mínima do passageiro (0=desativado, max=5.0)
+    val minPassengerRating: Double = 4.90,   // Avaliação mínima do passageiro (padrão 4.90, max=5.0)
     val maxDuration: Double = 0.0,          // Duração máxima aceitável min (0=desativado)
-    val maxStops: Int = 99,                 // Máximo de paradas aceitáveis (99=desativado)
+    val maxStops: Int = 1,                  // Máximo de paradas aceitáveis (padrão 1)
     val minDropoffDistance: Double = 0.0    // Distância mínima do destino km (0=desativado)
 ) {
     fun isValuePerKmActive() = minValuePerKm > 0
@@ -298,7 +301,8 @@ data class CardModel(
     val showPlatformIcon: Boolean = true,
     val showScore: Boolean = true,
     val isCustom: Boolean = false,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val isAiDriven: Boolean = false // <-- Novo sinalizador de UI controlada pela IA
 )
 
 // ============================================================================

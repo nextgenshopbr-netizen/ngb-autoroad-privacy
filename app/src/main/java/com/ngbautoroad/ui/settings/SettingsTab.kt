@@ -765,7 +765,7 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                 } else {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "O modo Padrão exibe um design moderno inspirado na Gigu com fundo translúcido (Glassmorphism) e borda inteligente.",
+                        "O modo Padrão exibe um design moderno com fundo translúcido (Glassmorphism) e borda inteligente.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -948,6 +948,53 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                 }
             }
         }
+
+        // === ALERTAS DE MANUTENÇÃO ===
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Alertas de Manutenção",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Escolha quais despesas do veículo a IA deve monitorar",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val monitorTires by prefsManager.monitorTiresFlow.collectAsState(initial = true)
+                val monitorBrakes by prefsManager.monitorBrakesFlow.collectAsState(initial = true)
+                val monitorOil by prefsManager.monitorOilFlow.collectAsState(initial = true)
+                val monitorGeneral by prefsManager.monitorGeneralFlow.collectAsState(initial = true)
+
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Monitorar Pneus", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Switch(checked = monitorTires, onCheckedChange = { scope.launch { prefsManager.saveMonitorTires(it) } })
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Monitorar Pastilhas/Freios", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Switch(checked = monitorBrakes, onCheckedChange = { scope.launch { prefsManager.saveMonitorBrakes(it) } })
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Monitorar Troca de Óleo", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Switch(checked = monitorOil, onCheckedChange = { scope.launch { prefsManager.saveMonitorOil(it) } })
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Monitorar Revisão Geral", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    Switch(checked = monitorGeneral, onCheckedChange = { scope.launch { prefsManager.saveMonitorGeneral(it) } })
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // === STATUS DO SISTEMA ===
         SystemStatusCard(context, scope, prefsManager)

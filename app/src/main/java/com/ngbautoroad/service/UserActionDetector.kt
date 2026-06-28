@@ -156,7 +156,7 @@ class UserActionDetector(
         if (!isMonitoring) return false
 
         val clickedText = buildString {
-            event.text?.forEach { append(it?.toString()?.lowercase() ?: "") }
+            event.text.forEach { append(it?.toString()?.lowercase() ?: "") }
             event.contentDescription?.let { append(" ").append(it.toString().lowercase()) }
         }.trim()
 
@@ -381,7 +381,7 @@ class UserActionDetector(
 
     private fun getCompletedTexts(platform: Platform): List<String> = when (platform) {
         Platform.UBER -> listOf("viagem concluída", "trip completed", "corrida finalizada",
-            "avalie o passageiro", "rate rider", "como foi a viagem")
+            "avalie o passageiro", "rate rider", "como foi a viagem", "avaliar usuário", "avaliar o usuário")
         Platform.NINETY_NINE -> listOf("corrida finalizada", "avalie", "viagem concluída")
         Platform.INDRIVE -> listOf("concluída", "finalizada", "completed")
         else -> listOf("concluída", "finalizada", "completed", "avalie")

@@ -35,6 +35,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.ngbautoroad.data.model.Platform
 import com.ngbautoroad.data.model.RideData
 import com.ngbautoroad.data.prefs.PrefsManager
+import com.ngbautoroad.domain.TelemetryLogger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlin.random.Random
@@ -142,9 +143,12 @@ class AutoPilotEngine(
 
         scope.launch {
             try {
+                val telemetry = TelemetryLogger.getInstance(context)
                 val mode = prefsManager.autoPilotModeFlow.first()
                 if (mode == MODE_OFF) {
                     Log.d(TAG, "│  AutoPilot DESLIGADO — motorista decide")
+                    telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                        "AutoPilot: DESLIGADO (modo=OFF, rideId=$rideDbId)")
                     return@launch
                 }
 
@@ -164,6 +168,9 @@ class AutoPilotEngine(
                 Log.i(TAG, "║  Refuse ≤ $maxRefuseScore | GeoFilters: ${if (geoFiltersEnabled) "ON" else "OFF"}")
                 Log.i(TAG, "║  💰 ${financialCtx.reason}")
                 Log.i(TAG, "╚══════════════════════════════════════════════════╝")
+
+                telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                    "AutoPilot: Avaliando rideId=$rideDbId | Modo=$mode | Score=${String.format("%.1f", score)} | LimiteAceitar=$minAcceptScore | LimiteRecusar=$maxRefuseScore")
 
                 // ── Decisão (v6.1.1: suporta modos combinados) ──
                 val canAccept = mode in listOf(MODE_ACCEPT_ONLY, MODE_FULL, MODE_ACCEPT, MODE_BOTH)
@@ -190,19 +197,25 @@ class AutoPilotEngine(
                     AutoPilotDecision.ACCEPT -> {
                         val delay = calculateAcceptDelay(score)
                         Log.i(TAG, "├─ ✅ AUTO-ACEITAR em ${delay}ms (score=${String.format("%.1f", score)})")
+                        telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                            "AutoPilot: Decisão ACEITAR em ${delay}ms para rideId=$rideDbId")
                         scheduleAction(delay) {
-                            performAccept(ride.platform)
+                            performAccept(ride, rideDbId)
                         }
                     }
                     AutoPilotDecision.REFUSE -> {
                         val delay = calculateRefuseDelay(score)
                         Log.i(TAG, "├─ ❌ AUTO-RECUSAR em ${delay}ms (score=${String.format("%.1f", score)})")
+                        telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                            "AutoPilot: Decisão RECUSAR em ${delay}ms para rideId=$rideDbId")
                         scheduleAction(delay) {
-                            performRefuse(ride.platform)
+                            performRefuse(ride.platform, rideDbId)
                         }
                     }
                     AutoPilotDecision.NEUTRAL -> {
                         Log.i(TAG, "├─ ⚖ ZONA NEUTRA — motorista decide")
+                        telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                            "AutoPilot: Decisão NEUTRA (zona neutra) para rideId=$rideDbId")
                     }
                 }
 
@@ -315,8 +328,10 @@ class AutoPilotEngine(
     /**
      * Executa click no botão ACEITAR da plataforma
      */
-    private fun performAccept(platform: Platform) {
+    fun performAccept(ride: RideData, rideDbId: Long) {
+        val platform = ride.platform
         Log.i(TAG, "├─ 🖱 Executando ACEITAR para ${platform.displayName}")
+        val telemetry = TelemetryLogger.getInstance(context)
 
         val acceptTexts = when (platform) {
             Platform.UBER -> UBER_ACCEPT_TEXTS
@@ -328,23 +343,49 @@ class AutoPilotEngine(
         val clicked = findAndClickButton(acceptTexts, platform.packageName)
         if (clicked) {
             Log.i(TAG, "│  ✅ Botão ACEITAR clicado com sucesso!")
+            telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                "AutoPilot: Botão ACEITAR clicado para rideId=$rideDbId")
             RideAccessibilityService.instance?.lifecycleManager?.onRideAccepted()
             RideAccessibilityService.instance?.userActionDetector?.stopMonitoring()
         } else {
-            // v6.9.9: Fallback com swipe para Uber (slider "deslize para aceitar")
+            // v6.9.9: Fallback para Uber (swipe para radar / tap para corrida padrão)
             if (platform == Platform.UBER && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                Log.i(TAG, "│  👆 Tentando swipe (slider Uber)...")
-                val swipeResult = performSwipeAccept()
-                if (swipeResult) {
-                    Log.i(TAG, "│  ✅ Swipe ACEITAR executado com sucesso!")
-                    RideAccessibilityService.instance?.lifecycleManager?.onRideAccepted()
-                    RideAccessibilityService.instance?.userActionDetector?.stopMonitoring()
+                val isRadar = ride.metadata?.get("isRadar")?.toBoolean() ?: false
+                if (isRadar) {
+                    Log.i(TAG, "│  👆 Oferta detectada como RADAR. Tentando swipe (slider Uber)...")
+                    val swipeResult = performSwipeAccept()
+                    if (swipeResult) {
+                        Log.i(TAG, "│  ✅ Swipe ACEITAR executado com sucesso!")
+                        telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                            "AutoPilot: Swipe ACEITAR executado para rideId=$rideDbId")
+                        RideAccessibilityService.instance?.lifecycleManager?.onRideAccepted()
+                        RideAccessibilityService.instance?.userActionDetector?.stopMonitoring()
+                    } else {
+                        Log.w(TAG, "│  ⚠ Swipe também falhou — motorista deve agir manualmente")
+                        telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.WARN,
+                            "AutoPilot: Swipe falhou ao aceitar rideId=$rideDbId")
+                        synchronized(processingLock) { isProcessing = false }
+                    }
                 } else {
-                    Log.w(TAG, "│  ⚠ Swipe também falhou — motorista deve agir manualmente")
-                    synchronized(processingLock) { isProcessing = false }
+                    Log.i(TAG, "│  👆 Oferta detectada como PADRÃO. Tentando tap/click (Card Uber)...")
+                    val tapResult = performTapAccept()
+                    if (tapResult) {
+                        Log.i(TAG, "│  ✅ Toque/Tap ACEITAR executado com sucesso!")
+                        telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                            "AutoPilot: Toque ACEITAR executado para rideId=$rideDbId")
+                        RideAccessibilityService.instance?.lifecycleManager?.onRideAccepted()
+                        RideAccessibilityService.instance?.userActionDetector?.stopMonitoring()
+                    } else {
+                        Log.w(TAG, "│  ⚠ Toque/Tap também falhou — motorista deve agir manualmente")
+                        telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.WARN,
+                            "AutoPilot: Toque ACEITAR falhou para rideId=$rideDbId")
+                        synchronized(processingLock) { isProcessing = false }
+                    }
                 }
             } else {
                 Log.w(TAG, "│  ⚠ Botão ACEITAR não encontrado — motorista deve agir manualmente")
+                telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.WARN,
+                    "AutoPilot: Botão ACEITAR não encontrado para rideId=$rideDbId")
                 synchronized(processingLock) { isProcessing = false }
             }
         }
@@ -353,8 +394,9 @@ class AutoPilotEngine(
     /**
      * Executa click no botão RECUSAR da plataforma
      */
-    private fun performRefuse(platform: Platform) {
+    fun performRefuse(platform: Platform, rideDbId: Long) {
         Log.i(TAG, "├─ 🖱 Executando RECUSAR para ${platform.displayName}")
+        val telemetry = TelemetryLogger.getInstance(context)
 
         val refuseTexts = when (platform) {
             Platform.UBER -> UBER_REFUSE_TEXTS
@@ -366,10 +408,24 @@ class AutoPilotEngine(
         val clicked = findAndClickButton(refuseTexts, platform.packageName)
         if (clicked) {
             Log.i(TAG, "│  ✅ Botão RECUSAR clicado com sucesso!")
+            telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                "AutoPilot: Botão RECUSAR clicado para rideId=$rideDbId")
             // Notificar lifecycle que corrida foi recusada
             RideAccessibilityService.instance?.lifecycleManager?.onRideRefused()
         } else {
-            Log.w(TAG, "│  ⚠ Botão RECUSAR não encontrado — motorista deve agir manualmente")
+            // Fallback tap for refuse (top-left X or top-right X depending on platform, usually top-right for Uber now or top-left)
+            // Uber usually has X at top right (x=0.90, y=0.08) or top left (x=0.10, y=0.08)
+            val tapResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) performTapRefuse() else false
+            if (tapResult) {
+                Log.i(TAG, "│  ✅ Toque/Tap RECUSAR executado (fallback) com sucesso!")
+                telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
+                    "AutoPilot: Toque RECUSAR executado (fallback) para rideId=$rideDbId")
+                RideAccessibilityService.instance?.lifecycleManager?.onRideRefused()
+            } else {
+                Log.w(TAG, "│  ⚠ Botão RECUSAR não encontrado e Tap falhou — motorista deve agir manualmente")
+                telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.WARN,
+                    "AutoPilot: Botão RECUSAR não encontrado para rideId=$rideDbId")
+            }
         }
     }
 
@@ -521,6 +577,127 @@ class AutoPilotEngine(
             return gestureResult
         } catch (e: Exception) {
             Log.e(TAG, "│  ✖ Erro ao executar swipe: ${e.message}")
+            return false
+        }
+    }
+
+    @android.annotation.TargetApi(Build.VERSION_CODES.N)
+    private fun performTapRefuse(): Boolean {
+        // fix: O botão X do Uber muda de posição conforme versão do app e tamanho de tela.
+        // Tentamos múltiplos candidatos em ordem de probabilidade:
+        //   1. Canto superior direito (x=0.90, y=0.08) — Uber layout atual
+        //   2. Canto superior esquerdo (x=0.10, y=0.08) — Uber layout antigo / 99
+        //   3. Centro-superior (x=0.50, y=0.08) — layouts alternativos
+        //   4. Canto superior direito mais baixo (x=0.90, y=0.12) — cards maiores
+        val candidatePositions = listOf(
+            Pair(0.90f, 0.08f),
+            Pair(0.10f, 0.08f),
+            Pair(0.50f, 0.08f),
+            Pair(0.90f, 0.12f),
+            Pair(0.10f, 0.12f)
+        )
+
+        try {
+            val displayMetrics = context.resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels.toFloat()
+            val screenHeight = displayMetrics.heightPixels.toFloat()
+
+            for ((xRatio, yRatio) in candidatePositions) {
+                val clickX = screenWidth * xRatio
+                val clickY = screenHeight * yRatio
+
+                val path = android.graphics.Path()
+                path.moveTo(clickX, clickY)
+
+                val stroke = android.accessibilityservice.GestureDescription.StrokeDescription(
+                    path, 0L, 50L
+                )
+
+                val gesture = android.accessibilityservice.GestureDescription.Builder()
+                    .addStroke(stroke)
+                    .build()
+
+                var gestureResult = false
+                val latch = java.util.concurrent.CountDownLatch(1)
+
+                accessibilityService.dispatchGesture(
+                    gesture,
+                    object : AccessibilityService.GestureResultCallback() {
+                        override fun onCompleted(gestureDescription: android.accessibilityservice.GestureDescription?) {
+                            gestureResult = true
+                            latch.countDown()
+                        }
+                        override fun onCancelled(gestureDescription: android.accessibilityservice.GestureDescription?) {
+                            gestureResult = false
+                            latch.countDown()
+                        }
+                    },
+                    null
+                )
+
+                latch.await(1, java.util.concurrent.TimeUnit.SECONDS)
+                Log.d(TAG, "│    Tap refuse em (${clickX.toInt()}, ${clickY.toInt()}): $gestureResult")
+
+                if (gestureResult) return true
+
+                // Aguardar 200ms entre tentativas para não sobrecarregar o sistema
+                Thread.sleep(200)
+            }
+
+            Log.w(TAG, "│  ⚠ Todos os candidatos de Tap RECUSAR falharam")
+            return false
+        } catch (e: Exception) {
+            Log.e(TAG, "│  ✖ Erro ao executar tap refuse: ${e.message}")
+            return false
+        }
+    }
+
+    @android.annotation.TargetApi(Build.VERSION_CODES.N)
+    private fun performTapAccept(): Boolean {
+        try {
+            val displayMetrics = context.resources.displayMetrics
+            val screenWidth = displayMetrics.widthPixels.toFloat()
+            val screenHeight = displayMetrics.heightPixels.toFloat()
+
+            // Toque rápido no centro-baixo da tela onde fica o card de oferta
+            // Ajustado para 0.82f baseado no novo layout do Uber
+            val clickX = screenWidth * 0.50f
+            val clickY = screenHeight * 0.82f
+
+            val path = android.graphics.Path()
+            path.moveTo(clickX, clickY)
+
+            val stroke = android.accessibilityservice.GestureDescription.StrokeDescription(
+                path, 0L, 50L // 50ms para simular toque rápido e limpo
+            )
+
+            val gesture = android.accessibilityservice.GestureDescription.Builder()
+                .addStroke(stroke)
+                .build()
+
+            var gestureResult = false
+            val latch = java.util.concurrent.CountDownLatch(1)
+
+            accessibilityService.dispatchGesture(
+                gesture,
+                object : AccessibilityService.GestureResultCallback() {
+                    override fun onCompleted(gestureDescription: android.accessibilityservice.GestureDescription?) {
+                        gestureResult = true
+                        latch.countDown()
+                    }
+                    override fun onCancelled(gestureDescription: android.accessibilityservice.GestureDescription?) {
+                        gestureResult = false
+                        latch.countDown()
+                    }
+                },
+                null
+            )
+
+            latch.await(2, java.util.concurrent.TimeUnit.SECONDS)
+            Log.d(TAG, "│    Tap result: $gestureResult (${clickX.toInt()}, ${clickY.toInt()})")
+            return gestureResult
+        } catch (e: Exception) {
+            Log.e(TAG, "│  ✖ Erro ao executar tap: ${e.message}")
             return false
         }
     }

@@ -19,6 +19,9 @@ package com.ngbautoroad.data.prefs
 // ============================================================================
 
 import android.content.Context
+
+
+import androidx.compose.ui.unit.sp
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
@@ -29,6 +32,9 @@ import com.ngbautoroad.domain.ScoringThresholds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.GlobalScope
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "ngb_autoroad_prefs")
 
@@ -101,6 +107,7 @@ class PrefsManager(private val context: Context) {
 
     // Keep screen on
     private val KEY_KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
+    private val KEY_AI_VOICE_ENABLED = booleanPreferencesKey("ai_voice_enabled") // IA Voice Toggle
 
     // Overlay Toggles (Sprint 2)
     private val KEY_OVERLAY_SHOW_SCORE = booleanPreferencesKey("overlay_show_score")
@@ -110,6 +117,25 @@ class PrefsManager(private val context: Context) {
     private val KEY_OVERLAY_PINNED = booleanPreferencesKey("overlay_pinned")
     // Gallery favorites
     private val KEY_GALLERY_FAVORITES = stringPreferencesKey("gallery_favorites")
+    
+    // Active Ride for Dashboard
+    private val KEY_ACTIVE_RIDE_JSON = stringPreferencesKey("active_ride_json")
+
+    // Maintenance Monitors (Toggles)
+    private val KEY_MONITOR_TIRES = booleanPreferencesKey("monitor_tires")
+    private val KEY_MONITOR_BRAKES = booleanPreferencesKey("monitor_brakes")
+    private val KEY_MONITOR_OIL = booleanPreferencesKey("monitor_oil")
+    private val KEY_MONITOR_GENERAL = booleanPreferencesKey("monitor_general")
+
+    val monitorTiresFlow: Flow<Boolean> = context.dataStore.data.map { it[KEY_MONITOR_TIRES] ?: true }
+    val monitorBrakesFlow: Flow<Boolean> = context.dataStore.data.map { it[KEY_MONITOR_BRAKES] ?: true }
+    val monitorOilFlow: Flow<Boolean> = context.dataStore.data.map { it[KEY_MONITOR_OIL] ?: true }
+    val monitorGeneralFlow: Flow<Boolean> = context.dataStore.data.map { it[KEY_MONITOR_GENERAL] ?: true }
+
+    suspend fun saveMonitorTires(value: Boolean) { context.dataStore.edit { it[KEY_MONITOR_TIRES] = value } }
+    suspend fun saveMonitorBrakes(value: Boolean) { context.dataStore.edit { it[KEY_MONITOR_BRAKES] = value } }
+    suspend fun saveMonitorOil(value: Boolean) { context.dataStore.edit { it[KEY_MONITOR_OIL] = value } }
+    suspend fun saveMonitorGeneral(value: Boolean) { context.dataStore.edit { it[KEY_MONITOR_GENERAL] = value } }
 
     // --- Criteria Weights ---
 
@@ -139,17 +165,36 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    val activeRideJsonFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_ACTIVE_RIDE_JSON]
+    }
+
+    suspend fun saveActiveRideJson(json: String?) {
+        context.dataStore.edit { prefs ->
+            if (json == null) {
+                prefs.remove(KEY_ACTIVE_RIDE_JSON)
+            } else {
+                prefs[KEY_ACTIVE_RIDE_JSON] = json
+            }
+        }
+    }
+
     // --- Driver Thresholds (valores mínimos desejados) ---
 
     val driverThresholdsFlow: Flow<DriverThresholds> = context.dataStore.data.map { prefs ->
+        val vkm = prefs[KEY_THRESH_MIN_VALUE_PER_KM] ?: 2.00
+        val vh = prefs[KEY_THRESH_MIN_VALUE_PER_HOUR] ?: 42.00
+        val rating = prefs[KEY_THRESH_MIN_RATING] ?: 4.90
+        val stops = prefs[KEY_THRESH_MAX_STOPS] ?: 1
+
         DriverThresholds(
-            minValuePerKm = prefs[KEY_THRESH_MIN_VALUE_PER_KM] ?: 0.0,
-            minValuePerHour = prefs[KEY_THRESH_MIN_VALUE_PER_HOUR] ?: 0.0,
+            minValuePerKm = if (vkm <= 0.0) 2.00 else vkm,
+            minValuePerHour = if (vh <= 0.0) 42.00 else vh,
             minRideValue = prefs[KEY_THRESH_MIN_RIDE_VALUE] ?: 0.0,
             maxPickupDistance = prefs[KEY_THRESH_MAX_PICKUP_DIST] ?: 0.0,
-            minPassengerRating = prefs[KEY_THRESH_MIN_RATING] ?: 0.0,
+            minPassengerRating = if (rating <= 0.0) 4.90 else rating,
             maxDuration = prefs[KEY_THRESH_MAX_DURATION] ?: 0.0,
-            maxStops = prefs[KEY_THRESH_MAX_STOPS] ?: 99,
+            maxStops = if (stops <= 0 || stops >= 99) 1 else stops,
             minDropoffDistance = prefs[KEY_THRESH_MIN_DROPOFF_DIST] ?: 0.0
         )
     }
@@ -170,7 +215,7 @@ class PrefsManager(private val context: Context) {
     // --- Keep Screen On ---
 
     val keepScreenOnFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
-        prefs[KEY_KEEP_SCREEN_ON] ?: false
+        prefs[KEY_KEEP_SCREEN_ON] ?: true
     }
 
     suspend fun setKeepScreenOn(enabled: Boolean) {
@@ -178,6 +223,19 @@ class PrefsManager(private val context: Context) {
             prefs[KEY_KEEP_SCREEN_ON] = enabled
         }
     }
+
+    // --- AI Voice Announcer ---
+
+    val aiVoiceEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AI_VOICE_ENABLED] ?: false
+    }
+
+    suspend fun setAiVoiceEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_AI_VOICE_ENABLED] = enabled
+        }
+    }
+
 
     // --- Card Selection ---
 
@@ -463,12 +521,31 @@ class PrefsManager(private val context: Context) {
         }
     }
 
-    // --- Overlay Toggles (Sprint 2) ---
+    // --- Overlay Toggles (Sprint 2 & Commercial Customization) ---
+    
+
+    // Novas chaves para Customização Comercial
+    private val KEY_OVERLAY_SHOW_VALUE_PER_KM = booleanPreferencesKey("overlay_show_value_per_km")
+    private val KEY_OVERLAY_SHOW_VALUE_PER_HOUR = booleanPreferencesKey("overlay_show_value_per_hour")
+    private val KEY_OVERLAY_SHOW_RIDE_VALUE = booleanPreferencesKey("overlay_show_ride_value")
+    private val KEY_OVERLAY_SHOW_DURATION = booleanPreferencesKey("overlay_show_duration")
+    private val KEY_OVERLAY_SHOW_TOTAL_KM = booleanPreferencesKey("overlay_show_total_km")
+    private val KEY_OVERLAY_SHOW_NEIGHBORHOODS = booleanPreferencesKey("overlay_show_neighborhoods")
+    private val KEY_OVERLAY_CARD_TYPE = stringPreferencesKey("overlay_card_type") // "STANDARD" ou "CUSTOMIZABLE"
+
     val overlayShowScoreFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_SCORE] ?: true }
     val overlayShowMetaFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_META] ?: true }
     val overlayShowAccessibilityFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_ACCESSIBILITY] ?: true }
     val overlayShowCloseFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_CLOSE] ?: true }
     val overlayPinnedFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_PINNED] ?: false }
+
+    val overlayShowValuePerKmFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_VALUE_PER_KM] ?: true }
+    val overlayShowValuePerHourFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_VALUE_PER_HOUR] ?: true }
+    val overlayShowRideValueFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_RIDE_VALUE] ?: true }
+    val overlayShowDurationFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_DURATION] ?: true }
+    val overlayShowTotalKmFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_TOTAL_KM] ?: true }
+    val overlayShowNeighborhoodsFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_NEIGHBORHOODS] ?: true }
+    val overlayCardTypeFlow: Flow<String> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_CARD_TYPE] ?: "STANDARD" }
 
     suspend fun setOverlayShowScore(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_SCORE] = show } }
     suspend fun setOverlayShowMeta(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_META] = show } }
@@ -476,11 +553,19 @@ class PrefsManager(private val context: Context) {
     suspend fun setOverlayShowClose(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_CLOSE] = show } }
     suspend fun setOverlayPinned(pinned: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_PINNED] = pinned } }
 
+    suspend fun setOverlayShowValuePerKm(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_VALUE_PER_KM] = show } }
+    suspend fun setOverlayShowValuePerHour(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_VALUE_PER_HOUR] = show } }
+    suspend fun setOverlayShowRideValue(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_RIDE_VALUE] = show } }
+    suspend fun setOverlayShowDuration(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_DURATION] = show } }
+    suspend fun setOverlayShowTotalKm(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_TOTAL_KM] = show } }
+    suspend fun setOverlayShowNeighborhoods(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_NEIGHBORHOODS] = show } }
+    suspend fun setOverlayCardType(type: String) { context.dataStore.edit { it[KEY_OVERLAY_CARD_TYPE] = type } }
+
 
     // --- Auto-dismiss overlay (v5.0.0) ---
     private val KEY_AUTO_DISMISS_SECONDS = intPreferencesKey("auto_dismiss_seconds")
     val autoDismissSecondsFlow: Flow<Int> = context.dataStore.data.map { prefs ->
-        prefs[KEY_AUTO_DISMISS_SECONDS] ?: 5 // Padrão: 5 segundos (0 = nunca)
+        prefs[KEY_AUTO_DISMISS_SECONDS] ?: 7 // Padrão: 7 segundos (0 = nunca)
     }
     suspend fun saveAutoDismissSeconds(seconds: Int) {
         context.dataStore.edit { prefs ->
@@ -639,6 +724,14 @@ class PrefsManager(private val context: Context) {
         context.dataStore.edit { prefs -> prefs[KEY_ANDROID_AUTO_ENABLED] = enabled }
     }
 
+    private val KEY_ANDROID_AUTO_AUTODETECT = booleanPreferencesKey("android_auto_autodetect")
+    val androidAutoAutoDetectFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_ANDROID_AUTO_AUTODETECT] ?: false
+    }
+    suspend fun setAndroidAutoAutoDetect(enabled: Boolean) {
+        context.dataStore.edit { prefs -> prefs[KEY_ANDROID_AUTO_AUTODETECT] = enabled }
+    }
+
     private val KEY_TUTORIAL_COMPLETED = stringPreferencesKey("tutorial_completed_screens")
 
     val tutorialCompletedScreensFlow: Flow<Set<String>> = context.dataStore.data.map { prefs ->
@@ -754,5 +847,6 @@ class PrefsManager(private val context: Context) {
         }
     }
 }
+
 
 

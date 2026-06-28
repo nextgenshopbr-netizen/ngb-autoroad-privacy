@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v6.3.4: Android Auto — declaração de suporte para exibir notificações no carro -->
 <automotiveApp>
-    <uses name="notification" />
+    <uses name="template" />
 </automotiveApp>

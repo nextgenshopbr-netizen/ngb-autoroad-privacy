@@ -4,7 +4,7 @@ package com.ngbautoroad.service
 // ARQUIVO: BubbleService.kt
 // RESPONSABILIDADE: Botão flutuante lateral (bubble) que aparece na borda da tela
 //   quando o app não está em primeiro plano. Ao tocar, abre o app.
-//   Similar ao comportamento do GigU e Uber Driver.
+//   Similar ao comportamento do Uber Driver.
 // CONFIGURAÇÕES:
 //   - Lado (esquerdo/direito) via PrefsManager.bubbleSideFlow
 //   - Transparência via PrefsManager.overlayOpacityFlow
@@ -197,6 +197,7 @@ class BubbleService : Service() {
                             // Tocar = abrir o app
                             val launchIntent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                                putExtra("from_bubble", true)
                             }
                             launchIntent?.let { startActivity(it) }
                         }

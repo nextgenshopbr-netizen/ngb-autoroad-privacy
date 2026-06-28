@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -13,8 +14,8 @@ android {
         applicationId = "com.ngbautoroad"
         minSdk = 26
         targetSdk = 34
-        versionCode = 81
-        versionName = "6.9.14"
+        versionCode = 83
+        versionName = "6.9.16"
     }
 
     signingConfigs {
@@ -50,10 +51,6 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
     }
 
     packaging {
@@ -114,6 +111,9 @@ dependencies {
 
     // WorkManager (tarefas periódicas: recorrência de despesas)
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // Android Auto (Cars App Library)
+    implementation("androidx.car.app:app:1.2.0")
 
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")

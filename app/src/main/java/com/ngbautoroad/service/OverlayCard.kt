@@ -1,29 +1,11 @@
 package com.ngbautoroad.service
 
-// ============================================================================
-// ARQUIVO: OverlayCard.kt
-// LOCALIZAÇÃO: service/OverlayCard.kt
-// RESPONSABILIDADE: Composable do card visual que aparece no overlay flutuante
-// LÓGICA:
-//   - Recebe GalleryCard (template visual) + RideData + RideScore
-//   - Renderiza apenas os campos definidos em galleryCard.fields
-//   - Cores dinâmicas baseadas no ScoreLevel (verde/amarelo/laranja/vermelho)
-// DEPENDÊNCIAS:
-//   - data/model/CardGallery.kt → GalleryCard, CardField, EditorField
-//   - data/model/RideData.kt → RideData, RideScore, ScoreLevel
-// DEPENDENTES:
-//   - service/OverlayService.kt → usa este composable no ComposeView
-// ============================================================================
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,543 +13,243 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import com.ngbautoroad.data.model.*
-import com.ngbautoroad.data.model.CardGallery.CardField
 import com.ngbautoroad.ui.theme.*
-import kotlin.math.roundToInt
 
-/**
- * Card overlay informativo (SEM botões aceitar/recusar)
- * Usa o card da galeria selecionado pelo motorista.
- * Suporta resize e acessibilidade (A+/A-).
- */
 @Composable
 fun OverlayCard(
     ride: RideData?,
     score: RideScore?,
-    galleryCard: CardGallery.GalleryCard?,
     fontScale: Float = 1.0f,
-    goalProgress: Float = 0f,
-    goalEarned: Double = 0.0,
-    goalTarget: Double = 200.0,
-    customLayout: com.ngbautoroad.ui.editor.CustomCardLayout? = null,
+    cardType: String = "STANDARD",
     showScore: Boolean = true,
-    showMeta: Boolean = true,
-    showAccessibility: Boolean = true,
-    showClose: Boolean = true,
-    isPinned: Boolean = false,
-    onTogglePin: () -> Unit = {},
+    showValuePerKm: Boolean = true,
+    showValuePerHour: Boolean = true,
+    showRideValue: Boolean = true,
+    showDuration: Boolean = true,
+    showTotalKm: Boolean = true,
+    showNeighborhoods: Boolean = true,
     onDismiss: () -> Unit,
-    onFontScaleChange: (Float) -> Unit = {},
-    onResize: ((deltaX: Float, deltaY: Float) -> Unit)? = null
+    onDrag: (Float, Float) -> Unit
 ) {
     if (ride == null || score == null) return
 
     val totalScoreColor = getScoreColor(score.scoreColor)
-    val card = galleryCard
+    // Se o score final for amarelo (alerta) ou vermelho (ruim), a borda será mais grossa para destacar a penalidade global
+    val borderWidth = if (score.scoreColor == com.ngbautoroad.data.model.ScoreLevel.YELLOW || score.scoreColor == com.ngbautoroad.data.model.ScoreLevel.RED) 4.dp else 1.5.dp
+    
+    // Fundo premium translúcido simulando glassmorphism
+    val bgColor = Color(0xEB11141E) 
+    val textColor = Color.White
+    val accentColor = Color(0xFF4F6BFF)
+    
+    // Se fontScale muito alto, reduz o título para não transbordar na coluna
+    val effectiveTitleScale = if (fontScale > 1.2f) 1.2f else fontScale
+    val scaledTitle = (22 * effectiveTitleScale).sp
+    val scaledBody = (14 * fontScale).sp
+    val scaledSmall = (12 * fontScale).sp
+    val scaledTiny = (10 * fontScale).sp
 
-    // Cores do card (usa galeria ou fallback)
-    val bgColor = Color(card?.backgroundColor ?: 0xFF101830)
-    val textColor = Color(card?.textColor ?: 0xFFFFFFFF)
-    val accentColor = Color(card?.accentColor ?: 0xFF4F6BFF)
-    // BORDA DINÂMICA: cor muda conforme o score (verde/amarelo/laranja/vermelho)
-    val borderColor = totalScoreColor
-    val borderRadius = (card?.borderRadius ?: 12).dp
-    val showBorder = card?.showBorder ?: true
-
-    // Campos do card (usa galeria ou todos)
-    val fields = card?.fields ?: CardField.entries
-
-    // Font sizes com escala de acessibilidade
-    val baseFontSize = (card?.fontSize ?: 14).sp
-    val scaledTitle = (22 * fontScale).sp
-    val scaledBody = (baseFontSize.value * fontScale).sp
-    val scaledSmall = (11 * fontScale).sp
-    val scaledLabel = (12 * fontScale).sp
-
-    // Cores da barra de meta
-    val goalBarColor = when {
-        goalProgress >= 1.0f -> Color(0xFF4CAF50) // Verde — meta atingida
-        goalProgress >= 0.7f -> Color(0xFFFFC107) // Amarelo — quase lá
-        else -> accentColor
-    }
-    val goalPercentText = "R$${"%.0f".format(goalEarned)}/R$${"%.0f".format(goalTarget)}"
-
-    // Estrutura: Barra de título (fora do card) + Card com conteúdo
-    Column {
-        // === BARRA DE TÍTULO COMPACTA - FORA do card ===
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(topStart = borderRadius, topEnd = borderRadius))
-                .background(bgColor.copy(alpha = 0.9f))
-                .padding(horizontal = 6.dp, vertical = 2.dp)
-        ) {
-            // Barra de controle: A- / A+ / Score / Pin / Fechar
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .pointerInput(Unit) {
+                detectDragGestures { change, dragAmount ->
+                    change.consume()
+                    onDrag(dragAmount.x, dragAmount.y)
+                }
+            }
+            .clip(RoundedCornerShape(20.dp))
+            .background(bgColor)
+            .border(borderWidth, totalScoreColor.copy(alpha = 0.9f), RoundedCornerShape(20.dp))
+            .padding(16.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            
+            // CABEÇALHO (Plataforma, Score e Fechar)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Botões de acessibilidade A- e A+
-                if (showAccessibility) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "A\u2212",
-                            color = textColor.copy(alpha = 0.8f),
-                            fontSize = (12 * fontScale).sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .clickable { onFontScaleChange((fontScale - 0.1f).coerceAtLeast(0.7f)) }
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                        Text(
-                            text = "A+",
-                            color = textColor.copy(alpha = 0.8f),
-                            fontSize = (12 * fontScale).sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .clickable { onFontScaleChange((fontScale + 0.1f).coerceAtMost(1.6f)) }
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                } else {
-                    Spacer(modifier = Modifier.width(40.dp))
-                }
-
-                // Score Centralizado
-                if (showScore) {
-                    Text(
-                        text = "Score: ${score.totalScore.toInt()}",
-                        color = totalScoreColor,
-                        fontSize = (12 * fontScale).sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Botão Pin
-                    Icon(
-                        imageVector = if (isPinned) Icons.Default.PushPin else Icons.Default.PushPin, // Outline was not available so use Default with opacity
-                        contentDescription = "Pin",
-                        tint = if (isPinned) ScoreYellow else textColor.copy(alpha = 0.5f),
-                        modifier = Modifier
-                            .clickable { onTogglePin() }
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                            .size((14 * fontScale).dp)
-                    )
-
-                    // Botão fechar
-                    if (showClose) {
-                        Text(
-                            text = "\u2715",
-                            color = textColor.copy(alpha = 0.9f),
-                            fontSize = (13 * fontScale).sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .clickable { onDismiss() }
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.width(16.dp))
-                    }
-                }
-            }
-
-            // Linha 2: Mini barra de progresso da meta do dia
-            if (showMeta) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Meta",
-                    color = textColor.copy(alpha = 0.6f),
-                    fontSize = (9 * fontScale).sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                // Barra de progresso fina
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(textColor.copy(alpha = 0.15f))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .fillMaxWidth(fraction = goalProgress.coerceIn(0f, 1f))
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(goalBarColor)
-                    )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = goalPercentText,
-                    color = textColor.copy(alpha = 0.6f),
-                    fontSize = (8 * fontScale).sp
-                )
-            }
-            } // end if (showMeta)
-            Spacer(modifier = Modifier.height(2.dp))
-        }
-
-        // === CARD COM CONTEÚDO ===
-        val customL = customLayout
-        val scoreBarHeightDp = (customL?.scoreBarHeight ?: 5).dp
-
-        if (customL != null && customL.fields.isNotEmpty()) {
-            // === MODO CUSTOM: posicionamento absoluto com estilos por campo ===
-            val customBgColor = try { android.graphics.Color.parseColor(customL.backgroundColor).let { Color(it) } } catch (_: Exception) { bgColor }
-            val customBorderColor = try { android.graphics.Color.parseColor(customL.borderColor).let { Color(it) } } catch (_: Exception) { borderColor }
-            val customRadius = customL.borderRadius.dp
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(bottomStart = customRadius, bottomEnd = customRadius))
-                    .then(
-                        if (customL.showBorder) Modifier.border(
-                            2.dp, totalScoreColor,
-                            RoundedCornerShape(bottomStart = customRadius, bottomEnd = customRadius)
-                        ) else Modifier
-                    )
-                    .background(customBgColor)
-                    .fillMaxWidth()
-                    .heightIn(min = if (customL.cardHeight > 0) customL.cardHeight.dp else 80.dp)
-            ) {
-                customL.fields.forEach { editorField ->
-                    val fieldColor = try { android.graphics.Color.parseColor(editorField.colorHex).let { Color(it) } } catch (_: Exception) { textColor }
-                    val fieldFontSize = (editorField.fontSize * fontScale).sp
-                    val fieldFontWeight = if (editorField.isBold) FontWeight.Bold else FontWeight.Normal
-                    val fieldFontStyle = if (editorField.isItalic) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal
-
-                    val fieldValue: String = when (editorField.fieldType) {
-                        "PLATFORM" -> ride.platform.displayName
-                        "SCORE" -> score.totalScore.toInt().toString()
-                        "VALUE", "RIDE_VALUE" -> "R\$ ${ "%.2f".format(ride.rideValue) }"
-                        "RIDE_TYPE" -> ride.rideType.displayName
-                        "DISTANCE_KM", "DROPOFF_DISTANCE" -> "${ "%.1f".format(ride.dropoffDistance) } km"
-                        "PICKUP_DISTANCE" -> "${ "%.1f".format(ride.pickupDistance) } km"
-                        "VALUE_PER_KM" -> "R\$ ${ "%.2f".format(ride.valuePerKm) }/km"
-                        "VALUE_PER_HOUR" -> "R\$ ${ "%.2f".format(if (ride.rideDuration > 0) ride.rideValue / (ride.rideDuration / 60.0) else 0.0) }/h"
-                        "DURATION_MIN", "DURATION" -> "${ride.rideDuration.toInt()} min"
-                        "PASSENGER_RATING" -> "★ ${ "%.1f".format(ride.passengerRating) }"
-                        "STOPS", "INTERMEDIATE_STOPS" -> "${ride.intermediateStops}"
-                        "PICKUP_NEIGHBORHOOD" -> ride.pickupNeighborhood
-                        "DROPOFF_NEIGHBORHOOD" -> ride.dropoffNeighborhood
-                        "SCORE_BAR" -> "" // barra visual
-                        else -> editorField.label
-                    }
-
-                    if (editorField.fieldType == "SCORE_BAR") {
+                    if (cardType == "STANDARD" || showScore) {
                         Box(
                             modifier = Modifier
-                                .offset { IntOffset(editorField.x.roundToInt(), editorField.y.roundToInt()) }
-                                .fillMaxWidth()
-                                .padding(horizontal = 4.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(totalScoreColor.copy(alpha = 0.2f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
-                            LinearProgressIndicator(
-                                progress = (score.totalScore / 100.0).toFloat().coerceIn(0f, 1f),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(scoreBarHeightDp)
-                                    .clip(RoundedCornerShape(scoreBarHeightDp / 2)),
+                            Text(
+                                text = "${score.totalScore.toInt()} PTS",
                                 color = totalScoreColor,
-                                trackColor = fieldColor.copy(alpha = 0.15f),
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = scaledSmall
                             )
                         }
-                    } else {
-                        Text(
-                            text = fieldValue,
-                            color = fieldColor,
-                            fontSize = fieldFontSize,
-                            fontWeight = fieldFontWeight,
-                            fontStyle = fieldFontStyle,
-                            modifier = Modifier
-                                .offset { IntOffset(editorField.x.roundToInt(), editorField.y.roundToInt()) }
-                                .padding(2.dp)
-                        )
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
-                }
-
-                if (onResize != null) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(32.dp)
-                            .background(color = accentColor.copy(alpha = 0.5f), shape = RoundedCornerShape(topStart = 8.dp, bottomEnd = customRadius))
-                            .pointerInput(Unit) { detectDragGestures { change, dragAmount -> change.consume(); onResize(dragAmount.x, dragAmount.y) } },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = "⤡", color = textColor.copy(alpha = 0.8f), fontSize = (14 * fontScale).sp)
-                    }
-                }
-            }
-        } else {
-
-        // === MODO GALERIA: layout sequencial fixo ===
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(bottomStart = borderRadius, bottomEnd = borderRadius))
-                .then(
-                    if (showBorder) Modifier.border(
-                        2.dp, borderColor,
-                        RoundedCornerShape(bottomStart = borderRadius, bottomEnd = borderRadius)
-                    ) else Modifier
-                )
-                .background(bgColor)
-        ) {
-            Column(modifier = Modifier.padding(12.dp)) {
-                // Header: Platform + Score
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Platform
-                    if (fields.contains(CardField.PLATFORM)) {
-                        Text(
-                            text = ride.platform.displayName,
-                            color = accentColor,
-                            fontSize = scaledBody,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    // Score
-                    if (fields.contains(CardField.SCORE)) {
-                        Text(
-                            text = "${score.totalScore.toInt()}",
-                            color = totalScoreColor,
-                            fontSize = scaledTitle,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-            // v6.3.6: Layout responsivo com FlowRow — campos se reorganizam ao redimensionar
-            // Score bar fica separada (full-width), demais campos usam FlowRow
-            @OptIn(ExperimentalLayoutApi::class)
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                fields.forEach { field ->
-                    when (field) {
-                        CardField.SCORE -> {} // Já exibido no header
-                        CardField.PLATFORM -> {} // Já exibido no header
-                        CardField.SCORE_BAR -> {} // Renderizado abaixo separadamente
-                        CardField.RIDE_TYPE -> {
-                            if (ride.rideType != RideType.UNKNOWN) {
-                                OverlayFieldChip(
-                                    label = field.shortLabel,
-                                    value = ride.rideType.displayName,
-                                    textColor = textColor,
-                                    valueColor = accentColor,
-                                    fontSize = scaledLabel
-                                )
-                            }
-                        }
-                        CardField.RIDE_VALUE -> {
-                            OverlayFieldChip(
-                                label = field.shortLabel,
-                                value = "R$ ${"%.2f".format(ride.rideValue)}",
-                                textColor = textColor,
-                                valueColor = getCriteriaColor(score, "rideValue", accentColor),
-                                fontSize = scaledLabel
-                            )
-                        }
-                        CardField.VALUE_PER_KM -> {
-                            OverlayFieldChip(
-                                label = field.shortLabel,
-                                value = "R$ ${"%.2f".format(ride.valuePerKm)}",
-                                textColor = textColor,
-                                valueColor = getCriteriaColor(score, "valuePerKm", accentColor),
-                                fontSize = scaledLabel
-                            )
-                        }
-                        CardField.VALUE_PER_HOUR -> {
-                            OverlayFieldChip(
-                                label = field.shortLabel,
-                                value = "R$ ${"%.0f".format(ride.valuePerHour)}",
-                                textColor = textColor,
-                                valueColor = getCriteriaColor(score, "valuePerHour", accentColor),
-                                fontSize = scaledLabel
-                            )
-                        }
-                        CardField.PICKUP_DISTANCE -> {
-                            OverlayFieldChip(
-                                label = field.shortLabel,
-                                value = "${"%.1f".format(ride.pickupDistance)} km",
-                                textColor = textColor,
-                                valueColor = getCriteriaColor(score, "pickupDistance", accentColor),
-                                fontSize = scaledLabel
-                            )
-                        }
-                        CardField.DROPOFF_DISTANCE -> {
-                            OverlayFieldChip(
-                                label = field.shortLabel,
-                                value = "${"%.1f".format(ride.dropoffDistance)} km",
-                                textColor = textColor,
-                                valueColor = getCriteriaColor(score, "dropoffDistance", accentColor),
-                                fontSize = scaledLabel
-                            )
-                        }
-                        CardField.DURATION -> {
-                            OverlayFieldChip(
-                                label = field.shortLabel,
-                                value = "${ride.rideDuration.toInt()} min",
-                                textColor = textColor,
-                                valueColor = getCriteriaColor(score, "rideDuration", accentColor),
-                                fontSize = scaledLabel
-                            )
-                        }
-                        CardField.PASSENGER_RATING -> {
-                            if (ride.passengerRating > 0) {
-                                OverlayFieldChip(
-                                    label = field.shortLabel,
-                                    value = "★ ${"%.1f".format(ride.passengerRating)}",
-                                    textColor = textColor,
-                                    valueColor = getCriteriaColor(score, "passengerRating", accentColor),
-                                    fontSize = scaledLabel
-                                )
-                            }
-                        }
-                        CardField.STOPS -> {
-                            if (ride.intermediateStops > 0) {
-                                OverlayFieldChip(
-                                    label = field.shortLabel,
-                                    value = "${ride.intermediateStops}",
-                                    textColor = textColor,
-                                    valueColor = getCriteriaColor(score, "intermediateStops", accentColor),
-                                    fontSize = scaledLabel
-                                )
-                            }
-                        }
-                        CardField.PICKUP_NEIGHBORHOOD -> {
-                            if (ride.pickupNeighborhood.isNotBlank()) {
-                                OverlayFieldChip(
-                                    label = field.shortLabel,
-                                    value = ride.pickupNeighborhood,
-                                    textColor = textColor,
-                                    valueColor = textColor.copy(alpha = 0.9f),
-                                    fontSize = scaledLabel
-                                )
-                            }
-                        }
-                        CardField.DROPOFF_NEIGHBORHOOD -> {
-                            if (ride.dropoffNeighborhood.isNotBlank()) {
-                                OverlayFieldChip(
-                                    label = field.shortLabel,
-                                    value = ride.dropoffNeighborhood,
-                                    textColor = textColor,
-                                    valueColor = textColor.copy(alpha = 0.9f),
-                                    fontSize = scaledLabel
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Score bar (full-width, fora do FlowRow)
-            if (fields.contains(CardField.SCORE_BAR)) {
-                Spacer(modifier = Modifier.height(6.dp))
-                LinearProgressIndicator(
-                    progress = (score.totalScore / 100.0).toFloat().coerceIn(0f, 1f),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(scoreBarHeightDp)
-                        .clip(RoundedCornerShape(scoreBarHeightDp / 2)),
-                    color = totalScoreColor,
-                    trackColor = textColor.copy(alpha = 0.15f),
-                )
-            }
-
-            }
-
-            // === RESIZE HANDLE — Grudado no canto inferior direito (v6.3.4: área maior 32dp) ===
-            if (onResize != null) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(32.dp)
-                        .background(
-                            color = accentColor.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(topStart = 8.dp, bottomEnd = borderRadius)
-                        )
-                        .pointerInput(Unit) {
-                            detectDragGestures { change, dragAmount ->
-                                change.consume()
-                                onResize(dragAmount.x, dragAmount.y)
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
                     Text(
-                        text = "⤡",
-                        color = textColor.copy(alpha = 0.8f),
-                        fontSize = (14 * fontScale).sp
+                        text = ride.platform.displayName,
+                        color = textColor.copy(alpha = 0.9f),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = scaledBody
                     )
                 }
+                
+                Text(
+                    text = "✕",
+                    color = textColor.copy(alpha = 0.5f),
+                    fontSize = (16 * fontScale).sp,
+                    modifier = Modifier
+                        .clickable { onDismiss() }
+                        .padding(4.dp)
+                )
             }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // MÉTRICAS PRINCIPAIS (R$/km e R$/h)
+            if (cardType == "STANDARD" || showValuePerKm || showValuePerHour) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    if (cardType == "STANDARD" || showValuePerKm) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Text("Ganhos por KM", color = textColor.copy(alpha = 0.5f), fontSize = scaledTiny)
+                            Text(
+                                text = "R$ ${"%.2f".format(ride.valuePerKm)}",
+                                color = getCriteriaColor(score, "valuePerKm", accentColor),
+                                fontWeight = FontWeight.Black,
+                                fontSize = scaledTitle,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                    // Separador vertical entre as colunas
+                    if ((cardType == "STANDARD" || showValuePerKm) && (cardType == "STANDARD" || showValuePerHour)) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height((scaledTitle.value * 1.5f).dp)
+                                .background(textColor.copy(alpha = 0.1f))
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    if (cardType == "STANDARD" || showValuePerHour) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.Start
+                        ) {
+                            Text("Ganhos por Hora", color = textColor.copy(alpha = 0.5f), fontSize = scaledTiny)
+                            Text(
+                                text = "R$ ${"%.2f".format(ride.valuePerHour)}",
+                                color = getCriteriaColor(score, "valuePerHour", accentColor),
+                                fontWeight = FontWeight.Black,
+                                fontSize = scaledTitle,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+
+            // DETALHES MENORES (Valor, Tempo, KM) — peso igual para cada item visível
+            if (cardType == "STANDARD" || showRideValue || showDuration || showTotalKm) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    if (cardType == "STANDARD" || showRideValue) {
+                        DetailItem(
+                            "Valor", "R$ ${"%.2f".format(ride.rideValue)}",
+                            textColor, scaledBody, modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (cardType == "STANDARD" || showDuration) {
+                        DetailItem(
+                            "Tempo", "${ride.rideDuration} min",
+                            textColor, scaledBody, modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (cardType == "STANDARD" || showTotalKm) {
+                        DetailItem(
+                            "KM Total", "${"%.1f".format(ride.pickupDistance + ride.dropoffDistance)} km",
+                            textColor, scaledBody, modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+            
+            // BAIRROS — permite 2 linhas para nomes longos não serem cortados
+            if (cardType == "STANDARD" || showNeighborhoods) {
+                if (ride.pickupNeighborhood.isNotBlank() || ride.dropoffNeighborhood.isNotBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White.copy(alpha = 0.05f))
+                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "${ride.pickupNeighborhood} ➔ ${ride.dropoffNeighborhood}",
+                            color = textColor.copy(alpha = 0.85f),
+                            fontSize = scaledSmall,
+                            maxLines = 2,  // Permite quebrar linha para nomes longos
+                            overflow = TextOverflow.Ellipsis,
+                            lineHeight = (scaledSmall.value * 1.3f).sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+            }
+            
+            // PROGRESS BAR DE SCORE
+            LinearProgressIndicator(
+                progress = (score.totalScore / 100.0).toFloat().coerceIn(0f, 1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(1.5.dp)),
+                color = totalScoreColor,
+                trackColor = textColor.copy(alpha = 0.1f)
+            )
         }
-        } // fecha else (modo galeria)
     }
 }
 
-/**
- * v6.3.6: Chip compacto para FlowRow — se reorganiza automaticamente ao redimensionar
- * Cada campo ocupa apenas o espaço necessário e "quebra linha" quando não cabe na largura.
- */
 @Composable
-fun OverlayFieldChip(
+fun DetailItem(
     label: String,
     value: String,
     textColor: Color,
-    valueColor: Color,
-    fontSize: androidx.compose.ui.unit.TextUnit
+    fontSize: androidx.compose.ui.unit.TextUnit,
+    modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 4.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "$label ",
-            color = textColor.copy(alpha = 0.6f),
-            fontSize = fontSize,
-            maxLines = 1
-        )
+    Column(modifier = modifier, horizontalAlignment = Alignment.Start) {
+        Text(text = label, color = textColor.copy(alpha = 0.5f), fontSize = 10.sp)
         Text(
             text = value,
-            color = valueColor,
+            color = textColor.copy(alpha = 0.9f),
+            fontWeight = FontWeight.SemiBold,
             fontSize = fontSize,
-            fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
     }
 }
 
-/**
- * Obtém a cor de um critério específico baseado no score calculado
- */
 private fun getCriteriaColor(score: RideScore, criteriaKey: String, fallback: Color): Color {
     val criteria = score.criteriaScores[criteriaKey]
     return if (criteria != null) {

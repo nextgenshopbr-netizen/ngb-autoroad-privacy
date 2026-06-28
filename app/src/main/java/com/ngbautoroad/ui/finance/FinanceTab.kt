@@ -28,7 +28,7 @@ import com.ngbautoroad.data.prefs.PrefsManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FinanceTab(prefsManager: PrefsManager, database: AppDatabase) {
+fun FinanceTab(prefsManager: PrefsManager) {
     val context = LocalContext.current
     val financeDb = remember { FinanceDatabase.getInstance(context) }
     val snackbarHostState = remember { SnackbarHostState() }

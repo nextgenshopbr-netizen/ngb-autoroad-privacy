@@ -289,7 +289,10 @@ fun LearningTab() {
             }
         } else {
             items(suggestions) { s ->
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    onClick = { /* TODO: Expandir detalhe da sugestão */ },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(

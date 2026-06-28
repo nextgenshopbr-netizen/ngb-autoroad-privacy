@@ -60,7 +60,7 @@ class RideLifecycleManager(private val context: Context) {
         private const val TAG = "NGB_LIFECYCLE"
 
         // ── Timeouts ──
-        private const val ACCEPTANCE_DETECTION_TIMEOUT_MS = 20_000L  // 20s para detectar aceitação
+        private const val ACCEPTANCE_DETECTION_TIMEOUT_MS = 60_000L  // 60s para detectar aceitação (aumentado para robustez)
         private const val COMPLETION_DETECTION_TIMEOUT_MS = 180_000L // 3min para detectar conclusão
         private const val UNCERTAIN_TIMEOUT_MS = 300_000L            // 5min → UNCERTAIN
 
