@@ -464,7 +464,9 @@ class RideAccessibilityService : AccessibilityService() {
             }
 
             if (rideData != null && rideData.rideValue > 0) {
-                // Deduplicação
+                // v7.3.0: Dump da árvore de acessibilidade para diagnóstico do AutoPilot
+                dumpAccessibilityTree(packageName)
+
                 val hash = generateRideHash(rideData)
                 val now = System.currentTimeMillis()
 
@@ -1498,6 +1500,67 @@ class RideAccessibilityService : AccessibilityService() {
         }
 
         return nodesVisited
+    }
+
+    // =========================================================================
+    // BLOCO: Accessibility Tree Dump — Diagnóstico do AutoPilot
+    // v7.3.0: Captura árvore completa quando corrida detectada
+    // Registra: texto, contentDescription, className, isClickable, bounds
+    // Permite identificar exatamente o que o AutoPilot "vê" da Uber/99/inDrive
+    // =========================================================================
+    private fun dumpAccessibilityTree(packageFilter: String) {
+        try {
+            val telemetry = com.ngbautoroad.domain.TelemetryLogger.getInstance(applicationContext)
+            val sb = StringBuilder()
+            sb.appendLine("=== A11Y TREE DUMP: $packageFilter ===")
+
+            val windowList = windows ?: return
+            for (window in windowList) {
+                val root = window.root ?: continue
+                val pkg = root.packageName?.toString() ?: ""
+                if (pkg != packageFilter && pkg.isNotEmpty()) {
+                    try { root.recycle() } catch (_: Exception) {}
+                    continue
+                }
+                sb.appendLine("Window: ${window.title} type=${window.type} layer=${window.layer}")
+                dumpNode(root, sb, depth = 0, maxDepth = 15)
+                try { root.recycle() } catch (_: Exception) {}
+            }
+
+            val dump = sb.toString()
+            if (dump.length > 200) {
+                telemetry.log(
+                    com.ngbautoroad.domain.TelemetryLogger.Category.PARSER,
+                    com.ngbautoroad.domain.TelemetryLogger.Level.INFO,
+                    dump.take(8000)
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("NGB_A11Y_DUMP", "Dump failed: ${e.message}")
+        }
+    }
+
+    private fun dumpNode(node: AccessibilityNodeInfo, sb: StringBuilder, depth: Int, maxDepth: Int) {
+        if (depth > maxDepth) return
+        val indent = "  ".repeat(depth)
+        val text = node.text?.toString()?.take(80) ?: ""
+        val desc = node.contentDescription?.toString()?.take(80) ?: ""
+        val cls = node.className?.toString()?.substringAfterLast('.') ?: ""
+        val clickable = if (node.isClickable) " [CLICK]" else ""
+        val bounds = android.graphics.Rect()
+        node.getBoundsInScreen(bounds)
+
+        if (text.isNotBlank() || desc.isNotBlank() || node.isClickable) {
+            sb.appendLine("${indent}[$cls]$clickable txt=\"$text\" desc=\"$desc\" bounds=${bounds.left},${bounds.top},${bounds.right},${bounds.bottom}")
+        }
+
+        for (i in 0 until node.childCount) {
+            try {
+                val child = node.getChild(i) ?: continue
+                dumpNode(child, sb, depth + 1, maxDepth)
+                try { child.recycle() } catch (_: Exception) {}
+            } catch (_: Exception) {}
+        }
     }
 
     // =========================================================================

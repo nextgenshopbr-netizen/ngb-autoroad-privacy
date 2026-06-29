@@ -359,6 +359,9 @@ class AutoPilotEngine(
             else -> UBER_ACCEPT_TEXTS + NINETY_NINE_ACCEPT_TEXTS + INDRIVE_ACCEPT_TEXTS
         }
 
+        // v7.3.0: Log quais nodes são visíveis para diagnóstico
+        logVisibleNodes(platform.packageName)
+
         val clicked = findAndClickButton(acceptTexts, platform.packageName, useBoundsDetection = true)
         if (clicked) {
             Log.i(TAG, "Botao ACEITAR clicado -- aguardando confirmacao em 800ms")
@@ -864,6 +867,55 @@ class AutoPilotEngine(
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao agendar tap accept: ${e.message}")
             return false
+        }
+    }
+
+    /**
+     * v7.3.0: Log dos nodes clicáveis visíveis — diagnóstico do AutoPilot.
+     * Mostra exatamente o que o findAndClickButton vai encontrar.
+     */
+    private fun logVisibleNodes(targetPackage: String) {
+        try {
+            val telemetry = TelemetryLogger.getInstance(context)
+            val sb = StringBuilder("AutoPilot visible nodes [$targetPackage]:\n")
+            val windows = accessibilityService.windows ?: return
+            var nodeCount = 0
+            for (window in windows) {
+                val root = window.root ?: continue
+                val pkg = root.packageName?.toString() ?: ""
+                if (pkg != targetPackage && pkg.isNotEmpty()) {
+                    try { root.recycle() } catch (_: Exception) {}
+                    continue
+                }
+                logNodeRecursive(root, sb, 0, 10)
+                nodeCount++
+                try { root.recycle() } catch (_: Exception) {}
+            }
+            if (nodeCount > 0) {
+                telemetry.autopilot(sb.toString().take(4000))
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "logVisibleNodes failed: ${e.message}")
+        }
+    }
+
+    private fun logNodeRecursive(node: AccessibilityNodeInfo, sb: StringBuilder, depth: Int, maxDepth: Int) {
+        if (depth > maxDepth) return
+        val text = node.text?.toString()?.take(60) ?: ""
+        val desc = node.contentDescription?.toString()?.take(60) ?: ""
+        val click = node.isClickable
+        val bounds = android.graphics.Rect()
+        node.getBoundsInScreen(bounds)
+        if (text.isNotBlank() || desc.isNotBlank() || click) {
+            val indent = "  ".repeat(depth)
+            sb.appendLine("${indent}${if (click) "[CLICK]" else "[    ]"} \"$text\" desc=\"$desc\" @${bounds.centerX()},${bounds.centerY()} ${bounds.width()}x${bounds.height()}")
+        }
+        for (i in 0 until node.childCount) {
+            try {
+                val child = node.getChild(i) ?: continue
+                logNodeRecursive(child, sb, depth + 1, maxDepth)
+                try { child.recycle() } catch (_: Exception) {}
+            } catch (_: Exception) {}
         }
     }
 
