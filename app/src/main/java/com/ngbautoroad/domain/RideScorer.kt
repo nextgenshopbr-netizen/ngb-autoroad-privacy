@@ -305,13 +305,15 @@ class RideScorer(
         // ====================================================================
         val effectiveWeight = criteriaScores.values.sumOf { it.weight }
         var totalScore = if (effectiveWeight > 0 && effectiveWeight < weights.totalUsed) {
-            // Escalar proporcionalmente para compensar critérios sem dados
             criteriaScores.values.sumOf { it.weightedScore } * (weights.totalUsed.toDouble() / effectiveWeight)
         } else {
             criteriaScores.values.sumOf { it.weightedScore }
         }
 
-        // Subtrair penalidades de thresholds violados
+        // Clampar score base a 100 ANTES de subtrair penalidades
+        // Sem isso, score inflado (>100) absorve penalidades sem efeito visível
+        totalScore = totalScore.coerceAtMost(100.0)
+
         val thresholdPenalty = violations.sumOf { it.penaltyApplied }
         totalScore -= thresholdPenalty
 
