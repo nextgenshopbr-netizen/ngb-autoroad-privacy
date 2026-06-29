@@ -568,20 +568,12 @@ class OverlayService : Service(),
                     prefsManager.autoDismissSecondsFlow.first()
                 } ?: 30
 
-                // Tempo mínimo por plataforma (em segundos) — baseado no timer real de cada app
-                val platformMinSeconds = when (currentRide?.platform) {
-                    com.ngbautoroad.data.model.Platform.UBER -> 10        // Uber: cards 11-16s, fechar 1s antes
-                    com.ngbautoroad.data.model.Platform.NINETY_NINE -> 14  // 99: cards ~15s, fechar 1s antes
-                    com.ngbautoroad.data.model.Platform.INDRIVE -> 25      // inDrive: sem timer fixo
-                    else -> 12
-                }
-
-                // Usar o MAIOR entre: config do motorista e mínimo da plataforma
-                val effectiveSeconds = if (userDismissSeconds == 0) 0 else maxOf(userDismissSeconds, platformMinSeconds)
+                // v7.x: Motorista controla o timer diretamente, sem mínimo por plataforma
+                val effectiveSeconds = userDismissSeconds
                 val dismissMs = if (effectiveSeconds > 0) effectiveSeconds * 1000L else 0L
 
                 val platformName = currentRide?.platform?.displayName ?: "?"
-                android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] $platformName: ${effectiveSeconds}s (user=${userDismissSeconds}s, plataforma min=${platformMinSeconds}s)")
+                android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] $platformName: ${effectiveSeconds}s (user=${userDismissSeconds}s)")
 
                 if (dismissMs > 0) {
                     delay(dismissMs)

@@ -345,13 +345,6 @@ class AutoPilotEngine(
         Log.i(TAG, "Executando ACEITAR para ${platform.displayName}")
         val telemetry = TelemetryLogger.getInstance(context)
 
-        // v7.3.0: Esconder overlay ANTES do gesture para evitar FLAG_WINDOW_IS_OBSCURED
-        // O overlay NGB pode bloquear o dispatchGesture em alguns dispositivos Samsung
-        try {
-            OverlayService.instance?.hideOverlay(isReplacing = true)
-            Log.d(TAG, "Overlay escondido antes do gesture ACEITAR")
-        } catch (_: Exception) {}
-
         val acceptTexts = when (platform) {
             Platform.UBER -> UBER_ACCEPT_TEXTS
             Platform.NINETY_NINE -> NINETY_NINE_ACCEPT_TEXTS
@@ -361,6 +354,9 @@ class AutoPilotEngine(
 
         // v7.3.0: Log quais nodes são visíveis para diagnóstico
         logVisibleNodes(platform.packageName)
+
+        // v7.4.0: Small delay to let the ride offer card fully render before searching nodes
+        try { Thread.sleep(300) } catch (_: Exception) {}
 
         val clicked = findAndClickButton(acceptTexts, platform.packageName, useBoundsDetection = true)
         if (clicked) {
@@ -464,9 +460,6 @@ class AutoPilotEngine(
      *             3) Fallback: tap geometrico no canto sup. esquerdo
      */
     private fun performRefuseUber(rideDbId: Long): Boolean {
-        // v7.3.0: Esconder overlay antes do gesture
-        try { OverlayService.instance?.hideOverlay(isReplacing = true) } catch (_: Exception) {}
-
         val dismissTexts = listOf("✕", "×", "x", "close", "fechar", "dismiss", "cancelar")
         val clicked = findDismissNode(dismissTexts, Platform.UBER.packageName)
         if (clicked) {
@@ -512,7 +505,6 @@ class AutoPilotEngine(
      *             2) Fallback: tap geometrico no canto sup. direito
      */
     private fun performRefuse99(rideDbId: Long): Boolean {
-        try { OverlayService.instance?.hideOverlay(isReplacing = true) } catch (_: Exception) {}
         val dismissTexts = listOf("✕", "×", "x", "close", "fechar", "cancelar")
         val clicked = findDismissNode(dismissTexts, Platform.NINETY_NINE.packageName)
         if (clicked) {
@@ -847,8 +839,13 @@ class AutoPilotEngine(
     @android.annotation.TargetApi(Build.VERSION_CODES.N)
     private fun performTapAccept(): Boolean {
         val candidates = listOf(
-            Pair(0.50f, 0.87f), Pair(0.50f, 0.82f), Pair(0.50f, 0.75f),
-            Pair(0.50f, 0.90f), Pair(0.50f, 0.70f)
+            Pair(0.50f, 0.88f),  // Primary: center of Aceitar button (most common)
+            Pair(0.50f, 0.85f),  // Slightly higher
+            Pair(0.50f, 0.91f),  // Slightly lower
+            Pair(0.50f, 0.83f),  // Higher variant
+            Pair(0.50f, 0.80f),  // Uber Comfort may be higher
+            Pair(0.35f, 0.88f),  // Left side of button
+            Pair(0.65f, 0.88f)   // Right side of button
         )
         try {
             val dm = context.resources.displayMetrics
@@ -865,7 +862,7 @@ class AutoPilotEngine(
                     } catch (e: Exception) {
                         Log.w(TAG, "Tap accept candidato $index falhou: ${e.message}")
                     }
-                }, index * 250L)
+                }, index * 150L)
             }
             return true
         } catch (e: Exception) {
@@ -882,22 +879,28 @@ class AutoPilotEngine(
         try {
             val telemetry = TelemetryLogger.getInstance(context)
             val sb = StringBuilder("AutoPilot visible nodes [$targetPackage]:\n")
-            val windows = accessibilityService.windows ?: return
-            var nodeCount = 0
+            val windows = accessibilityService.windows
+            if (windows == null) {
+                sb.appendLine("  windows=NULL")
+                telemetry.autopilot(sb.toString())
+                return
+            }
+            sb.appendLine("  ${windows.size} windows total")
             for (window in windows) {
-                val root = window.root ?: continue
-                val pkg = root.packageName?.toString() ?: ""
-                if (pkg != targetPackage && pkg.isNotEmpty()) {
-                    try { root.recycle() } catch (_: Exception) {}
-                    continue
+                val root = window.root
+                val pkg = root?.packageName?.toString() ?: "null"
+                val childCount = root?.childCount ?: 0
+                sb.appendLine("  Window: type=${window.type} layer=${window.layer} pkg=$pkg children=$childCount")
+                if (pkg == targetPackage || pkg.isEmpty()) {
+                    if (root != null) {
+                        logNodeRecursive(root, sb, 0, 10)
+                    } else {
+                        sb.appendLine("    root=NULL")
+                    }
                 }
-                logNodeRecursive(root, sb, 0, 10)
-                nodeCount++
-                try { root.recycle() } catch (_: Exception) {}
+                try { root?.recycle() } catch (_: Exception) {}
             }
-            if (nodeCount > 0) {
-                telemetry.autopilot(sb.toString().take(4000))
-            }
+            telemetry.autopilot(sb.toString().take(4000))
         } catch (e: Exception) {
             Log.w(TAG, "logVisibleNodes failed: ${e.message}")
         }

@@ -585,7 +585,6 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "- Randomiza intervalos de leitura OCR\n" +
-                                "- Oculta overlay durante screenshots\n" +
                                 "- Desativa AccessibilityService periodicamente\n" +
                                 "- Simula comportamento humano nos tempos de resposta",
                         style = MaterialTheme.typography.bodySmall,
@@ -595,27 +594,8 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
             }
         }
 
-        // === SERVICOS ===
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Servicos",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Overlay (Redundante removido - inicialização automática pelo RideAccessibilityService)
-
-                // v7.1.0: Toggle OCR removido — OcrCaptureService (MediaProjection) desativado.
-                // O Triple Engine já inclui OCR como Camada 2 (takeScreenshot via AccessibilityService),
-                // sem exposição de indicador de gravação e sem dreno de bateria contínuo.
-            }
-        }
+        // v7.x: Card "Servicos" removido — toggles OCR e Overlay eram redundantes.
+        // Triple Engine cobre OCR internamente; Overlay é gerenciado pelo RideAccessibilityService.
 
         // === TESTES E FERRAMENTAS ===
         Card(
@@ -788,19 +768,21 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                 Divider()
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Transparencia do overlay
-                val overlayOpacity by prefsManager.overlayOpacityFlow.collectAsState(initial = 1.0f)
-                Text(
-                    "Transparencia: ${String.format("%.0f", overlayOpacity * 100)}%",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                // Tempo do overlay (auto-dismiss)
+                val dismissSeconds by prefsManager.autoDismissSecondsFlow.collectAsState(initial = 18)
+                Text("Tempo do overlay: ${dismissSeconds}s", style = MaterialTheme.typography.bodyMedium)
                 Slider(
-                    value = overlayOpacity,
-                    onValueChange = { newOpacity ->
-                        scope.launch { prefsManager.saveOverlayOpacity(newOpacity) }
+                    value = dismissSeconds.toFloat(),
+                    onValueChange = {
+                        scope.launch { prefsManager.saveAutoDismissSeconds(it.toInt()) }
                     },
-                    valueRange = 0.3f..1.0f,
-                    steps = 6
+                    valueRange = 5f..30f,
+                    steps = 24
+                )
+                Text(
+                    "5s = rapido | 15s = padrao | 30s = maximo",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -851,6 +833,25 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
 
                 Spacer(modifier = Modifier.height(4.dp))
                 Text("Arraste o botao livremente pela tela", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Transparencia (movido para seção do bubble)
+                val overlayOpacity by prefsManager.overlayOpacityFlow.collectAsState(initial = 1.0f)
+                Text(
+                    "Transparencia: ${String.format("%.0f", overlayOpacity * 100)}%",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = overlayOpacity,
+                    onValueChange = { newOpacity ->
+                        scope.launch { prefsManager.saveOverlayOpacity(newOpacity) }
+                    },
+                    valueRange = 0.3f..1.0f,
+                    steps = 6
+                )
             }
         }
 

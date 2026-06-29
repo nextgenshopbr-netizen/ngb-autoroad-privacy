@@ -6,9 +6,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.ngbautoroad.data.db.AppDatabase
-import kotlinx.coroutines.launch
 
 // ============================================================================
 // ARQUIVO: HeatmapTab.kt
@@ -17,8 +14,6 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun HeatmapTab() {
-    val coroutineScope = rememberCoroutineScope()
-    var isLoading by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(
@@ -34,39 +29,28 @@ fun HeatmapTab() {
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
+        // TODO: Implementar heatmap visual real com dados do banco de corridas
         Card(
             modifier = Modifier.fillMaxWidth().weight(1f),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Box(contentAlignment = androidx.compose.ui.Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                if (isLoading) {
-                    CircularProgressIndicator()
-                } else {
-                    Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
-                        Text("Mapa de calor gerado", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Zonas Quentes detectadas:", fontWeight = FontWeight.SemiBold)
-                        Text("- Centro: 07h-09h (R$ 3,20/km)")
-                        Text("- Zona Sul: 17h-19h (R$ 2,80/km)")
-                        Text("- Aeroporto: Sextas 15h-20h (R$ 3,50/km)")
-                    }
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                    Text(
+                        "Em desenvolvimento",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "O mapa de calor visual sera disponibilizado em breve.\n" +
+                            "Ele cruzara seus dados historicos de corridas para\n" +
+                            "identificar zonas, horarios e dias mais lucrativos.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    isLoading = true
-                    kotlinx.coroutines.delay(1000)
-                    isLoading = false
-                }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Recalcular Heatmap")
         }
     }
 }
