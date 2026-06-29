@@ -99,7 +99,7 @@ fun OverlayCard(
             .background(bgColor)
             .border(
                 width = if (score.scoreColor == ScoreLevel.GREEN) 2.dp else 1.5.dp,
-                color = scoreColor.copy(alpha = 0.8f),
+                color = scoreColor,
                 shape = RoundedCornerShape(16.dp)
             )
     ) {
@@ -112,8 +112,8 @@ fun OverlayCard(
                     .background(
                         brush = Brush.horizontalGradient(
                             colors = listOf(
-                                scoreColor.copy(alpha = 0.25f),
-                                scoreColor.copy(alpha = 0.05f)
+                                scoreColor.copy(alpha = 0.6f),
+                                scoreColor.copy(alpha = 0.15f)
                             )
                         )
                     )
@@ -361,7 +361,7 @@ private fun MetricDivider() {
         modifier = Modifier
             .width(1.dp)
             .height(40.dp)
-            .background(Color.White.copy(alpha = 0.08f))
+            .background(Color.White.copy(alpha = 0.15f))
     )
 }
 
@@ -377,7 +377,7 @@ private fun ChipDetail(
     fontSize: androidx.compose.ui.unit.TextUnit
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = icon, fontSize = fontSize, color = textColor.copy(alpha = 0.6f))
+        Text(text = icon, fontSize = fontSize, color = textColor.copy(alpha = 0.9f))
         Spacer(Modifier.width(3.dp))
         Text(
             text = text,

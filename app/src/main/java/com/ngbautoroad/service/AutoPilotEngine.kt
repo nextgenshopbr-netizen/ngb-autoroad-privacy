@@ -345,6 +345,13 @@ class AutoPilotEngine(
         Log.i(TAG, "Executando ACEITAR para ${platform.displayName}")
         val telemetry = TelemetryLogger.getInstance(context)
 
+        // v7.3.0: Esconder overlay ANTES do gesture para evitar FLAG_WINDOW_IS_OBSCURED
+        // O overlay NGB pode bloquear o dispatchGesture em alguns dispositivos Samsung
+        try {
+            OverlayService.instance?.hideOverlay(isReplacing = true)
+            Log.d(TAG, "Overlay escondido antes do gesture ACEITAR")
+        } catch (_: Exception) {}
+
         val acceptTexts = when (platform) {
             Platform.UBER -> UBER_ACCEPT_TEXTS
             Platform.NINETY_NINE -> NINETY_NINE_ACCEPT_TEXTS
@@ -450,6 +457,9 @@ class AutoPilotEngine(
      *             3) Fallback: tap geometrico no canto sup. esquerdo
      */
     private fun performRefuseUber(rideDbId: Long): Boolean {
+        // v7.3.0: Esconder overlay antes do gesture
+        try { OverlayService.instance?.hideOverlay(isReplacing = true) } catch (_: Exception) {}
+
         val dismissTexts = listOf("✕", "×", "x", "close", "fechar", "dismiss", "cancelar")
         val clicked = findDismissNode(dismissTexts, Platform.UBER.packageName)
         if (clicked) {
@@ -493,6 +503,7 @@ class AutoPilotEngine(
      *             2) Fallback: tap geometrico no canto sup. direito
      */
     private fun performRefuse99(rideDbId: Long): Boolean {
+        try { OverlayService.instance?.hideOverlay(isReplacing = true) } catch (_: Exception) {}
         val dismissTexts = listOf("✕", "×", "x", "close", "fechar", "cancelar")
         val clicked = findDismissNode(dismissTexts, Platform.NINETY_NINE.packageName)
         if (clicked) {
