@@ -283,42 +283,6 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // === ASSISTENTE NGB (IA) ===
-        // Movido para baixo do card de turno e corridas para não cobrir informações críticas
-        if (aiState != null) {
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.AutoAwesome,
-                        contentDescription = "IA",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            "Assistente NGB",
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            aiState?.suggestion ?: "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
-                    }
-                }
-            }
-        }
-
 
 
         // Estado vazio: sem corridas
