@@ -18,7 +18,9 @@ import android.util.Log
 import androidx.work.*
 import com.ngbautoroad.data.db.ExpenseEntity
 import com.ngbautoroad.data.db.FinanceDatabase
+import java.time.LocalDate
 import java.util.Calendar
+import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
 /**
@@ -79,19 +81,10 @@ class RecurringExpenseWorker(
             val db = FinanceDatabase.getInstance(applicationContext)
             val expenseDao = db.expenseDao()
 
-            val today = Calendar.getInstance()
-            val dayOfWeek = today.get(Calendar.DAY_OF_WEEK) // 1=Dom, 2=Seg, ..., 7=Sáb
-            // Converter para formato do app: 1=Seg, 2=Ter, ..., 7=Dom
-            val appDayOfWeek = when (dayOfWeek) {
-                Calendar.MONDAY -> 1
-                Calendar.TUESDAY -> 2
-                Calendar.WEDNESDAY -> 3
-                Calendar.THURSDAY -> 4
-                Calendar.FRIDAY -> 5
-                Calendar.SATURDAY -> 6
-                Calendar.SUNDAY -> 7
-                else -> 1
-            }
+            val today = Calendar.getInstance(TimeZone.getDefault())
+            // v6.10: Use LocalDate for reliable day-of-week in device timezone
+            val localToday = LocalDate.now()
+            val appDayOfWeek = localToday.dayOfWeek.value // 1=Mon, 2=Tue, ..., 7=Sun (ISO-8601, matches app format)
 
             // Buscar todas as despesas recorrentes ativas
             val recurringExpenses = expenseDao.getRecurringExpensesSync()
@@ -116,7 +109,7 @@ class RecurringExpenseWorker(
                 }
 
                 // Verificar se já foi gerada hoje (evitar duplicata)
-                val todayStart = Calendar.getInstance().apply {
+                val todayStart = Calendar.getInstance(TimeZone.getDefault()).apply {
                     set(Calendar.HOUR_OF_DAY, 0)
                     set(Calendar.MINUTE, 0)
                     set(Calendar.SECOND, 0)

@@ -406,7 +406,7 @@ class RideAccessibilityService : AccessibilityService() {
                     userActionDetector?.onTextsAfterAccepted(textsForLifecycle)
                 }
                 // Legacy lifecycle (mantido para compatibilidade)
-                lifecycleManager?.onTextsDetected(textsForLifecycle)
+                lifecycleManager?.onTextsDetected(textsForLifecycle, event.packageName?.toString() ?: "")
             }
         }
     }
@@ -507,9 +507,9 @@ class RideAccessibilityService : AccessibilityService() {
                     hash = hash
                 )
 
-                // v6.9.16: Auto-iniciar OverlayService se ele não estiver rodando (Android mata serviços em bg por memória)
-                if (!OverlayService.isRunning()) {
-                    Log.w(TAG_ENGINE, "│  ⚠️ OverlayService não está rodando. Auto-iniciando...")
+                // v7.1.0: Fallback robusto — usa Intent quando callback é null (service reiniciando)
+                if (!OverlayService.isRunning() || OverlayService.onRideDetected == null) {
+                    Log.w(TAG_ENGINE, "│  ⚠️ OverlayService não disponível (running=${OverlayService.isRunning()}, callback=${OverlayService.onRideDetected != null}). Iniciando via Intent...")
                     OverlayService.start(this, rideData)
                 } else {
                     OverlayService.onRideDetected?.invoke(rideData)
@@ -725,8 +725,9 @@ class RideAccessibilityService : AccessibilityService() {
                                 lastRideValue = rideData.rideValue
                                 lastRideValueTime = now
                                 Log.i(TAG_OCR, "│  ✅ CORRIDA VIA OCR! R$${String.format("%.2f", rideData.rideValue)}")
-                                if (!OverlayService.isRunning()) {
-                                    Log.w(TAG_OCR, "│  ⚠️ OverlayService não está rodando. Auto-iniciando...")
+                                // v7.1.0: Fallback robusto — usa Intent quando callback null
+                                if (!OverlayService.isRunning() || OverlayService.onRideDetected == null) {
+                                    Log.w(TAG_OCR, "│  ⚠️ OverlayService não disponível. Iniciando via Intent...")
                                     OverlayService.start(this@RideAccessibilityService, rideData)
                                 } else {
                                     OverlayService.onRideDetected?.invoke(rideData)
@@ -845,8 +846,9 @@ class RideAccessibilityService : AccessibilityService() {
         if (pending != null) {
             Log.i(TAG_GHOST, "│  📨 Corrida pendente do Ghost Mode — enviando ao OverlayService")
             RideNotificationListener.instance?.pendingGhostRide = null
-            if (!OverlayService.isRunning()) {
-                Log.w(TAG_GHOST, "│  ⚠️ OverlayService não está rodando. Auto-iniciando...")
+            // v7.1.0: Fallback robusto
+            if (!OverlayService.isRunning() || OverlayService.onRideDetected == null) {
+                Log.w(TAG_GHOST, "│  ⚠️ OverlayService não disponível. Iniciando via Intent...")
                 OverlayService.start(this@RideAccessibilityService, pending)
             } else {
                 OverlayService.onRideDetected?.invoke(pending)
@@ -888,7 +890,7 @@ class RideAccessibilityService : AccessibilityService() {
             }
         }
 
-        ghostHandler.postDelayed(ghostPollingRunnable!!, 2000L)
+        ghostPollingRunnable?.let { ghostHandler.postDelayed(it, 2000L) }
         Log.d(TAG_GHOST, "│  Polling iniciado (intervalo=2s, timeout=5min)")
     }
 

@@ -124,14 +124,38 @@ class ShiftManager(private val context: Context) {
     fun startShift(goal: Double, vehicleId: Int = 0): ShiftState = synchronized(lock) {
         val current = loadState()
         if (current.isActive) return current // Já tem turno ativo, não sobrescrever
-        val s = ShiftState(
-            isActive = true,
-            startTimeMs = System.currentTimeMillis(),
-            goalValue = goal,
-            vehicleId = vehicleId
-        )
+
+        // Check for same-day accumulator
+        val accPrefs = context.getSharedPreferences("shift_daily_acc", Context.MODE_PRIVATE)
+        val accDate = accPrefs.getString("acc_date", "") ?: ""
+        val today = java.time.LocalDate.now().toString()
+
+        val s = if (accDate == today) {
+            // Same day — resume from accumulated values
+            val accElapsed = accPrefs.getLong("acc_elapsed_ms", 0L)
+            TelemetryLogger.getInstance(context).shift("startShift: same-day resume (accElapsed=${accElapsed}ms, rides=${accPrefs.getInt("acc_rides", 0)})")
+            ShiftState(
+                isActive = true,
+                startTimeMs = System.currentTimeMillis() - accElapsed,
+                goalValue = goal,
+                vehicleId = vehicleId,
+                totalEarned = accPrefs.getFloat("acc_earned", 0f).toDouble(),
+                ridesCount = accPrefs.getInt("acc_rides", 0),
+                ridesAccepted = accPrefs.getInt("acc_accepted", 0),
+                ridesRejected = accPrefs.getInt("acc_rejected", 0),
+                ridesCancelled = accPrefs.getInt("acc_cancelled", 0)
+            )
+        } else {
+            // New day — fresh start
+            TelemetryLogger.getInstance(context).shift("startShift: fresh start (new day)")
+            ShiftState(
+                isActive = true,
+                startTimeMs = System.currentTimeMillis(),
+                goalValue = goal,
+                vehicleId = vehicleId
+            )
+        }
         saveState(s)
-        GpsTrackingEngine.getInstance(context).startTracking()
         return s
     }
 
@@ -147,10 +171,34 @@ class ShiftManager(private val context: Context) {
     }
 
     fun endShift(): ShiftState = synchronized(lock) {
-        val e = ShiftState()
-        saveState(e)
-        GpsTrackingEngine.getInstance(context).stopTracking()
-        return e
+        val currentState = loadState()
+        if (currentState.isActive) {
+            saveDailyAccumulator(currentState)
+            TelemetryLogger.getInstance(context).shift(
+                "endShift: elapsed=${currentState.elapsedMs}ms, earned=${currentState.totalEarned}, rides=${currentState.ridesCount}"
+            )
+        }
+        val e = ShiftState(); saveState(e); return e
+    }
+
+    /**
+     * Save accumulated day metrics so a same-day restart resumes from where the driver left off.
+     * Uses a separate SharedPreferences ("shift_daily_acc") keyed by date.
+     * Values already include any prior same-day accumulation (startShift restored them),
+     * so we save directly without adding to previous.
+     */
+    private fun saveDailyAccumulator(state: ShiftState) {
+        val today = java.time.LocalDate.now().toString()
+        val accPrefs = context.getSharedPreferences("shift_daily_acc", Context.MODE_PRIVATE)
+        accPrefs.edit()
+            .putString("acc_date", today)
+            .putLong("acc_elapsed_ms", state.elapsedMs)
+            .putFloat("acc_earned", state.totalEarned.toFloat())
+            .putInt("acc_rides", state.ridesCount)
+            .putInt("acc_accepted", state.ridesAccepted)
+            .putInt("acc_rejected", state.ridesRejected)
+            .putInt("acc_cancelled", state.ridesCancelled)
+            .commit()
     }
 
     /**

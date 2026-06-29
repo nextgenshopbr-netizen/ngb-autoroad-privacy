@@ -105,9 +105,23 @@ class OcrCaptureService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startForeground(NOTIFICATION_ID, createNotification())
-        startCapture()
-        return START_STICKY
+        // ══════════════════════════════════════════════════════════════════
+        // v7.1.0: SERVIÇO DESATIVADO — LEGADO SUBSTITUÍDO PELO TRIPLE ENGINE
+        //
+        // O OcrCaptureService (MediaProjection) foi substituído pelo OCR embutido
+        // no RideAccessibilityService (takeScreenshot via API do AccessibilityService).
+        //
+        // Motivos da desativação:
+        //   1. MediaProjection ativa indicador de gravação (Android 14+) — expõe o motorista
+        //   2. Screenshots a cada 1,5s consomem bateria e geram calor excessivo
+        //   3. Falsos positivos: parser sem validação de botão Aceitar
+        //   4. Redundante: Triple Engine (v6.0.0+) já cobre OCR como fallback de Camada 2
+        //
+        // O toggle nas Configurações foi removido. Este serviço pode ser deleted em versão futura.
+        // ══════════════════════════════════════════════════════════════════
+        Log.i("OcrCaptureService", "DESATIVADO: substituído pelo Triple Engine. Parando serviço.")
+        stopSelf()
+        return START_NOT_STICKY
     }
 
     override fun onDestroy() {

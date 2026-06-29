@@ -349,15 +349,16 @@ class TelemetryLogger private constructor(private val context: Context) {
 
     private fun ensureWriter() {
         // Verificar se precisa rotacionar
-        if (currentFile != null && currentFile!!.length() > MAX_FILE_SIZE) {
+        val file = currentFile
+        if (file != null && file.length() > MAX_FILE_SIZE) {
             rotateFiles()
         }
 
-        if (currentWriter == null || currentFile == null || !currentFile!!.exists()) {
-            // Criar novo arquivo de log
-            currentFile = File(logDir, "${LOG_FILE_PREFIX}${fileDateFormat.format(Date())}.log")
-            currentWriter = PrintWriter(FileOutputStream(currentFile!!, true), true)
-            Log.d(TAG, "Novo arquivo de log: ${currentFile!!.name}")
+        if (currentWriter == null || currentFile == null || currentFile?.exists() != true) {
+            val newFile = File(logDir, "${LOG_FILE_PREFIX}${fileDateFormat.format(Date())}.log")
+            currentFile = newFile
+            currentWriter = PrintWriter(FileOutputStream(newFile, true), true)
+            Log.d(TAG, "Novo arquivo de log: ${newFile.name}")
 
             // Gravar header
             currentWriter?.println("═══════════════════════════════════════════════════════════")

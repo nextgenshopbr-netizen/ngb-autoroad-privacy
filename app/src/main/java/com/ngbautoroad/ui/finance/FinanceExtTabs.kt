@@ -751,11 +751,11 @@ fun ProjectionTab(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("⚠️ Atenção", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(errorMessage!!, fontSize = 12.sp, color = Color.Gray)
+                    Text(errorMessage ?: "", fontSize = 12.sp, color = Color.Gray)
                 }
             }
         } else if (projection != null) {
-            val proj = projection!!
+            val proj = projection ?: return
 
             // Confiança
             Row(verticalAlignment = Alignment.CenterVertically) {

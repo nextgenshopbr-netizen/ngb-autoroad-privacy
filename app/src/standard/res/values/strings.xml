@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NGB AutoRoad</string>
+    <string name="accessibility_description">NGB AutoRoad precisa de acesso para detectar corridas nos apps de transporte (Uber, 99, inDrive, Cabify) e exibir informações sobre a corrida.</string>
+</resources>

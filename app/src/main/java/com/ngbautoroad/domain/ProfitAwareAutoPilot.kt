@@ -65,12 +65,8 @@ class ProfitAwareAutoPilot(private val context: Context) {
             val monthStartMs = cal.timeInMillis
             val nowMs = System.currentTimeMillis()
 
-            // Ganhos do mês e custos variáveis
-            val grossEarnings = earningDao.getTotalEarningsSync(monthStartMs, nowMs) ?: 0.0
-            val totalKm = earningDao.getTotalDistanceWithPickupSync(monthStartMs, nowMs) ?: 0.0
-            val vehicle = finDb.vehicleProfileDao().getActiveVehicleSync()
-            val costPerKm = vehicle?.costPerKm ?: 0.30
-            val monthEarnings = grossEarnings - (totalKm * costPerKm)
+            // Ganhos do mês
+            val monthEarnings = earningDao.getTotalEarningsSync(monthStartMs, nowMs) ?: 0.0
 
             // Custos fixos mensais (rateados)
             val monthlyFixed = individualExpenseDao.getTotalMonthlyRatedSync() ?: 0.0
@@ -103,7 +99,7 @@ class ProfitAwareAutoPilot(private val context: Context) {
                 val urgency = (baseUrgency * timePressure).coerceIn(0.0, 1.0)
 
                 // Estimar corridas restantes (baseado na média de ganho por corrida)
-                val avgPerRide = earningDao.getAverageAmountSyncLong(monthStartMs, nowMs) ?: 15.0
+                val avgPerRide = earningDao.getAverageAmountSync(monthStartMs, nowMs) ?: 15.0
                 val ridesRemaining = if (avgPerRide > 0) (deficit / avgPerRide).toInt() + 1 else 99
 
                 // Ajuste de score: proporcional à urgência

@@ -143,6 +143,7 @@ class GpsTrackingEngine(private val context: Context) : LocationListener, Sensor
             state = state.copy(isTracking = true)
             saveState()
             Log.i(TAG, "📍 GPS Tracking iniciado (passivo + acelerômetro)")
+            TelemetryLogger.getInstance(context).system("GPS Tracking iniciado")
         } catch (e: SecurityException) {
             Log.e(TAG, "Sem permissão de localização: ${e.message}")
         }
@@ -157,6 +158,7 @@ class GpsTrackingEngine(private val context: Context) : LocationListener, Sensor
         state = state.copy(isTracking = false)
         saveState()
         Log.i(TAG, "📍 GPS Tracking encerrado. Total: ${String.format("%.2f", state.totalDistanceKm)} km")
+        TelemetryLogger.getInstance(context).system("GPS Tracking encerrado totalKm=${String.format("%.2f", state.totalDistanceKm)}")
     }
 
     // v6.9.0: Controle automático por ActivityStateDetector
@@ -241,9 +243,10 @@ class GpsTrackingEngine(private val context: Context) : LocationListener, Sensor
         state = state.copy(
             isInRide = false,
             rideDistanceKm = rideKm,
-            deadDistanceKm = state.deadDistanceKm // Acumula entre corridas
+            deadDistanceKm = state.deadDistanceKm
         )
         saveState()
+        TelemetryLogger.getInstance(context).system("GPS endRide: ${String.format("%.2f", rideKm)}km pontos=${state.pointsCollected}")
         return rideKm
     }
 

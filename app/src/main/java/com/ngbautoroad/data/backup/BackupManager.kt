@@ -261,7 +261,7 @@ class BackupManager(private val context: Context) {
 
         // Migrar saved_profiles_json → profiles_json
         if ("saved_profiles_json" in result && "profiles_json" !in result) {
-            val legacyValue = result.remove("saved_profiles_json")!!
+            val legacyValue = result.remove("saved_profiles_json") ?: return result
             // Corrigir nomes de campos antigos dentro do JSON de perfis
             val migrated = legacyValue
                 .replace("\"stops\"", "\"intermediateStops\"")

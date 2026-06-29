@@ -144,7 +144,7 @@ fun FinanceScreen(
             }
 
             when (selectedTab) {
-                0 -> FinanceSummaryTab(expenseDao, earningDao, financialGoalDao)
+                0 -> FinanceSummaryTab(expenseDao, earningDao, financialGoalDao, vehicleProfileDao = vehicleProfileDao)
                 1 -> EarningsTab(earningDao, prefsManager, snackbarHostState)
                 2 -> ExpensesTab(expenseDao, snackbarHostState)
                 3 -> VehicleProfilesTab(vehicleProfileDao, snackbarHostState)
@@ -160,7 +160,7 @@ fun FinanceScreen(
 // === ABA RESUMO ===
 
 @Composable
-fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialGoalDao: FinancialGoalDao, individualExpenseDao: IndividualExpenseDao? = null) {
+fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialGoalDao: FinancialGoalDao, individualExpenseDao: IndividualExpenseDao? = null, vehicleProfileDao: VehicleProfileDao? = null) {
     var period by remember { mutableStateOf(FinancePeriod.TODAY) }
 
     val (startDate, endDate) = remember(period) { getPeriodRange(period) }
@@ -173,6 +173,9 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
     val activeGoals by financialGoalDao.getActiveGoals().collectAsState(initial = emptyList())
     // Despesas fixas rateadas (IPVA, seguro, parcela) — mensal
     val monthlyFixedCosts by (individualExpenseDao?.getTotalMonthlyRated() ?: kotlinx.coroutines.flow.flowOf(0.0)).collectAsState(initial = 0.0)
+
+    // v6.10: Carregar veículo ativo para custos reais (item 9)
+    val activeVehicle by (vehicleProfileDao?.getActiveVehicle() ?: kotlinx.coroutines.flow.flowOf(null)).collectAsState(initial = null)
 
     // Calcular ganhos por período para metas (igual ao GoalsTab)
     val (todayStart, todayEnd) = remember { getPeriodRange(FinancePeriod.TODAY) }
@@ -328,11 +331,21 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
         Text("Visão real do seu negócio", fontSize = 11.sp, color = Color.Gray)
         Spacer(modifier = Modifier.height(8.dp))
 
+        // DRE: custos do veículo ativo (ou fallback conservador) — hoisted for reuse in break-even
+        val costPerKm = activeVehicle?.costPerKm?.takeIf { it > 0 } ?: 0.30
+        val wearPerKm = activeVehicle?.let { v ->
+            var total = 0.0
+            if (v.tireLifeKm > 0 && v.tireCost > 0) total += v.tireCost / v.tireLifeKm
+            if (v.brakepadLifeKm > 0 && v.brakepadCost > 0) total += v.brakepadCost / v.brakepadLifeKm
+            if (v.oilChangeKm > 0 && v.oilChangeCost > 0) total += v.oilChangeCost / v.oilChangeKm
+            if (v.maintenanceIntervalKm > 0 && v.maintenanceCost > 0) total += v.maintenanceCost / v.maintenanceIntervalKm
+            if (total > 0) total else null
+        } ?: 0.05
+
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                // DRE inline usando dados já disponíveis
-                val combustivelEstimado = distance * 0.30 // Estimativa se não tiver veículo
-                val desgasteEstimado = distance * 0.05
+                val combustivelEstimado = distance * costPerKm
+                val desgasteEstimado = distance * wearPerKm
                 val custosVariaveis = combustivelEstimado + desgasteEstimado
                 val margemContrib = earnings - custosVariaveis
                 val lucroOp = margemContrib - fixedCostsForPeriod
@@ -352,7 +365,7 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
         if (fixedCostsForPeriod > 0 && rides > 0) {
             Spacer(modifier = Modifier.height(12.dp))
             val avgPerRide = if (rides > 0) earnings / rides else 0.0
-            val avgCostPerRide = if (rides > 0) (distance * 0.35) / rides else 0.0
+            val avgCostPerRide = if (rides > 0) (distance * (costPerKm + wearPerKm)) / rides else 0.0
             val contribPerRide = avgPerRide - avgCostPerRide
             val breakEvenRides = if (contribPerRide > 0) ((monthlyFixedCosts ?: 0.0) / contribPerRide).toInt() + 1 else 0
 
@@ -376,7 +389,9 @@ fun FinanceSummaryTab(expenseDao: ExpenseDao, earningDao: EarningDao, financialG
 @Composable
 fun EarningsTab(earningDao: EarningDao, prefsManager: com.ngbautoroad.data.prefs.PrefsManager? = null, snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }) {
     val scope = rememberCoroutineScope()
-    val allEarnings by earningDao.getAllEarnings().collectAsState(initial = emptyList())
+    // v6.10: Default to last 90 days for performance instead of loading ALL records
+    val last90DaysMs = remember { System.currentTimeMillis() - (90L * 24 * 60 * 60 * 1000) }
+    val allEarnings by earningDao.getEarningsByPeriod(last90DaysMs, Long.MAX_VALUE).collectAsState(initial = emptyList())
     var showAddDialog by remember { mutableStateOf(false) }
     var editingEarning by remember { mutableStateOf<EarningEntity?>(null) }
     val autoImportEnabled by (prefsManager?.autoImportEarningsFlow
@@ -524,21 +539,21 @@ fun EarningCard(earning: EarningEntity, onEdit: () -> Unit, onDelete: () -> Unit
 fun AddEarningDialog(existingEarning: EarningEntity?, onDismiss: () -> Unit, onConfirm: (EarningEntity) -> Unit) {
     val isEditing = existingEarning != null
     var platform by remember { mutableStateOf(existingEarning?.platform ?: "Uber") }
-    var amount by remember { mutableStateOf(if (isEditing) "%.2f".format(existingEarning!!.amount) else "") }
-    var tips by remember { mutableStateOf(if (isEditing && existingEarning!!.tips > 0) "%.2f".format(existingEarning.tips) else "") }
-    var bonus by remember { mutableStateOf(if (isEditing && existingEarning!!.bonus > 0) "%.2f".format(existingEarning.bonus) else "") }
-    var distance by remember { mutableStateOf(if (isEditing && existingEarning!!.distance > 0) "%.1f".format(existingEarning.distance) else "") }
-    // duration armazenado em minutos, exibido como H:mm
+    val e = existingEarning
+    var amount by remember { mutableStateOf(if (e != null) "%.2f".format(e.amount) else "") }
+    var tips by remember { mutableStateOf(if (e != null && e.tips > 0) "%.2f".format(e.tips) else "") }
+    var bonus by remember { mutableStateOf(if (e != null && e.bonus > 0) "%.2f".format(e.bonus) else "") }
+    var distance by remember { mutableStateOf(if (e != null && e.distance > 0) "%.1f".format(e.distance) else "") }
     var duration by remember {
         mutableStateOf(
-            if (isEditing && existingEarning!!.duration > 0) {
-                val h = existingEarning.duration / 60
-                val m = existingEarning.duration % 60
+            if (e != null && e.duration > 0) {
+                val h = e.duration / 60
+                val m = e.duration % 60
                 if (h > 0) "$h:${m.toString().padStart(2, '0')}" else "0:${m.toString().padStart(2, '0')}"
             } else ""
         )
     }
-    var rides by remember { mutableStateOf(if (isEditing && existingEarning!!.ridesCount > 0) "${existingEarning.ridesCount}" else "") }
+    var rides by remember { mutableStateOf(if (e != null && e.ridesCount > 0) "${e.ridesCount}" else "") }
     var description by remember { mutableStateOf(existingEarning?.description ?: "") }
     var period by remember { mutableStateOf(existingEarning?.period ?: "DIA") }
 
@@ -684,7 +699,9 @@ fun AddEarningDialog(existingEarning: EarningEntity?, onDismiss: () -> Unit, onC
 @Composable
 fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }) {
     val scope = rememberCoroutineScope()
-    val allExpenses by expenseDao.getAllExpenses().collectAsState(initial = emptyList())
+    // v6.10: Default to last 90 days for performance instead of loading ALL records
+    val last90DaysMs = remember { System.currentTimeMillis() - (90L * 24 * 60 * 60 * 1000) }
+    val allExpenses by expenseDao.getExpensesByPeriod(last90DaysMs, Long.MAX_VALUE).collectAsState(initial = emptyList())
     var showAddDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     var editingExpense by remember { mutableStateOf<ExpenseEntity?>(null) }
@@ -767,7 +784,7 @@ fun ExpensesTab(expenseDao: ExpenseDao, snackbarHostState: SnackbarHostState = r
     // Dialog de edição de gasto
     if (showEditDialog && editingExpense != null) {
         EditExpenseDialog(
-            expense = editingExpense!!,
+            expense = editingExpense ?: return,
             onDismiss = { showEditDialog = false; editingExpense = null },
             onConfirm = { updated ->
                 scope.launch {

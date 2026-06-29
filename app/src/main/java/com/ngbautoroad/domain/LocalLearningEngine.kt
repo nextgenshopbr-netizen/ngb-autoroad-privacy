@@ -16,7 +16,11 @@ package com.ngbautoroad.domain
 import android.content.Context
 import android.content.SharedPreferences
 import com.ngbautoroad.data.db.AppDatabase
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -67,8 +71,12 @@ class LocalLearningEngine(context: Context? = null) {
     fun setCostPerKm(cost: Double) { vehicleCostPerKm = cost }
 
     // v6.3.7: Constante de decaimento temporal
-    // k = 0.03 → corrida de 7 dias atrás pesa ~81%, 30 dias ~41%, 90 dias ~7%
+    // k = 0.03 -> corrida de 7 dias atras pesa ~81%, 30 dias ~41%, 90 dias ~7%
     private val DECAY_K = 0.03
+
+    // Debounce for persistPatterns: batch writes every 5 seconds
+    private val persistScope = CoroutineScope(Dispatchers.IO)
+    private var persistJob: Job? = null
 
     init {
         prefs?.getString("patterns_json_v2", null)?.let { json ->
@@ -140,7 +148,7 @@ class LocalLearningEngine(context: Context? = null) {
                 patterns.clear()
                 patterns.addAll(newPatterns)
             }
-            persistPatterns()
+            persistPatternsNow()
 
             // v6.3.7: Calibrar AdaptiveScoringEngine com os dados carregados
             val completedRides = rides.filter { it.status == "COMPLETED" || it.status == "ACCEPTED" }
@@ -159,10 +167,31 @@ class LocalLearningEngine(context: Context? = null) {
     }
 
     private fun persistPatterns() {
-        // [V2 AI ARCHITECTURE UPDATE]
-        // Persistência em JSON/SharedPreferences removida para economizar bateria e I/O.
-        // O motor heurístico agora atua 100% de forma "stateless", lendo do SQLite via seedFromDatabase()
-        // e cruzando dados com o AiBrainRepository de forma reativa e sob demanda.
+        prefs ?: return
+        // Debounce: cancel previous pending write, schedule new one in 5 seconds
+        persistJob?.cancel()
+        persistJob = persistScope.launch {
+            delay(5000L)
+            persistPatternsNow()
+        }
+    }
+
+    /** Immediate write to SharedPreferences on IO thread. */
+    private fun persistPatternsNow() {
+        prefs ?: return
+        try {
+            val arr = JSONArray()
+            val toSave = synchronized(patterns) { patterns.takeLast(1000) }
+            for (p in toSave) {
+                arr.put(JSONObject().apply {
+                    put("h", p.hour); put("d", p.dayOfWeek)
+                    put("n", p.neighborhood); put("v", p.valuePerKm)
+                    put("a", p.accepted); put("t", p.timestamp)
+                    put("rt", p.rideType)
+                })
+            }
+            prefs.edit().putString("patterns_json_v2", arr.toString()).apply()
+        } catch (_: Exception) {}
     }
 
     /**

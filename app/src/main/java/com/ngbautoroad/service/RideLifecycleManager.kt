@@ -37,6 +37,7 @@ import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.domain.ShiftManager
 import com.ngbautoroad.domain.GpsTrackingEngine
 import com.ngbautoroad.domain.SmartRoutingEngine
+import com.ngbautoroad.domain.TelemetryLogger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 
@@ -60,7 +61,7 @@ class RideLifecycleManager(private val context: Context) {
         private const val TAG = "NGB_LIFECYCLE"
 
         // ── Timeouts ──
-        private const val ACCEPTANCE_DETECTION_TIMEOUT_MS = 60_000L  // 60s para detectar aceitação (aumentado para robustez)
+        private const val ACCEPTANCE_DETECTION_TIMEOUT_MS = 20_000L  // 20s para detectar aceitação
         private const val COMPLETION_DETECTION_TIMEOUT_MS = 180_000L // 3min para detectar conclusão
         private const val UNCERTAIN_TIMEOUT_MS = 300_000L            // 5min → UNCERTAIN
 
@@ -77,7 +78,7 @@ class RideLifecycleManager(private val context: Context) {
         private val UBER_COMPLETED_TEXTS = listOf(
             "viagem concluída", "trip completed", "viaje completado",
             "corrida finalizada", "avalie o passageiro", "rate rider",
-            "como foi a viagem", "how was the trip", "avaliar usuário", "avaliar o usuário"
+            "como foi a viagem", "how was the trip"
         )
         private val UBER_CANCELLED_TEXTS = listOf(
             "viagem cancelada", "trip cancelled", "corrida cancelada",
@@ -122,6 +123,9 @@ class RideLifecycleManager(private val context: Context) {
     // ── Coroutine scope ──
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    // ── Telemetria ──
+    private val telemetry = TelemetryLogger.getInstance(context)
+
     // ── Callback para notificar OverlayService de mudanças de status ──
     var onPhaseChanged: ((RidePhase, RideData?) -> Unit)? = null
 
@@ -165,6 +169,7 @@ class RideLifecycleManager(private val context: Context) {
         currentRideDbId = dbId
         currentRideScore = score
         transitionTo(RidePhase.PENDING)
+        telemetry.lifecycle("Corrida detectada rideId=$dbId score=$score plataforma=${ride.platform.displayName}")
 
         // Iniciar timeout de aceitação
         // Se em 20s não detectar aceitação, verificar se card ainda está visível
@@ -187,13 +192,14 @@ class RideLifecycleManager(private val context: Context) {
      * - Conclusão ("Viagem concluída")
      * - Cancelamento ("Cancelada")
      *
-     * @param texts Lista de textos visíveis na tela
+     * @param texts Lista de textos coletados da árvore de acessibilidade
+     * @param packageName Package do app que gerou o evento
      */
-    fun onTextsDetected(texts: List<String>) {
+    fun onTextsDetected(texts: List<String>, packageName: String) {
         if (currentPhase == RidePhase.IDLE) return
-        if (currentRide == null) return
+        val ride = currentRide ?: return
 
-        val platform = currentRide!!.platform
+        val platform = ride.platform
         val lowerTexts = texts.map { it.lowercase().trim() }
 
         when (currentPhase) {
@@ -236,6 +242,7 @@ class RideLifecycleManager(private val context: Context) {
         }
 
         transitionTo(RidePhase.ACCEPTED)
+        telemetry.lifecycle("Corrida ACEITA rideId=$currentRideDbId")
 
         // v6.9.8: Fechar overlay do card atual (não recalcular com dados da corrida ativa)
         // O serviço continua ativo — se nova oferta real chegar (com botão aceitar), abre novo overlay
@@ -243,7 +250,7 @@ class RideLifecycleManager(private val context: Context) {
 
         // v6.6.0: Iniciar rastreamento GPS da corrida
         try {
-            val gps = GpsTrackingEngine.getInstance(context)
+            val gps = GpsTrackingEngine(context)
             gps.startRide()
             Log.d(TAG, "│  📍 GPS: Rastreamento da corrida iniciado")
         } catch (e: Exception) {
@@ -261,14 +268,6 @@ class RideLifecycleManager(private val context: Context) {
                 val db = AppDatabase.getInstance(context)
                 db.rideHistoryDao().updateStatusById(currentRideDbId, "ACCEPTED")
                 Log.d(TAG, "│  DB: Status atualizado para ACCEPTED (id=$currentRideDbId)")
-                
-                // Salvar corrida ativa no Dashboard
-                currentRide?.let {
-                    // Need to cast to the exact serializable type or use the imported extension function
-                    // Let's use the serializer explicitly to avoid import issues
-                    val json = kotlinx.serialization.json.Json.encodeToString(com.ngbautoroad.data.model.RideData.serializer(), it)
-                    PrefsManager(context).saveActiveRideJson(json)
-                }
             } catch (e: Exception) {
                 Log.e(TAG, "│  ✖ Erro ao atualizar status ACCEPTED: ${e.message}")
             }
@@ -296,21 +295,20 @@ class RideLifecycleManager(private val context: Context) {
 
         transitionTo(RidePhase.REFUSED)
 
+        val rideId = currentRideDbId
+        telemetry.lifecycle("Corrida RECUSADA rideId=$rideId")
+
         // v6.6.0: Registrar recusa no SmartRoutingEngine (incrementa contador de recusas consecutivas)
         try {
             SmartRoutingEngine(context).registerRejection()
         } catch (e: Exception) { /* non-critical */ }
 
         // v6.3.5: Atualizar status via query direta (sem carregar tabela inteira)
-        // Atualizar DB (v6.3.5 usava insertOrUpdate, agora fazemos updateStatus)
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
-                db.rideHistoryDao().updateStatusById(currentRideDbId, "REFUSED")
-                Log.d(TAG, "│  DB: Status atualizado para REFUSED (id=$currentRideDbId)")
-                
-                // Limpar corrida ativa do Dashboard
-                PrefsManager(context).saveActiveRideJson(null)
+                db.rideHistoryDao().updateStatusById(rideId, "REFUSED")
+                Log.d(TAG, "│  DB: Status atualizado para REFUSED (id=$rideId)")
             } catch (e: Exception) {
                 Log.e(TAG, "│  ✖ Erro ao atualizar status REFUSED: ${e.message}")
             }
@@ -331,10 +329,13 @@ class RideLifecycleManager(private val context: Context) {
 
         transitionTo(RidePhase.COMPLETED)
 
+        val rideId = currentRideDbId
+        telemetry.lifecycle("Corrida CONCLUÍDA rideId=$rideId valor=${finalValue ?: currentRide?.rideValue}")
+
         // v6.6.0: Encerrar rastreamento GPS e validar KM
         var gpsRideKm = 0.0
         try {
-            val gps = GpsTrackingEngine.getInstance(context)
+            val gps = GpsTrackingEngine(context)
             gpsRideKm = gps.endRide()
             Log.d(TAG, "│  📍 GPS: Corrida encerrada. KM GPS: ${String.format("%.2f", gpsRideKm)}")
         } catch (e: Exception) {
@@ -347,7 +348,7 @@ class RideLifecycleManager(private val context: Context) {
         // v6.6.0: Validar KM da Uber vs GPS
         if (gpsRideKm > 0.5) { // Só validar se GPS mediu algo significativo
             try {
-                val gps = GpsTrackingEngine.getInstance(context)
+                val gps = GpsTrackingEngine(context)
                 val validation = gps.validateRideKm(ride.dropoffDistance)
                 if (validation.isUberUnderreporting) {
                     Log.w(TAG, "│  ⚠️ KM DIVERGENTE: GPS=${String.format("%.1f", validation.gpsDistanceKm)}km vs Uber=${String.format("%.1f", validation.uberReportedKm)}km (${String.format("%.1f", validation.differencePercent)}% a menos)")
@@ -356,15 +357,11 @@ class RideLifecycleManager(private val context: Context) {
         }
 
         // v6.3.5: Atualizar status + valor via query direta (sem carregar tabela inteira)
-        val rideId = currentRideDbId
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
                 db.rideHistoryDao().updateStatusAndValueById(rideId, "COMPLETED", actualValue)
                 Log.d(TAG, "│  DB: Status atualizado para COMPLETED (id=$rideId, valor=R$$actualValue)")
-                
-                // Limpar corrida ativa do Dashboard
-                PrefsManager(context).saveActiveRideJson(null)
 
                 // ═══ REGISTRAR GANHO — SÓ AQUI! ═══
                 // v6.1.1: Respeitar toggle de auto-import
@@ -390,6 +387,14 @@ class RideLifecycleManager(private val context: Context) {
             }
         }
 
+        // v7.3.0: Invalidar cache da IA para que dashboard mostre dados atualizados imediatamente
+        try { com.ngbautoroad.ai.AiBrainRepository.invalidateActiveCache() } catch (_: Exception) {}
+        // v7.3.0: Limpar notificação de corrida ativa
+        try {
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.cancel(1003)
+        } catch (_: Exception) {}
+
         finishLifecycle()
     }
 
@@ -404,16 +409,15 @@ class RideLifecycleManager(private val context: Context) {
 
         transitionTo(RidePhase.CANCELLED)
 
-        // v6.3.5: Atualizar status via query direta (sem carregar tabela inteira)
         val rideId = currentRideDbId
+        telemetry.lifecycle("Corrida CANCELADA rideId=$rideId")
+
+        // v6.3.5: Atualizar status via query direta (sem carregar tabela inteira)
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
                 db.rideHistoryDao().updateStatusById(rideId, "CANCELLED")
                 Log.d(TAG, "│  DB: Status atualizado para CANCELLED (id=$rideId)")
-                
-                // Limpar corrida ativa do Dashboard
-                PrefsManager(context).saveActiveRideJson(null)
 
                 // Se já havia ganho registrado (caso raro), reverter
                 val financeDb = FinanceDatabase.getInstance(context)
@@ -463,6 +467,7 @@ class RideLifecycleManager(private val context: Context) {
     fun onOverlayDismissed() {
         if (currentPhase == RidePhase.PENDING) {
             Log.d(TAG, "├─ Overlay fechado em PENDING — marcando como EXPIRED")
+            telemetry.lifecycle("Corrida EXPIRADA rideId=$currentRideDbId")
             transitionTo(RidePhase.EXPIRED)
 
             // v6.3.5: Query direta
@@ -487,14 +492,14 @@ class RideLifecycleManager(private val context: Context) {
      * SÓ é chamado quando corrida é COMPLETED.
      * Verifica duplicatas antes de inserir.
      */
-    private suspend fun registerEarning(ride: RideData, actualValue: Double, rideId: Long) {
+    private suspend fun registerEarning(ride: RideData, actualValue: Double, rideDbId: Long) {
         try {
             val financeDb = FinanceDatabase.getInstance(context)
 
             // Verificar se já foi importado (evitar duplicata)
-            val alreadyImported = financeDb.earningDao().countAutoImportedByRideId(rideId)
+            val alreadyImported = financeDb.earningDao().countAutoImportedByRideId(rideDbId)
             if (alreadyImported > 0) {
-                Log.d(TAG, "│  ⊊ Ganho já registrado para id=$rideId — ignorando duplicata")
+                Log.d(TAG, "│  ⊊ Ganho já registrado para id=$rideDbId — ignorando duplicata")
                 return
             }
 
@@ -507,7 +512,7 @@ class RideLifecycleManager(private val context: Context) {
                 description = "Auto-import (lifecycle)",
                 period = "DIA",
                 isAutoImported = true,
-                rideHistoryId = rideId,
+                rideHistoryId = rideDbId,
                 score = currentRideScore,
                 pickupDistance = ride.pickupDistance // v6.6.0: KM morto
             )
@@ -583,6 +588,7 @@ class RideLifecycleManager(private val context: Context) {
         phaseStartTime = System.currentTimeMillis()
 
         Log.i(TAG, "│  ⟹ Transição: ${oldPhase.name} → ${newPhase.name}")
+        telemetry.lifecycle("Transição ${oldPhase.name} → ${newPhase.name} rideId=$currentRideDbId")
 
         // Notificar observers
         onPhaseChanged?.invoke(newPhase, currentRide)
@@ -594,7 +600,7 @@ class RideLifecycleManager(private val context: Context) {
     private fun startTimeout(delayMs: Long, onTimeout: () -> Unit) {
         cancelTimeout()
         timeoutRunnable = Runnable { onTimeout() }
-        handler.postDelayed(timeoutRunnable!!, delayMs)
+        timeoutRunnable?.let { handler.postDelayed(it, delayMs) }
     }
 
     /**
@@ -613,6 +619,7 @@ class RideLifecycleManager(private val context: Context) {
     private fun finishLifecycle() {
         Log.i(TAG, "└─ Lifecycle finalizado (fase final: ${currentPhase.name})")
         cancelTimeout()
+        RideAccessibilityService.instance?.userActionDetector?.stopMonitoring()
         currentRide = null
         currentRideDbId = 0L
         currentPhase = RidePhase.IDLE
@@ -634,6 +641,7 @@ class RideLifecycleManager(private val context: Context) {
                     } catch (_: Exception) {}
                 }
             }
+            RideAccessibilityService.instance?.userActionDetector?.stopMonitoring()
             currentRide = null
             currentRideDbId = 0L
             currentPhase = RidePhase.IDLE

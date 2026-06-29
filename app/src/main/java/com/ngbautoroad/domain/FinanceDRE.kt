@@ -47,7 +47,9 @@ data class DREResult(
     val receitaPorCorrida: Double,
     val lucroPorKm: Double,
     val lucroPorHora: Double,
-    val lucroPorCorrida: Double
+    val lucroPorCorrida: Double,
+    // v6.10: Manutenção real vs estimada
+    val manutencaoReal: Double = 0.0
 )
 
 /**
@@ -88,7 +90,8 @@ class FinanceDREEngine(
     private val expenseDao: ExpenseDao,
     private val individualExpenseDao: IndividualExpenseDao,
     private val vehicleProfileDao: VehicleProfileDao,
-    private val odometerHistoryDao: OdometerHistoryDao? = null
+    private val odometerHistoryDao: OdometerHistoryDao? = null,
+    private val maintenanceRecordDao: MaintenanceRecordDao? = null
 ) {
 
     /**
@@ -138,11 +141,17 @@ class FinanceDREEngine(
         // Custos Variáveis (combustível + desgaste por km REAL)
         val combustivelCost = totalKm * costPerKm
         val desgastePorKm = calculateDesgastePorKm(vehicle)
-        val desgasteCost = totalKm * desgastePorKm
+        val desgasteEstimado = totalKm * desgastePorKm
+
+        // v6.10: Integrar manutenção real — usar o MAIOR entre estimado e real (conservador)
+        val manutencaoReal = if (maintenanceRecordDao != null && vehicle != null) {
+            maintenanceRecordDao.getTotalCostByPeriod(vehicle.id, startDate, endDate) ?: 0.0
+        } else 0.0
+        val desgasteCost = maxOf(desgasteEstimado, manutencaoReal)
         val custosVariaveis = combustivelCost + desgasteCost
 
         // Margem de Contribuição
-        val margemContribuicao = if (receitaBruta > 0) receitaBruta - custosVariaveis else 0.0
+        val margemContribuicao = receitaBruta - custosVariaveis
         val margemContribuicaoPct = if (receitaBruta > 0) (margemContribuicao / receitaBruta) * 100.0 else 0.0
 
         // Custos Fixos (rateados para o período)
@@ -201,7 +210,8 @@ class FinanceDREEngine(
             receitaPorCorrida = receitaPorCorrida,
             lucroPorKm = lucroPorKm,
             lucroPorHora = lucroPorHora,
-            lucroPorCorrida = lucroPorCorrida
+            lucroPorCorrida = lucroPorCorrida,
+            manutencaoReal = manutencaoReal
         )
     }
 
@@ -293,6 +303,12 @@ class FinanceDREEngine(
         cal.add(Calendar.DAY_OF_YEAR, -7)
         val weekStart = cal.timeInMillis
 
+        // v6.10: Fuel category variants — case-insensitive matching
+        val fuelCategories = listOf(
+            "Combustível", "Combustivel", "COMBUSTÍVEL", "COMBUSTIVEL",
+            "FUEL", "Gasolina", "Álcool", "Etanol", "Diesel", "GNV"
+        )
+
         // Últimas 8 semanas (para calcular média e desvio padrão)
         val weeklyTotals = mutableListOf<Double>()
         val tempCal = Calendar.getInstance()
@@ -300,24 +316,29 @@ class FinanceDREEngine(
             val wEnd = tempCal.timeInMillis
             tempCal.add(Calendar.DAY_OF_YEAR, -7)
             val wStart = tempCal.timeInMillis
-            val total = expenseDao.getTotalByCategorySync("Combustível", wStart, wEnd) ?: 0.0
-            weeklyTotals.add(total)
+            var weekTotal = 0.0
+            for (cat in fuelCategories) {
+                weekTotal += expenseDao.getTotalByCategorySync(cat, wStart, wEnd) ?: 0.0
+            }
+            weeklyTotals.add(weekTotal)
         }
 
         // Gasto da semana atual
-        val currentWeekFuel = expenseDao.getTotalByCategorySync("Combustível", weekStart, endDate) ?: 0.0
+        var currentWeekFuel = 0.0
+        for (cat in fuelCategories) {
+            currentWeekFuel += expenseDao.getTotalByCategorySync(cat, weekStart, endDate) ?: 0.0
+        }
 
         if (weeklyTotals.size >= 4 && weeklyTotals.any { it > 0 }) {
-            val avg = if (weeklyTotals.isNotEmpty()) weeklyTotals.average() else 0.0
-            val variance = if (weeklyTotals.isNotEmpty()) weeklyTotals.map { (it - avg) * (it - avg) }.average() else 0.0
+            val avg = weeklyTotals.average()
+            val variance = weeklyTotals.map { (it - avg) * (it - avg) }.average()
             val stdDev = kotlin.math.sqrt(variance).coerceAtLeast(1.0)
             val zScore = if (stdDev > 0) (currentWeekFuel - avg) / stdDev else 0.0
 
-            if (zScore > 1.5) {
+            if (zScore > 2.0) {
                 val severity = when {
                     zScore > 3.0 -> "CRITICAL"
-                    zScore > 2.0 -> "WARNING"
-                    else -> "INFO"
+                    else -> "WARNING"
                 }
                 val pctAbove = ((currentWeekFuel - avg) / avg * 100).toInt()
                 alerts.add(AnomalyAlert(

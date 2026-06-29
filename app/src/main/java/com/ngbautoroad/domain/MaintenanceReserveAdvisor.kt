@@ -120,6 +120,7 @@ class MaintenanceReserveAdvisor(private val context: Context) {
 
         // v6.9.18: Filtrar os itens de manutenção baseando-se nas escolhas do motorista
         val prefsManager = PrefsManager(context)
+        // runBlocking ok: this method is called from IO dispatcher contexts only
         val monitorTires = runBlocking { prefsManager.monitorTiresFlow.first() }
         val monitorBrakes = runBlocking { prefsManager.monitorBrakesFlow.first() }
         val monitorOil = runBlocking { prefsManager.monitorOilFlow.first() }

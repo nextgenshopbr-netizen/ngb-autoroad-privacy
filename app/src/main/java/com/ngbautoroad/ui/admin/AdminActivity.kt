@@ -1017,7 +1017,7 @@ suspend fun simulateRide(prefsManager: PrefsManager, quality: RideQuality): Simu
     val (valueRange, distanceRange, surgeRange, ratingRange) = when (quality) {
         RideQuality.GOOD -> Quadruple(20.0..60.0, 4.0..15.0, 1.2..2.5, 4.7..5.0)
         RideQuality.AVERAGE -> Quadruple(10.0..25.0, 3.0..10.0, 1.0..1.3, 4.3..4.8)
-        RideQuality.BAD -> Quadruple(5.0..12.0, 1.0..5.0, 1.0..1.0, 3.5..4.5)
+        RideQuality.BAD -> Quadruple(5.0..12.0, 1.0..5.0, 1.0..1.1, 3.5..4.5)
         RideQuality.RANDOM -> Quadruple(5.0..80.0, 1.0..25.0, 1.0..3.0, 3.5..5.0)
     }
 

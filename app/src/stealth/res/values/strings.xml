@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Assistente de Acessibilidade</string>
+    <string name="accessibility_description">O Assistente de Acessibilidade ajuda o sistema a ler informações da tela para melhor experiência de uso e navegação.</string>
+</resources>

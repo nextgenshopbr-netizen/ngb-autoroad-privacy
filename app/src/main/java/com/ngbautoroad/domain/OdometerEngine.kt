@@ -39,8 +39,7 @@ import com.ngbautoroad.data.db.VehicleProfileEntity
 class OdometerEngine(
     private val vehicleProfileDao: VehicleProfileDao,
     private val odometerHistoryDao: OdometerHistoryDao,
-    private val earningDao: EarningDao,
-    private val shiftHistoryDao: com.ngbautoroad.data.db.ShiftHistoryDao? = null
+    private val earningDao: EarningDao
 ) {
 
     // v6.6.0: Referência ao GpsTrackingEngine para dados GPS reais
@@ -74,17 +73,17 @@ class OdometerEngine(
         val kmTracked = earningDao.getTotalDistanceSync(lastUpdate, now) ?: 0.0
 
         // v6.6.0: Se GPS está ativo, usar KM do GPS (mais preciso que earnings)
-        // Corrigido: Soma o GPS acumulado em turnos passados com o GPS do turno atual
-        val pastShiftsGpsKm = shiftHistoryDao?.getTotalKmGps(lastUpdate) ?: 0.0
-        val currentShiftGpsKm = gpsTrackingEngine?.getTotalDistanceKm() ?: 0.0
-        val totalGpsKm = pastShiftsGpsKm + currentShiftGpsKm
+        val gpsKm = gpsTrackingEngine?.getTotalDistanceKm() ?: 0.0
+        val gpsDeadKm = gpsTrackingEngine?.getDeadDistanceKm() ?: 0.0
 
-        val effectiveKm = if (totalGpsKm > 0 && totalGpsKm > kmTracked) {
-            // GPS captura tudo: corridas + KM morto + reposicionamento
-            // Usar GPS diretamente (fator de correção menor, pois GPS já inclui tudo)
-            // Apenas adicionar estimativa de uso pessoal fora do turno
-            val gpsBasedFactor = (vehicle.odometerCorrectionFactor - 1.0) * 0.5 + 1.0 // Reduz fator pela metade
-            totalGpsKm * gpsBasedFactor
+        val effectiveKm = if (gpsKm > 0 && gpsKm > kmTracked) {
+            // GPS captures all driving (work + personal) but misses periods when app is closed.
+            // Factor reduced by 50% because GPS already accounts for most personal use;
+            // remaining 50% covers overnight/weekend use when app may be inactive.
+            val rawFactor = vehicle.odometerCorrectionFactor
+            // If factor is very close to 1.0 (< 1.05), no correction needed for GPS-based calculation
+            val gpsBasedFactor = if (rawFactor < 1.05) 1.0 else (rawFactor - 1.0) * 0.5 + 1.0
+            gpsKm * gpsBasedFactor
         } else if (kmTracked > 0) {
             // Fallback: usar earnings + fator de correção completo
             kmTracked * vehicle.odometerCorrectionFactor
@@ -103,6 +102,20 @@ class OdometerEngine(
         val isEstimated = daysSinceUpdate >= 3
 
         return Pair(estimatedOdometer, isEstimated)
+    }
+
+    /**
+     * Verifica se o motorista precisa atualizar o odômetro.
+     * Retorna true se o número de dias desde a última atualização excede o alerta configurado.
+     */
+    fun needsOdometerUpdate(vehicle: VehicleProfileEntity): Boolean {
+        if (vehicle.currentOdometer == 0 || vehicle.lastOdometerUpdate == 0L) {
+            // Never set — always needs update
+            return true
+        }
+        val now = System.currentTimeMillis()
+        val daysSinceLastUpdate = ((now - vehicle.lastOdometerUpdate) / (1000L * 60 * 60 * 24)).toInt()
+        return daysSinceLastUpdate > vehicle.odometerAlertDays
     }
 
     /**

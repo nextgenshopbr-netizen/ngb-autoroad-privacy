@@ -28,7 +28,10 @@ import kotlinx.coroutines.flow.Flow
 
 // === ENTITIES ===
 
-@Entity(tableName = "expenses")
+@Entity(
+    tableName = "expenses",
+    indices = [Index("date"), Index("parentExpenseId")]
+)
 data class ExpenseEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val category: String = "",
@@ -49,7 +52,10 @@ data class ExpenseEntity(
     val isGenerated: Boolean = false       // Se foi gerado automaticamente pela recorrência
 )
 
-@Entity(tableName = "earnings")
+@Entity(
+    tableName = "earnings",
+    indices = [Index("date"), Index("rideHistoryId")]
+)
 data class EarningEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val platform: String = "",
@@ -115,7 +121,7 @@ data class FinancialGoalEntity(
 @Entity(tableName = "maintenance_records")
 data class MaintenanceRecordEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val vehicleId: Int = 1,
+    val vehicleId: Long = 0,
     val date: Long = System.currentTimeMillis(),
     val odometer: Int = 0,
     val totalCost: Double = 0.0,
@@ -252,12 +258,8 @@ interface EarningDao {
     suspend fun countDistinctDaysSync(startDate: Long, endDate: Long): Int?
 
     // v6.3.9: Média de valor por corrida (para estimar corridas restantes no break-even)
-    @Query("SELECT AVG(amount) FROM earnings WHERE date >= :startDate AND date <= :endDate AND isAutoImported = 1")
-    suspend fun getAverageAmountSync(startDate: String, endDate: String): Double?
-
-    // v6.3.9: Média de valor por corrida (versão Long para ProfitAwareAutoPilot)
     @Query("SELECT AVG(amount) FROM earnings WHERE date >= :startMs AND date <= :endMs AND isAutoImported = 1")
-    suspend fun getAverageAmountSyncLong(startMs: Long, endMs: Long): Double?
+    suspend fun getAverageAmountSync(startMs: Long, endMs: Long): Double?
 }
 
 @Dao
@@ -325,10 +327,10 @@ interface MaintenanceRecordDao {
     fun getAllRecords(): Flow<List<MaintenanceRecordEntity>>
 
     @Query("SELECT * FROM maintenance_records WHERE vehicleId = :vehicleId ORDER BY date DESC")
-    fun getRecordsByVehicle(vehicleId: Int): Flow<List<MaintenanceRecordEntity>>
+    fun getRecordsByVehicle(vehicleId: Long): Flow<List<MaintenanceRecordEntity>>
     
     @Query("SELECT SUM(totalCost) FROM maintenance_records WHERE vehicleId = :vehicleId AND date >= :startDate AND date <= :endDate")
-    suspend fun getTotalCostByPeriod(vehicleId: Int, startDate: Long, endDate: Long): Double?
+    suspend fun getTotalCostByPeriod(vehicleId: Long, startDate: Long, endDate: Long): Double?
 }
 
 // === Resultado de queries de relatório ===
@@ -360,7 +362,7 @@ data class PlatformSummary(
         ShiftHistoryEntity::class,
         MaintenanceRecordEntity::class
     ],
-    version = 9,
+    version = 11,
     exportSchema = false
 )
 abstract class FinanceDatabase : RoomDatabase() {
@@ -524,6 +526,23 @@ abstract class FinanceDatabase : RoomDatabase() {
             }
         }
 
+        // Migração v9 → v10: Adicionar índices em expenses e earnings para performance
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_expenses_date ON expenses(date)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_expenses_parentExpenseId ON expenses(parentExpenseId)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_earnings_date ON earnings(date)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_earnings_rideHistoryId ON earnings(rideHistoryId)")
+            }
+        }
+
+        // Migração v10 → v11: vehicleId em shift_history e maintenance_records Long
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE shift_history ADD COLUMN vehicleId INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): FinanceDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -531,7 +550,7 @@ abstract class FinanceDatabase : RoomDatabase() {
                     FinanceDatabase::class.java,
                     "ngb_finance_db"
                 )
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                 // Fallback apenas para migração de versão 1 (primeira instalação antiga)
                 .fallbackToDestructiveMigrationFrom(1)
                 // Removido allowMainThreadQueries — todas as queries são suspend/Flow (item 6.2)

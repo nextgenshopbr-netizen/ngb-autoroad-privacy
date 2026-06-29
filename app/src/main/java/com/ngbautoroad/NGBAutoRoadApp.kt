@@ -36,6 +36,10 @@ class NGBAutoRoadApp : Application() {
         // v6.2.0: Iniciar monitoramento de memória para Android 17
         memoryMonitor = MemoryMonitor(this)
         memoryMonitor.start()
+        // v7.3.0: Agendar calibração noturna da IA (roda com bateria carregando + device idle)
+        com.ngbautoroad.ai.NightlyLearningWorker.schedule(this)
+        // v5.0.0: Agendar geração de despesas recorrentes
+        com.ngbautoroad.service.RecurringExpenseWorker.schedule(this)
     }
 
     private fun createNotificationChannels() {

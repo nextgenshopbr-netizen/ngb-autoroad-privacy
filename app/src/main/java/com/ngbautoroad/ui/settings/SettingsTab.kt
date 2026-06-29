@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.prefs.PrefsManager
 import com.ngbautoroad.service.BubbleService
-import com.ngbautoroad.service.OcrCaptureService
+// import com.ngbautoroad.service.OcrCaptureService — v7.1.0: removido, serviço desativado
 import com.ngbautoroad.service.OverlayService
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.width
@@ -510,7 +510,7 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val serviceEnabled by prefsManager.serviceEnabledFlow.collectAsState(initial = false)
-    val ocrEnabled by prefsManager.ocrEnabledFlow.collectAsState(initial = true)
+    // v7.1.0: ocrEnabled removido — OcrCaptureService desativado, Triple Engine cobre OCR internamente
     val protectionEnabled by prefsManager.protectionEnabledFlow.collectAsState(initial = false)
     val overlayWidth by prefsManager.overlayWidthFlow.collectAsState(initial = 320)
     val overlayFontScale by prefsManager.overlayFontScaleFlow.collectAsState(initial = 1.0f)
@@ -611,44 +611,9 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
 
                 // Overlay (Redundante removido - inicialização automática pelo RideAccessibilityService)
 
-                // OCR Toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp)
-                    ) {
-                        Text("OCR (ML Kit)", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            "Leitura de tela via captura",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = ocrEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled && !Settings.canDrawOverlays(context)) {
-                                Toast.makeText(context, "Permissao de overlay necessaria para captura OCR", Toast.LENGTH_LONG).show()
-                                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
-                                context.startActivity(intent)
-                            } else {
-                                scope.launch {
-                                    prefsManager.setOcrEnabled(enabled)
-                                    if (enabled) {
-                                        OcrCaptureService.start(context)
-                                        Toast.makeText(context, "OCR ativado", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        OcrCaptureService.stop(context)
-                                    }
-                                }
-                            }
-                        }
-                    )
-                }
+                // v7.1.0: Toggle OCR removido — OcrCaptureService (MediaProjection) desativado.
+                // O Triple Engine já inclui OCR como Camada 2 (takeScreenshot via AccessibilityService),
+                // sem exposição de indicador de gravação e sem dreno de bateria contínuo.
             }
         }
 

@@ -11,7 +11,6 @@ package com.ngbautoroad.service
 //   - showOverlay (L148-240): Calcula score, salva histórico, auto-import, exibe card
 //   - hideOverlay (L241-250): Remove overlay com animação
 //   - createOverlay (L251-332): Cria WindowManager.LayoutParams + ComposeView
-//   - updateOverlayContent (L333-350): Atualiza conteúdo do Compose
 //   - resizeOverlay (L351-364): Redimensiona card ao vivo
 //   - createNotification (L365-fim): Notificação do foreground service
 // DEPENDÊNCIAS:
@@ -71,6 +70,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import com.ngbautoroad.data.db.AppDatabase
 import com.ngbautoroad.data.db.RideHistoryEntity
+import com.ngbautoroad.domain.TelemetryLogger
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 
@@ -114,7 +114,12 @@ class OverlayService : Service(),
     private var lastRideTime: Long = 0L
     private val DUPLICATE_WINDOW_MS = 30000L // v6.9.14: 30 segundos (era 3s)
 
+    // v7.1.0: Debounce inteligente por hash — só cancela se for a MESMA corrida aguardando destino
+    private var debounceJob: Job? = null
+    private var pendingRideHash: Int = 0
+
     private lateinit var prefsManager: PrefsManager
+    private val telemetry by lazy { TelemetryLogger.getInstance(applicationContext) }
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     // v5.0.0: Auto-dismiss timer
     private var autoDismissJob: Job? = null
@@ -193,32 +198,8 @@ class OverlayService : Service(),
             currentFontScale = prefsManager.overlayFontScaleFlow.first()
         }
 
-        var debounceJob: kotlinx.coroutines.Job? = null
-
-        onRideDetected = { ride ->
-            debounceJob?.cancel()
-            debounceJob = serviceScope.launch {
-                // v6.9.17: Debounce para aguardar a UI da Uber carregar completamente o destino.
-                // Evita que o AutoPilot tome decisão precoce (verde) antes do destino (vermelho) aparecer.
-                if (ride.dropoffNeighborhood.isBlank()) {
-                    kotlinx.coroutines.delay(800)
-                } else {
-                    kotlinx.coroutines.delay(150)
-                }
-
-                // Incluir dropoffNeighborhood no hash para atualizar caso o destino apareça depois
-                val rideHash = "${ride.platform}_${ride.rideValue}_${ride.rideType}_${ride.dropoffNeighborhood}".hashCode()
-                val now = System.currentTimeMillis()
-                if (!ride.isSimulation && rideHash == lastRideHash && (now - lastRideTime) < DUPLICATE_WINDOW_MS) {
-                    return@launch // Ignorar duplicata
-                }
-                if (!ride.isSimulation) {
-                    lastRideHash = rideHash
-                    lastRideTime = now
-                }
-                showOverlay(ride)
-            }
-        }
+        // v7.1.0: Debounce inteligente — delega para queueRide()
+        onRideDetected = { ride -> queueRide(ride) }
 
         // v6.9.16: Se o serviço for reiniciado e houver uma corrida ativa em fase PENDING, exibi-la imediatamente
         val activeManager = RideAccessibilityService.instance?.lifecycleManager
@@ -280,9 +261,8 @@ class OverlayService : Service(),
             try {
                 val ride = kotlinx.serialization.json.Json.decodeFromString<RideData>(json)
                 android.util.Log.i("NGB_OVERLAY", "Corrida recebida via Intent: R$ ${ride.rideValue}")
-                serviceScope.launch {
-                    onRideDetected?.invoke(ride)
-                }
+                // v7.1.0: Chama queueRide diretamente — evita race condition do callback null
+                serviceScope.launch { queueRide(ride) }
             } catch (e: Exception) {
                 android.util.Log.e("NGB_OVERLAY", "Erro ao deserializar RideData do Intent: ${e.message}")
             }
@@ -316,7 +296,64 @@ class OverlayService : Service(),
         System.gc()
     }
 
+    // =========================================================================
+    // v7.1.0: queueRide — Debounce inteligente + deduplicação
+    //
+    // Comportamento:
+    //   - MESMA corrida (mesmo hash, destino ainda vazio): adia 600ms aguardando
+    //     o bairro de destino carregar antes de exibir (evita overlay incompleto)
+    //   - MESMA corrida com destino já presente: exibe imediatamente (100ms mínimo)
+    //   - CORRIDA DIFERENTE: cancela debounce anterior e exibe imediatamente
+    //   - DUPLICATA confirmada (30s window): ignora silenciosamente
+    // =========================================================================
+    private fun queueRide(ride: RideData) {
+        // Deduplicação por hash (30s window)
+        // v7.1.2: rideType REMOVIDO do hash — o parser pode atualizá-lo entre eventos
+        // (ex: UBER_X → UBER_COMFORT ao ler o badge), gerando hash diferente e re-exibindo o overlay.
+        // Hash estável: plataforma + valor + bairro destino (suficiente para identificar a oferta)
+        val rideHash = "${ride.platform}_${ride.rideValue}_${ride.dropoffNeighborhood}".hashCode()
+        val now = System.currentTimeMillis()
+        if (!ride.isSimulation && rideHash == lastRideHash && (now - lastRideTime) < DUPLICATE_WINDOW_MS) {
+            android.util.Log.d("NGB_OVERLAY", "[Queue] Duplicata ignorada (hash=$rideHash, Δt=${now - lastRideTime}ms)")
+            return
+        }
+
+        // v7.2.1: Simulações sempre tratadas como corrida nova — permite repetir sem reiniciar o serviço
+        val isNewRide = ride.isSimulation || rideHash != pendingRideHash
+
+        if (isNewRide) {
+            // Corrida diferente: cancela debounce anterior e inicia imediatamente
+            debounceJob?.cancel()
+            pendingRideHash = rideHash
+            val delay = if (ride.dropoffNeighborhood.isBlank()) 400L else 0L
+            debounceJob = serviceScope.launch {
+                if (delay > 0) kotlinx.coroutines.delay(delay)
+                if (!ride.isSimulation) { lastRideHash = rideHash; lastRideTime = System.currentTimeMillis() }
+                showOverlay(ride)
+            }
+            android.util.Log.d("NGB_OVERLAY", "[Queue] Nova corrida R$${ride.rideValue} | delay=${delay}ms")
+            telemetry.overlay("Queue: nova corrida R$${ride.rideValue} plataforma=${ride.platform.displayName} delay=${delay}ms")
+        } else {
+            // Mesma corrida chegando de novo (destino atualizou ou releitura do AS):
+            // só atualiza se o destino ficou mais completo (tem bairro agora E job ainda está aguardando)
+            val hasNeighborhoodUpdate = ride.dropoffNeighborhood.isNotBlank() && (debounceJob?.isActive == true)
+            if (hasNeighborhoodUpdate) {
+                debounceJob?.cancel()
+                pendingRideHash = rideHash
+                debounceJob = serviceScope.launch {
+                    kotlinx.coroutines.delay(100L) // mínimo para evitar flash
+                    if (!ride.isSimulation) { lastRideHash = rideHash; lastRideTime = System.currentTimeMillis() }
+                    showOverlay(ride)
+                }
+                android.util.Log.d("NGB_OVERLAY", "[Queue] Mesma corrida com destino atualizado — exibindo")
+            } else {
+                android.util.Log.d("NGB_OVERLAY", "[Queue] Releitura da mesma corrida pendente — ignorando")
+            }
+        }
+    }
+
     private suspend fun showOverlay(ride: RideData) {
+      try { // v7.1.0: try-catch global — qualquer exceção é logada e não mata silenciosamente o overlay
         currentRide = ride
 
         // Ler critérios reais do DataStore
@@ -429,6 +466,22 @@ class OverlayService : Service(),
             }
         }
 
+        // v7.2.0: Pipe Mode — ativa FLAG_NOT_TOUCHABLE quando AutoPilot está no modo de aceitar.
+        // Com FLAG_NOT_TOUCHABLE, toques do usuário passam DIRETO para o app alvo sem
+        // receber FLAG_WINDOW_IS_OBSCURED — remove o vetor de detecção mais trivial.
+        // Quando AutoPilot está OFF ou REFUSE_ONLY, o overlay mantém interatividade normal.
+        val autoPilotMode = withContext(Dispatchers.IO) {
+            kotlinx.coroutines.withTimeoutOrNull(500L) {
+                prefsManager.autoPilotModeFlow.first()
+            } ?: AutoPilotEngine.MODE_OFF
+        }
+        // v7.2.1: Simulações NUNCA ativam Pipe Mode — motorista precisa interagir com o overlay de teste
+        val isPipeMode = !ride.isSimulation && autoPilotMode in listOf(
+            AutoPilotEngine.MODE_ACCEPT, AutoPilotEngine.MODE_ACCEPT_ONLY,
+            AutoPilotEngine.MODE_FULL, AutoPilotEngine.MODE_BOTH
+        )
+        telemetry.overlay("showOverlay: R$${ride.rideValue} score=${currentScore?.totalScore?.toInt()} pipe=$isPipeMode plataforma=${ride.platform.displayName}")
+
         // v6.9.9: Notificação de corrida para Android Auto e tela de bloqueio
         val androidAutoEnabled = prefsManager.androidAutoEnabledFlow.first()
         val androidAutoAutoDetect = prefsManager.androidAutoAutoDetectFlow.first()
@@ -444,17 +497,28 @@ class OverlayService : Service(),
                 hideOverlay(isReplacing = true)
             }
             try {
-                createOverlay()
+                // v7.2.0: isPipeMode passado para aplicar FLAG_NOT_TOUCHABLE quando AutoPilot ativo
+                createOverlay(isPipeMode = isPipeMode)
                 // v5.0.0: Auto-dismiss configurável (30s padrão)
                 startAutoDismissTimer()
             } catch (e: Exception) {
                 android.util.Log.e("OverlayService", "Erro ao criar overlay: ${e.message}", e)
             }
         }
+      } catch (e: Exception) {
+          // v7.1.0: Catch global — garante que falhas em DataStore/DB/Score não matam o overlay silenciosamente
+          android.util.Log.e("NGB_OVERLAY", "[showOverlay] ERRO CRÍTICO — overlay não exibido: ${e.message}", e)
+          telemetry.log(
+              com.ngbautoroad.domain.TelemetryLogger.Category.LIFECYCLE,
+              com.ngbautoroad.domain.TelemetryLogger.Level.ERROR,
+              "showOverlay FALHOU: ${e.message}"
+          )
+      }
     }
 
     fun hideOverlay(isReplacing: Boolean = false) {
         autoDismissJob?.cancel() // v5.0.0: Cancelar timer ao fechar
+        dismissRideNotification() // v7.1.1: Limpar notificação de corrida ao fechar overlay
         overlayView?.let {
             try {
                 windowManager?.removeView(it)
@@ -491,20 +555,38 @@ class OverlayService : Service(),
         }
     }
 
-    // v5.0.0: Auto-dismiss configurável — fecha overlay após X segundos
+    // v7.3.0: Auto-dismiss inteligente por plataforma
+    // Cada app mantém o card na tela por um tempo diferente:
+    //   Uber: ~15s | 99: ~15s | inDrive: sem timer fixo (bidding)
+    // O overlay NGB deve permanecer visível pelo menos até o card da plataforma expirar,
+    // para que o motorista tenha a referência do score durante toda a janela de decisão.
     private fun startAutoDismissTimer() {
         autoDismissJob?.cancel()
         autoDismissJob = serviceScope.launch {
             try {
-                // v6.9.6: Usar withTimeoutOrNull para garantir que first() não trave indefinidamente
-                val dismissSeconds = kotlinx.coroutines.withTimeoutOrNull(3000L) {
+                val userDismissSeconds = kotlinx.coroutines.withTimeoutOrNull(3000L) {
                     prefsManager.autoDismissSecondsFlow.first()
-                } ?: 30 // Fallback: 30s se DataStore não responder em 3s
-                val dismissMs = if (dismissSeconds > 0) (dismissSeconds * 1000L) + 2000L else 0L
-                android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Timer iniciado: ${dismissSeconds}s + 2s de tolerância")
-                if (dismissMs > 0) { // 0 = nunca auto-dismiss
+                } ?: 30
+
+                // Tempo mínimo por plataforma (em segundos) — baseado no timer real de cada app
+                val platformMinSeconds = when (currentRide?.platform) {
+                    com.ngbautoroad.data.model.Platform.UBER -> 18        // Uber: 15s + 3s margem
+                    com.ngbautoroad.data.model.Platform.NINETY_NINE -> 18  // 99: 15s + 3s margem
+                    com.ngbautoroad.data.model.Platform.INDRIVE -> 30      // inDrive: sem timer, usar 30s
+                    else -> 20
+                }
+
+                // Usar o MAIOR entre: config do motorista e mínimo da plataforma
+                val effectiveSeconds = if (userDismissSeconds == 0) 0 else maxOf(userDismissSeconds, platformMinSeconds)
+                val dismissMs = if (effectiveSeconds > 0) effectiveSeconds * 1000L else 0L
+
+                val platformName = currentRide?.platform?.displayName ?: "?"
+                android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] $platformName: ${effectiveSeconds}s (user=${userDismissSeconds}s, plataforma min=${platformMinSeconds}s)")
+
+                if (dismissMs > 0) {
                     delay(dismissMs)
-                    android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Fechando overlay após ${dismissSeconds + 2}s")
+                    android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Fechando overlay após ${effectiveSeconds}s")
+                    telemetry.overlay("AutoDismiss: fechando após ${effectiveSeconds}s plataforma=$platformName")
                     hideOverlay()
                 } else {
                     android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Desativado (0s configurado)")
@@ -515,7 +597,23 @@ class OverlayService : Service(),
         }
     }
 
-    private fun createOverlay() {
+    /**
+     * v7.2.0: Parâmetro [isPipeMode].
+     *
+     * Pipe Mode (FLAG_NOT_TOUCHABLE):
+     *   Quando o AutoPilot está no modo aceitar (ACCEPT / FULL / BOTH / ACCEPT_ONLY),
+     *   o overlay é declarado como não-tocável. Toques do usuário passam diretamente
+     *   para o app alvo SEM receber FLAG_WINDOW_IS_OBSCURED — eliminando o vetor
+     *   de detecção mais básico usado por Uber/99/inDrive.
+     *   O AutoPilot usa dispatchGesture (AccessibilityService) que não carrega essa flag.
+     *
+     * Modo normal (sem FLAG_NOT_TOUCHABLE):
+     *   Overlay interativo — motorista pode arrastar e fechar manualmente.
+     *   Usado quando AutoPilot está OFF, REFUSE ou REFUSE_ONLY.
+     *
+     * @param isPipeMode true = FLAG_NOT_TOUCHABLE ativado, sem touch listener
+     */
+    private fun createOverlay(isPipeMode: Boolean = false) {
         val density = resources.displayMetrics.density
         val widthPx = (overlayWidth * density).toInt()
 
@@ -524,6 +622,15 @@ class OverlayService : Service(),
         // A posição será carregada assincronamente após criação
         val savedX = 0
         val savedY = 0
+
+        // v7.2.0: Flags condicionais por modo
+        val overlayFlags = if (isPipeMode) {
+            android.util.Log.i("NGB_OVERLAY", "[PipeMode] ATIVADO — FLAG_NOT_TOUCHABLE aplicado")
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        } else {
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+        }
 
         val heightParam = WindowManager.LayoutParams.WRAP_CONTENT
         val params = WindowManager.LayoutParams(
@@ -534,7 +641,7 @@ class OverlayService : Service(),
             else
                 @Suppress("DEPRECATION")
                 WindowManager.LayoutParams.TYPE_PHONE,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            overlayFlags,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -614,6 +721,12 @@ class OverlayService : Service(),
                                 try {
                                     windowManager?.updateViewLayout(overlayView, params)
                                 } catch (_: Exception) {}
+
+                                // v7.2.1: Salvar posição via onDrag (Compose consome os toques
+                                // antes do setOnTouchListener — esse é o único ponto que funciona)
+                                serviceScope.launch {
+                                    prefsManager.saveOverlayPosition(newX, newY)
+                                }
                             }
                         )
                     }
@@ -621,160 +734,157 @@ class OverlayService : Service(),
             }
         }
 
+        // v7.2.0: Touch listener só em modo normal (não em Pipe Mode).
+        // Em Pipe Mode (FLAG_NOT_TOUCHABLE), eventos de toque passam direto para o
+        // app alvo — o listener nunca seria chamado de qualquer forma.
         // Drag livre (v6.3.4 — pinch-to-zoom removido, usar resize handle em vez disso)
-        var initialX = 0
-        var initialY = 0
-        var touchX = 0f
-        var touchY = 0f
-        val screenWidth = resources.displayMetrics.widthPixels
-        val screenHeight = resources.displayMetrics.heightPixels
+        if (!isPipeMode) {
+            var initialX = 0
+            var initialY = 0
+            var touchX = 0f
+            var touchY = 0f
+            val screenWidth = resources.displayMetrics.widthPixels
+            val screenHeight = resources.displayMetrics.heightPixels
 
-        view.setOnTouchListener { _, event ->
-            when (event.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    initialX = params.x
-                    initialY = params.y
-                    touchX = event.rawX
-                    touchY = event.rawY
-                    true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    if (event.pointerCount == 1) {
-                        // Drag livre: mover card
-                        var newX = initialX + (event.rawX - touchX).toInt()
-                        var newY = initialY + (event.rawY - touchY).toInt()
-
-                        // fix: params.width/height podem ser negativos (WRAP_CONTENT = -2)
-                        val safeWidth = if (params.width > 0) params.width else (overlayWidth * density).toInt()
-                        val safeHeight = if (naturalOverlayHeight > 0) naturalOverlayHeight
-                                         else if (params.height > 0) params.height
-                                         else (200 * density).toInt()
-
-                        val maxX = (screenWidth - safeWidth).coerceAtLeast(0)
-                        val maxY = (screenHeight - safeHeight).coerceAtLeast(0)
-
-                        newX = newX.coerceIn(0, maxX)
-                        newY = newY.coerceIn(0, maxY)
-                        params.x = newX
-                        params.y = newY
-                        windowManager?.updateViewLayout(view, params)
+            view.setOnTouchListener { _, event ->
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        initialX = params.x
+                        initialY = params.y
+                        touchX = event.rawX
+                        touchY = event.rawY
+                        true
                     }
-                    true
-                }
-                MotionEvent.ACTION_UP -> {
-                    // Persistir posição
-                    serviceScope.launch {
-                        prefsManager.saveOverlayPosition(params.x, params.y)
+                    MotionEvent.ACTION_MOVE -> {
+                        if (event.pointerCount == 1) {
+                            // Drag livre: mover card
+                            var newX = initialX + (event.rawX - touchX).toInt()
+                            var newY = initialY + (event.rawY - touchY).toInt()
+
+                            // fix: params.width/height podem ser negativos (WRAP_CONTENT = -2)
+                            val safeWidth = if (params.width > 0) params.width else (overlayWidth * density).toInt()
+                            val safeHeight = if (naturalOverlayHeight > 0) naturalOverlayHeight
+                                             else if (params.height > 0) params.height
+                                             else (200 * density).toInt()
+
+                            val maxX = (screenWidth - safeWidth).coerceAtLeast(0)
+                            val maxY = (screenHeight - safeHeight).coerceAtLeast(0)
+
+                            newX = newX.coerceIn(0, maxX)
+                            newY = newY.coerceIn(0, maxY)
+                            params.x = newX
+                            params.y = newY
+                            windowManager?.updateViewLayout(view, params)
+                        }
+                        true
                     }
-                    true
+                    MotionEvent.ACTION_UP -> {
+                        // Persistir posição
+                        serviceScope.launch {
+                            prefsManager.saveOverlayPosition(params.x, params.y)
+                        }
+                        true
+                    }
+                    else -> false
                 }
-                else -> false
             }
         }
 
         // Registrar ViewModelStoreOwner para Compose (necessário no Compose 1.5+)
         view.setViewTreeViewModelStoreOwner(this@OverlayService)
+
+        // fix: carregar posição ANTES de addView para evitar flash no centro (0,0)
+        // Usa runBlocking com timeout curto (200ms) — não bloqueia UI perceptivelmente
+        // v7.2.1: Default y=8dp do topo (não centro) quando sem posição salva
+        val defaultY = (8 * resources.displayMetrics.density).toInt()
+        try {
+            val posX = kotlinx.coroutines.runBlocking {
+                kotlinx.coroutines.withTimeoutOrNull(200L) { prefsManager.overlayPositionXFlow.first() } ?: 0
+            }
+            val posY = kotlinx.coroutines.runBlocking {
+                kotlinx.coroutines.withTimeoutOrNull(200L) { prefsManager.overlayPositionYFlow.first() } ?: defaultY
+            }
+            params.x = posX
+            params.y = posY
+            params.alpha = 1f // visível já na posição correta, sem flash
+        } catch (e: Exception) {
+            android.util.Log.w("OverlayService", "Posição não carregada, usando topo: ${e.message}")
+            params.x = 0
+            params.y = 0
+            params.alpha = 1f
+        }
+
         windowManager?.addView(view, params)
         android.util.Log.d("NGB_TESTAR_CARD", "[OVERLAY] View adicionada ao WindowManager com sucesso")
+        telemetry.overlay("createOverlay: view adicionada pipe=$isPipeMode pos=(${params.x},${params.y}) width=${overlayWidth}dp")
         overlayView = view
         isOverlayVisible = true
 
-        // v6.9.20: Carregar X/Y assíncrono e restaurar alpha
+        // v7.1.1: Medir altura real do card após primeiro layout — corrige drag bounds
+        // naturalOverlayHeight era sempre 0 porque nunca era medido, forçando fallback de 200dp
+        view.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                if (view.height > 0) {
+                    naturalOverlayHeight = view.height
+                    view.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    android.util.Log.d("NGB_OVERLAY", "[createOverlay] naturalOverlayHeight = ${naturalOverlayHeight}px")
+                }
+            }
+        })
+
+        // Fallback assíncrono: confirmar posição após render (garante precisão)
         serviceScope.launch {
             try {
                 val posX = prefsManager.overlayPositionXFlow.first()
                 val posY = prefsManager.overlayPositionYFlow.first()
                 withContext(Dispatchers.Main) {
-                    params.x = posX
-                    params.y = posY
-                    params.alpha = 1f
-                    try {
-                        windowManager?.updateViewLayout(view, params)
-                    } catch (e: Exception) {
-                        android.util.Log.e("OverlayService", "Erro ao atualizar layout: ${e.message}")
+                    // Só atualizar se a view ainda for a mesma — proteção contra rajada de corridas
+                    if (overlayView == view) {
+                        params.x = posX
+                        params.y = posY
+                        try {
+                            windowManager?.updateViewLayout(view, params)
+                        } catch (e: Exception) {
+                            android.util.Log.e("OverlayService", "Erro ao atualizar layout: ${e.message}")
+                        }
                     }
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    params.alpha = 1f
-                    try { windowManager?.updateViewLayout(view, params) } catch (_: Exception) {}
-                }
+                android.util.Log.w("OverlayService", "Fallback posição falhou: ${e.message}")
             }
         }
     }
 
-    private fun updateOverlayContent() {
-        val density = resources.displayMetrics.density
-        overlayView?.setContent {
-            com.ngbautoroad.ui.theme.NGBAutoRoadTheme {
-                val ride = currentRide
-                val score = currentScore
-                if (ride != null && score != null) {
-                        val showScore by prefsManager.overlayShowScoreFlow.collectAsState(initial = true)
-                        val showValuePerKm by prefsManager.overlayShowValuePerKmFlow.collectAsState(initial = true)
-                        val showValuePerHour by prefsManager.overlayShowValuePerHourFlow.collectAsState(initial = true)
-                        val showRideValue by prefsManager.overlayShowRideValueFlow.collectAsState(initial = true)
-                        val showDuration by prefsManager.overlayShowDurationFlow.collectAsState(initial = true)
-                        val showTotalKm by prefsManager.overlayShowTotalKmFlow.collectAsState(initial = true)
-                        val showNeighborhoods by prefsManager.overlayShowNeighborhoodsFlow.collectAsState(initial = true)
-                        val overlayCardType by prefsManager.overlayCardTypeFlow.collectAsState(initial = "STANDARD")
-                        
-                        val isPinned by prefsManager.overlayPinnedFlow.collectAsState(initial = false)
-
-                        LaunchedEffect(isPinned) {
-                            if (isPinned) {
-                                autoDismissJob?.cancel()
-                            } else {
-                                startAutoDismissTimer()
-                            }
-                        }
-
-                        OverlayCard(
-                            ride = ride,
-                            score = score,
-                            fontScale = currentFontScale,
-                            cardType = overlayCardType,
-                            showScore = showScore,
-                            showValuePerKm = showValuePerKm,
-                            showValuePerHour = showValuePerHour,
-                            showRideValue = showRideValue,
-                            showDuration = showDuration,
-                            showTotalKm = showTotalKm,
-                            showNeighborhoods = showNeighborhoods,
-                            onDismiss = { hideOverlay() },
-                            onDrag = { deltaX, deltaY ->
-                                val screenWidth = resources.displayMetrics.widthPixels
-                                val screenHeight = resources.displayMetrics.heightPixels
-                                val view = overlayView ?: return@OverlayCard
-                                val lp = view.layoutParams as? WindowManager.LayoutParams ?: return@OverlayCard
-
-                                var newX = lp.x + deltaX.toInt()
-                                var newY = lp.y + deltaY.toInt()
-
-                                // fix: lp.width/height podem ser negativos (WRAP_CONTENT = -2)
-                                val safeWidth = if (lp.width > 0) lp.width else (overlayWidth * density).toInt()
-                                val safeHeight = if (naturalOverlayHeight > 0) naturalOverlayHeight
-                                                 else if (lp.height > 0) lp.height
-                                                 else (200 * density).toInt()
-
-                                val maxX = (screenWidth - safeWidth).coerceAtLeast(0)
-                                val maxY = (screenHeight - safeHeight).coerceAtLeast(0)
-
-                                newX = newX.coerceIn(0, maxX)
-                                newY = newY.coerceIn(0, maxY)
-
-                                lp.x = newX
-                                lp.y = newY
-
-                                try {
-                                    windowManager?.updateViewLayout(view, lp)
-                                } catch (_: Exception) {}
-                            }
-                        )
-                }
-            }
+    /**
+     * v7.2.0: Atualiza o Pipe Mode do overlay em tempo real sem recriar a view.
+     *
+     * Chamado externamente quando o motorista muda o modo do AutoPilot nas configurações
+     * enquanto o overlay já está visível. Usa updateViewLayout para aplicar as novas
+     * flags sem flickering.
+     *
+     * @param isPipe true = ativar FLAG_NOT_TOUCHABLE (Pipe Mode), false = remover
+     */
+    fun updatePipeMode(isPipe: Boolean) {
+        val view = overlayView ?: return
+        val layoutParams = view.layoutParams as? WindowManager.LayoutParams ?: return
+        val baseFlags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+        layoutParams.flags = if (isPipe) {
+            baseFlags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+        } else {
+            baseFlags
+        }
+        try {
+            windowManager?.updateViewLayout(view, layoutParams)
+            android.util.Log.i("NGB_OVERLAY", "[PipeMode] ${if (isPipe) "ATIVADO" else "DESATIVADO"} em tempo real")
+            telemetry.overlay("PipeMode: ${if (isPipe) "ATIVADO" else "DESATIVADO"} em tempo real")
+        } catch (e: Exception) {
+            android.util.Log.w("NGB_OVERLAY", "[PipeMode] Erro ao atualizar flags: ${e.message}")
         }
     }
+
+    // v7.1.1: updateOverlayContent() REMOVIDO — era código morto (nunca chamado).
+    // O conteúdo do overlay é definido uma vez no createOverlay() e atualizado via
+    // recomposição automática do Compose (currentRide/currentScore são lidos diretamente).
 
     fun resizeOverlay(newWidth: Int) {
         overlayWidth = newWidth

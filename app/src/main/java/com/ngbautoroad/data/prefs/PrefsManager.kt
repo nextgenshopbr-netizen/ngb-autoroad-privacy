@@ -565,7 +565,7 @@ class PrefsManager(private val context: Context) {
     // --- Auto-dismiss overlay (v5.0.0) ---
     private val KEY_AUTO_DISMISS_SECONDS = intPreferencesKey("auto_dismiss_seconds")
     val autoDismissSecondsFlow: Flow<Int> = context.dataStore.data.map { prefs ->
-        prefs[KEY_AUTO_DISMISS_SECONDS] ?: 7 // Padrão: 7 segundos (0 = nunca)
+        prefs[KEY_AUTO_DISMISS_SECONDS] ?: 18 // Padrão: 18s (cobre Uber/99 15s + margem; 0 = nunca)
     }
     suspend fun saveAutoDismissSeconds(seconds: Int) {
         context.dataStore.edit { prefs ->
@@ -672,7 +672,8 @@ class PrefsManager(private val context: Context) {
         private set
 
     init {
-        // Collect flows to update synchronous properties for Engine use
+        // GlobalScope acceptable: PrefsManager lives for entire app lifecycle
+        @Suppress("OPT_IN_USAGE")
         kotlinx.coroutines.GlobalScope.launch {
             smartReturnEnabledFlow.collect { isSmartReturnEnabled = it }
         }

@@ -73,7 +73,13 @@ data class IndividualExpenseEntity(
     val notes: String = "",                  // Observações
     val isPaid: Boolean = false,             // Se já foi quitada completamente
     val createdAt: Long = System.currentTimeMillis()
-)
+) {
+    /** Installments safe against division by zero — always >= 1 */
+    val safeInstallments: Int get() = installments.coerceAtLeast(1)
+
+    /** Monthly amount safe against zero installments */
+    val safeMonthlyAmount: Double get() = if (monthlyAmount > 0.0) monthlyAmount else totalAmount / safeInstallments
+}
 
 // ============================================================================
 // DAO: VehicleProfileDao
@@ -116,6 +122,27 @@ interface VehicleProfileDao {
 
     @Query("UPDATE vehicle_profiles SET odometerCorrectionFactor = :factor WHERE id = :vehicleId")
     suspend fun updateCorrectionFactor(vehicleId: Long, factor: Double)
+
+    // v6.10: Cascade delete — remove vehicle and all related records
+    @Query("DELETE FROM maintenance_records WHERE vehicleId = :vehicleId")
+    suspend fun deleteMaintenanceRecordsByVehicle(vehicleId: Long)
+
+    @Query("DELETE FROM individual_expenses WHERE vehicleId = :vehicleId")
+    suspend fun deleteIndividualExpensesByVehicle(vehicleId: Long)
+
+    @Query("DELETE FROM odometer_history WHERE vehicleId = :vehicleId")
+    suspend fun deleteOdometerHistoryByVehicle(vehicleId: Long)
+
+    @Query("DELETE FROM vehicle_profiles WHERE id = :vehicleId")
+    suspend fun deleteById(vehicleId: Long)
+
+    @Transaction
+    suspend fun deleteVehicleWithRelated(vehicleId: Long) {
+        deleteMaintenanceRecordsByVehicle(vehicleId)
+        deleteIndividualExpensesByVehicle(vehicleId)
+        deleteOdometerHistoryByVehicle(vehicleId)
+        deleteById(vehicleId)
+    }
 }
 
 // ============================================================================
@@ -193,10 +220,11 @@ interface IndividualExpenseDao {
     suspend fun getActiveUnpaidSync(): List<IndividualExpenseEntity>
 
     // Total mensal rateado (soma dos monthlyAmount de despesas ativas e incluídas)
-    @Query("SELECT SUM(monthlyAmount) FROM individual_expenses WHERE isIncludedInCalc = 1 AND isPaid = 0")
+    // Usa CASE para proteger contra installments=0 que causaria monthlyAmount=0 incorreto
+    @Query("SELECT SUM(CASE WHEN monthlyAmount > 0 THEN monthlyAmount ELSE totalAmount / CASE WHEN installments > 0 THEN installments ELSE 1 END END) FROM individual_expenses WHERE isIncludedInCalc = 1 AND isPaid = 0")
     fun getTotalMonthlyRated(): Flow<Double?>
 
-    @Query("SELECT SUM(monthlyAmount) FROM individual_expenses WHERE isIncludedInCalc = 1 AND isPaid = 0")
+    @Query("SELECT SUM(CASE WHEN monthlyAmount > 0 THEN monthlyAmount ELSE totalAmount / CASE WHEN installments > 0 THEN installments ELSE 1 END END) FROM individual_expenses WHERE isIncludedInCalc = 1 AND isPaid = 0")
     suspend fun getTotalMonthlyRatedSync(): Double?
 }
 
@@ -304,6 +332,7 @@ data class ShiftHistoryEntity(
     val endTime: Long = 0,                   // Timestamp de encerramento
     val durationMinutes: Int = 0,            // Duração total em minutos
     val totalEarned: Double = 0.0,           // Total ganho no turno
+    val vehicleId: Long = 0,                 // v7.3.0: Veículo usado no turno
     val ridesAccepted: Int = 0,              // Corridas aceitas
     val ridesRejected: Int = 0,              // Corridas rejeitadas
     val ridesCancelled: Int = 0,             // Corridas canceladas

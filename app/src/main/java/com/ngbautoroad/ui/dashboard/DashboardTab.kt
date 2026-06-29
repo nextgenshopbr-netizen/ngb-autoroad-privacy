@@ -130,7 +130,7 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
     val activeRideJson by prefsManager.activeRideJsonFlow.collectAsState(initial = null)
     val activeRide = remember(activeRideJson) {
         if (activeRideJson.isNullOrBlank()) null else {
-            try { kotlinx.serialization.json.Json.decodeFromString(com.ngbautoroad.data.model.RideData.serializer(), activeRideJson!!) } catch(e:Exception) { null }
+            try { activeRideJson?.let { kotlinx.serialization.json.Json.decodeFromString(com.ngbautoroad.data.model.RideData.serializer(), it) } } catch(e:Exception) { null }
         }
     }
 
@@ -308,7 +308,7 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            aiState!!.suggestion,
+                            aiState?.suggestion ?: "",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -1280,19 +1280,8 @@ fun ShiftDashboardCard(
                             // Salvar histórico do turno antes de encerrar
                             scope.launch {
                                 try {
-                                    val shiftHistoryPrefs = context.getSharedPreferences("shift_history", android.content.Context.MODE_PRIVATE)
-                                    val historyCount = shiftHistoryPrefs.getInt("count", 0)
-                                    shiftHistoryPrefs.edit()
-                                        .putLong("shift_${historyCount}_start", shiftState.startTimeMs)
-                                        .putLong("shift_${historyCount}_end", System.currentTimeMillis())
-                                        .putFloat("shift_${historyCount}_earned", shiftState.totalEarned.toFloat())
-                                        .putInt("shift_${historyCount}_rides", shiftState.ridesCount)
-                                        .putInt("shift_${historyCount}_accepted", shiftState.ridesAccepted)
-                                        .putInt("shift_${historyCount}_rejected", shiftState.ridesRejected)
-                                        .putFloat("shift_${historyCount}_goal", shiftState.goalValue.toFloat())
-                                        .putLong("shift_${historyCount}_elapsed", shiftState.elapsedMs)
-                                        .putInt("count", historyCount + 1)
-                                        .apply()
+                                    // Salvar no Room DB via ShiftHistoryManager (dados completos + GPS)
+                                    com.ngbautoroad.domain.ShiftHistoryManager(context).saveShiftToHistory(shiftState)
                                 } catch (_: Exception) {}
                             }
                             shiftState = shiftManager.endShift()
@@ -2038,7 +2027,17 @@ fun ActiveRidesHub(database: AppDatabase) {
     val activeRides = remember(allRides) {
         val sinceTime = System.currentTimeMillis() - 12 * 60 * 60 * 1000L
         allRides.filter { it.status == "ACCEPTED" && it.timestamp >= sinceTime }
-            .sortedBy { it.timestamp } // oldest first (current ride is first, queued next is second)
+            .sortedBy { it.timestamp }
+    }
+
+    // v7.3.0: Notificação expandida com dados da corrida ativa
+    LaunchedEffect(activeRides) {
+        if (activeRides.isNotEmpty()) {
+            showActiveRideNotification(context, activeRides.first())
+        } else {
+            val nm = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            nm.cancel(1003)
+        }
     }
 
     if (activeRides.isEmpty()) return
@@ -2046,15 +2045,21 @@ fun ActiveRidesHub(database: AppDatabase) {
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         activeRides.forEachIndexed { index, ride ->
             val isCurrent = index == 0
+            val textColor = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer
+                            else MaterialTheme.colorScheme.onSurface
+            val subtextColor = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                               else MaterialTheme.colorScheme.onSurfaceVariant
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isCurrent) MaterialTheme.colorScheme.primaryContainer 
+                    containerColor = if (isCurrent) MaterialTheme.colorScheme.primaryContainer
                                      else MaterialTheme.colorScheme.surfaceVariant
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    // Header
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -2064,95 +2069,111 @@ fun ActiveRidesHub(database: AppDatabase) {
                             Icon(
                                 Icons.Default.DirectionsCar,
                                 contentDescription = null,
-                                tint = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer 
-                                       else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = textColor,
+                                modifier = Modifier.size(28.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (isCurrent) "Corrida em Andamento" else "Próxima Corrida (Fila)",
-                                style = MaterialTheme.typography.titleMedium,
+                                text = if (isCurrent) "Corrida em Andamento" else "Próxima Corrida",
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer 
-                                       else MaterialTheme.colorScheme.onSurface
+                                color = textColor
                             )
                         }
                         Text(
                             text = ride.platform,
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer 
-                                   else MaterialTheme.colorScheme.primary
+                            color = if (isCurrent) textColor else MaterialTheme.colorScheme.primary
                         )
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
+                    // Valores principais — fontes grandes para legibilidade dirigindo
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
-                            Text("Valor Total", style = MaterialTheme.typography.labelSmall, color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("R$ ${"%.2f".format(ride.rideValue)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text("Valor", style = MaterialTheme.typography.bodyMedium, color = subtextColor)
+                            Text(
+                                "R$ ${"%.2f".format(ride.rideValue)}",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Black,
+                                color = textColor
+                            )
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("R$/KM", style = MaterialTheme.typography.labelSmall, color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("R$ ${"%.2f".format(ride.valuePerKm)}", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text("R$/KM", style = MaterialTheme.typography.bodyMedium, color = subtextColor)
+                            Text(
+                                "${"%.2f".format(ride.valuePerKm)}",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Black,
+                                color = textColor
+                            )
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("R$/Hora", style = MaterialTheme.typography.labelSmall, color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("R$/Hora", style = MaterialTheme.typography.bodyMedium, color = subtextColor)
                             val rpH = if (ride.rideDuration > 0) (ride.rideValue / ride.rideDuration) * 60.0 else 0.0
-                            Text("R$ ${"%.2f".format(rpH)}/h", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text(
+                                "${"%.0f".format(rpH)}",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Black,
+                                color = textColor
+                            )
                         }
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Divider(color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+                    @Suppress("DEPRECATION")
+                    Divider(color = textColor.copy(alpha = 0.15f))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(
-                            "Busca: ${"%.1f".format(ride.pickupDistance)} km",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            "Destino: ${"%.1f".format(ride.dropoffDistance)} km",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            "Duração: ${ride.rideDuration.toInt()} min",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
+                    // Bairros — destaque grande
                     if (ride.pickupNeighborhood.isNotBlank() || ride.dropoffNeighborhood.isNotBlank()) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
-                                .padding(8.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(textColor.copy(alpha = 0.12f))
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
                         ) {
                             Text(
                                 "${ride.pickupNeighborhood.trim()} ➔ ${ride.dropoffNeighborhood.trim()}",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Medium,
-                                color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = textColor
                             )
                         }
+                        Spacer(modifier = Modifier.height(10.dp))
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    // Detalhes secundários
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(
-                            "Avaliação: ⭐ ${"%.2f".format(ride.passengerRating)}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+                            "Busca: ${"%.1f".format(ride.pickupDistance)} km",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = subtextColor
                         )
                         Text(
-                            "Score IA: ${ride.score.toInt()} pts",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
+                            "Destino: ${"%.1f".format(ride.dropoffDistance)} km",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = subtextColor
+                        )
+                        Text(
+                            "${ride.rideDuration.toInt()} min",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = subtextColor
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "⭐ ${"%.1f".format(ride.passengerRating)}",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = subtextColor
+                        )
+                        Text(
+                            "${ride.score.toInt()} pts",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold,
                             color = when {
                                 ride.score >= 70 -> ScoreGreen
                                 ride.score >= 50 -> ScoreYellow
@@ -2172,14 +2193,12 @@ fun ActiveRidesHub(database: AppDatabase) {
                                     scope.launch(Dispatchers.IO) {
                                         dao.updateStatusById(ride.id, "COMPLETED")
                                         val rlm = com.ngbautoroad.service.RideAccessibilityService.instance?.lifecycleManager
-                                        if (rlm != null) {
-                                            rlm.onRideCompleted(ride.rideValue)
-                                        }
+                                        rlm?.onRideCompleted(ride.rideValue)
                                     }
                                 },
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f))
+                                border = androidx.compose.foundation.BorderStroke(1.dp, textColor.copy(alpha = 0.5f))
                             ) {
-                                Text("Finalizar Viagem", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                Text("Finalizar Viagem", color = textColor, style = MaterialTheme.typography.bodyLarge)
                             }
                         }
                     }
@@ -2187,4 +2206,59 @@ fun ActiveRidesHub(database: AppDatabase) {
             }
         }
     }
+}
+
+/**
+ * v7.3.0: Notificação expandida com dados da corrida ativa.
+ * Visível na tela de bloqueio, Android Auto e shade de notificações.
+ * Texto grande e legível sem precisar abrir o app.
+ */
+private fun showActiveRideNotification(context: android.content.Context, ride: com.ngbautoroad.data.db.RideHistoryEntity) {
+    val channelId = "ngb_active_ride"
+    val notifManager = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        val channel = android.app.NotificationChannel(
+            channelId, "Corrida Ativa", android.app.NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "Informações da corrida em andamento"
+            lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+            setShowBadge(false)
+        }
+        notifManager.createNotificationChannel(channel)
+    }
+
+    val route = buildString {
+        if (ride.pickupNeighborhood.isNotBlank()) append(ride.pickupNeighborhood.trim())
+        if (ride.dropoffNeighborhood.isNotBlank()) append(" → ${ride.dropoffNeighborhood.trim()}")
+    }
+
+    val rpH = if (ride.rideDuration > 0) (ride.rideValue / ride.rideDuration) * 60.0 else 0.0
+    val details = buildString {
+        append("R$ ${"%.2f".format(ride.rideValue)}")
+        append("  •  ${"%.2f".format(ride.valuePerKm)} R$/km")
+        append("  •  ${"%.0f".format(rpH)} R$/h")
+        append("\n${"%.1f".format(ride.pickupDistance)}km busca  •  ${"%.1f".format(ride.dropoffDistance)}km destino  •  ${ride.rideDuration.toInt()}min")
+        append("\n⭐ ${"%.1f".format(ride.passengerRating)}  •  Score: ${ride.score.toInt()} pts")
+    }
+
+    val openIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+    val pendingIntent = android.app.PendingIntent.getActivity(
+        context, 0, openIntent,
+        android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+    )
+
+    val notification = androidx.core.app.NotificationCompat.Builder(context, channelId)
+        .setContentTitle("${ride.platform} — $route")
+        .setContentText("R$ ${"%.2f".format(ride.rideValue)}  •  ${"%.2f".format(ride.valuePerKm)} R$/km")
+        .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(details))
+        .setSmallIcon(android.R.drawable.ic_menu_directions)
+        .setOngoing(true)
+        .setPriority(androidx.core.app.NotificationCompat.PRIORITY_LOW)
+        .setCategory(androidx.core.app.NotificationCompat.CATEGORY_NAVIGATION)
+        .setVisibility(androidx.core.app.NotificationCompat.VISIBILITY_PUBLIC)
+        .setContentIntent(pendingIntent)
+        .build()
+
+    notifManager.notify(1003, notification)
 }
