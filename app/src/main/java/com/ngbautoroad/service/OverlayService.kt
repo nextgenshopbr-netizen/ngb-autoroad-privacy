@@ -570,10 +570,10 @@ class OverlayService : Service(),
 
                 // Tempo mínimo por plataforma (em segundos) — baseado no timer real de cada app
                 val platformMinSeconds = when (currentRide?.platform) {
-                    com.ngbautoroad.data.model.Platform.UBER -> 18        // Uber: 15s + 3s margem
-                    com.ngbautoroad.data.model.Platform.NINETY_NINE -> 18  // 99: 15s + 3s margem
-                    com.ngbautoroad.data.model.Platform.INDRIVE -> 30      // inDrive: sem timer, usar 30s
-                    else -> 20
+                    com.ngbautoroad.data.model.Platform.UBER -> 10        // Uber: cards 11-16s, fechar 1s antes
+                    com.ngbautoroad.data.model.Platform.NINETY_NINE -> 14  // 99: cards ~15s, fechar 1s antes
+                    com.ngbautoroad.data.model.Platform.INDRIVE -> 25      // inDrive: sem timer fixo
+                    else -> 12
                 }
 
                 // Usar o MAIOR entre: config do motorista e mínimo da plataforma

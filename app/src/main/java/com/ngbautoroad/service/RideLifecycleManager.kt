@@ -61,7 +61,7 @@ class RideLifecycleManager(private val context: Context) {
         private const val TAG = "NGB_LIFECYCLE"
 
         // ── Timeouts ──
-        private const val ACCEPTANCE_DETECTION_TIMEOUT_MS = 20_000L   // 20s para detectar aceitação
+        private const val ACCEPTANCE_DETECTION_TIMEOUT_MS = 60_000L   // 60s para detectar aceitação (Uber card fica 15s + margem para motorista aceitar)
         private const val COMPLETION_DETECTION_TIMEOUT_MS = 180_000L // 3min (não usado diretamente)
         private const val UNCERTAIN_TIMEOUT_MS = 2_700_000L          // 45min → UNCERTAIN (corridas podem levar 30+ min)
 
@@ -196,6 +196,8 @@ class RideLifecycleManager(private val context: Context) {
             // Se ainda está PENDING após timeout, card provavelmente expirou
             if (currentPhase == RidePhase.PENDING) {
                 transitionTo(RidePhase.EXPIRED)
+                // v7.3.1: Fechar overlay quando corrida expira por timeout
+                OverlayService.onRideAccepted?.invoke()
             }
         }
     }
@@ -326,6 +328,9 @@ class RideLifecycleManager(private val context: Context) {
 
         val rideId = currentRideDbId
         telemetry.lifecycle("Corrida RECUSADA rideId=$rideId")
+
+        // v7.3.1: Fechar overlay quando corrida é recusada/expirada
+        OverlayService.onRideAccepted?.invoke()
 
         // v6.6.0: Registrar recusa no SmartRoutingEngine (incrementa contador de recusas consecutivas)
         try {
