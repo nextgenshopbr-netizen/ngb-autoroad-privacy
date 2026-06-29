@@ -468,10 +468,12 @@ class AutoPilotEngine(
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val dm = context.resources.displayMetrics
-            // Uber X: canto superior esquerdo (~10% da largura, ~8% da altura)
+            // Uber X: pode estar à DIREITA (BR) ou ESQUERDA (US) — testar ambos lados
+            // Video evidence 29/06: X está à DIREITA do card modal (~82% X, ~32% Y)
             val candidates = listOf(
-                Pair(0.08f, 0.07f), Pair(0.12f, 0.07f),
-                Pair(0.08f, 0.10f), Pair(0.05f, 0.07f)
+                Pair(0.82f, 0.32f), Pair(0.85f, 0.30f),  // Direita (BR confirmed)
+                Pair(0.82f, 0.35f), Pair(0.88f, 0.32f),  // Direita variantes
+                Pair(0.08f, 0.07f), Pair(0.12f, 0.07f)   // Esquerda (fallback US)
             )
             try {
                 candidates.forEachIndexed { index, (xr, yr) ->
