@@ -168,9 +168,14 @@ class FinanceDREEngine(
         val lucroOperacional = margemContribuicao - custosFixos
         val lucroOperacionalPct = if (receitaBruta > 0) (lucroOperacional / receitaBruta) * 100.0 else 0.0
 
-        // Depreciação
+        // Depreciação — vida útil por tipo de veículo
+        val vehicleLifeKm = when (vehicle?.vehicleType) {
+            "ELECTRIC" -> 300_000.0
+            "HYBRID" -> 250_000.0
+            else -> 200_000.0
+        }
         val depreciationPerKm = if (vehicle != null && vehicle.purchaseValue > 0) {
-            vehicle.purchaseValue / 200000.0
+            vehicle.purchaseValue / vehicleLifeKm
         } else 0.0
         val depreciacao = totalKm * depreciationPerKm
 
