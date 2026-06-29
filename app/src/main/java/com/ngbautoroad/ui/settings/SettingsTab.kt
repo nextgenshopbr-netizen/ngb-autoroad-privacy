@@ -49,7 +49,9 @@ import com.ngbautoroad.ui.theme.*
 import com.ngbautoroad.data.backup.BackupManager
 import com.ngbautoroad.data.model.*
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -1014,6 +1016,9 @@ private fun SettingsAdicionaisContent(prefsManager: PrefsManager, database: AppD
             Text("Reprisar Tutorial")
         }
 
+        // === EXPORTAR TELEMETRIA ===
+        ExportTelemetryButton()
+
         // === BACKUP & RESTAURACAO (sempre ultimo) ===
         BackupRestoreSection(context, scope, prefsManager)
 
@@ -1490,5 +1495,63 @@ private fun PermissionCheckItem(
                    else MaterialTheme.colorScheme.error,
             modifier = Modifier.size(20.dp)
         )
+    }
+}
+
+// ============================================================================
+// COMPOSABLE: ExportTelemetryButton
+// Botão para exportar e compartilhar logs de telemetria
+// ============================================================================
+@Composable
+fun ExportTelemetryButton() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var isExporting by remember { mutableStateOf(false) }
+
+    OutlinedButton(
+        onClick = {
+            if (isExporting) return@OutlinedButton
+            isExporting = true
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val telemetry = com.ngbautoroad.domain.TelemetryLogger.getInstance(context)
+                    val zipFile = telemetry.exportLogsAsZip()
+                    if (zipFile != null && zipFile.exists()) {
+                        withContext(Dispatchers.Main) {
+                            val uri = androidx.core.content.FileProvider.getUriForFile(
+                                context, "${context.packageName}.fileprovider", zipFile
+                            )
+                            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "application/zip"
+                                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, "NGB AutoRoad - Logs ${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())}")
+                                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Compartilhar logs").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "Nenhum log encontrado para exportar", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Erro ao exportar: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
+                } finally {
+                    isExporting = false
+                }
+            }
+        },
+        enabled = !isExporting,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        if (isExporting) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        } else {
+            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("Exportar Telemetria")
     }
 }

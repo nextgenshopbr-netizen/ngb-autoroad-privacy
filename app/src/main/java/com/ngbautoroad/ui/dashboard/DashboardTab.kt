@@ -1128,13 +1128,16 @@ fun ShiftDashboardCard(
                         fontWeight = FontWeight.Bold,
                         color = textColor
                     )
-                    if (goalReached) {
-                        Text(
-                            "META ATINGIDA!",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF76FF03)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (goalReached) {
+                            Text(
+                                "META ATINGIDA!",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF76FF03)
+                            )
+                        }
+                        ExportDayButton()
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -2362,6 +2365,56 @@ fun AiSuggestionCard(prefsManager: PrefsManager) {
                     modifier = Modifier.weight(1f)
                 ) { Text("Ignorar", fontSize = 12.sp) }
             }
+        }
+    }
+}
+
+// ============================================================================
+// COMPOSABLE: ExportDayButton
+// Botão para exportar logs de telemetria do dia e compartilhar via WhatsApp/email
+// ============================================================================
+@Composable
+fun ExportDayButton() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var isExporting by remember { mutableStateOf(false) }
+
+    IconButton(
+        onClick = {
+            if (isExporting) return@IconButton
+            isExporting = true
+            scope.launch(Dispatchers.IO) {
+                try {
+                    val telemetry = com.ngbautoroad.domain.TelemetryLogger.getInstance(context)
+                    val zipFile = telemetry.exportLogsAsZip()
+                    if (zipFile != null && zipFile.exists()) {
+                        withContext(Dispatchers.Main) {
+                            val uri = androidx.core.content.FileProvider.getUriForFile(
+                                context, "${context.packageName}.fileprovider", zipFile
+                            )
+                            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                type = "application/zip"
+                                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                putExtra(android.content.Intent.EXTRA_SUBJECT, "NGB AutoRoad - Logs ${java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date())}")
+                                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Compartilhar logs").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("ExportDay", "Export failed: ${e.message}")
+                } finally {
+                    isExporting = false
+                }
+            }
+        },
+        enabled = !isExporting
+    ) {
+        if (isExporting) {
+            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+        } else {
+            Icon(Icons.Default.Share, contentDescription = "Exportar logs do dia",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
