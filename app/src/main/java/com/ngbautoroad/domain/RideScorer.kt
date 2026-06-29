@@ -54,6 +54,9 @@ class RideScorer(
     // DEPENDÊNCIA: normalizeXxx() (abaixo), getLevel()
     // ========================================================================
     fun calculateScore(ride: RideData): RideScore {
+        if (ride.rideValue <= 0) {
+            return RideScore(totalScore = 0.0)
+        }
         val criteriaScores = mutableMapOf<String, CriteriaScore>()
         val violations = mutableListOf<ThresholdViolation>()
 
@@ -508,7 +511,7 @@ data class ScoringThresholds(
     val minValuePerKm: Double = 0.50,     // R$0,50/km = péssimo
     val maxValuePerKm: Double = 2.50,     // R$2,50/km = excelente
     val minValuePerHour: Double = 10.0,   // R$10/h = péssimo
-    val maxValuePerHour: Double = 40.0,   // R$40/h = excelente
+    val maxValuePerHour: Double = 60.0,   // R$60/h = excelente
     val minRideValue: Double = 5.0,       // R$5 = corrida mínima
     val maxRideValue: Double = 50.0,      // R$50 = corrida premium
     val minDuration: Double = 10.0,       // 10min = corrida curta ideal

@@ -185,7 +185,7 @@ data class DriverThresholds(
     val minValuePerHour: Double = 42.00,      // R$/hora mínimo desejado (padrão 42.00)
     val minRideValue: Double = 0.0,         // Valor mínimo da corrida R$ (0=desativado)
     val maxPickupDistance: Double = 0.0,    // Distância máxima até embarque km (0=desativado)
-    val minPassengerRating: Double = 4.90,   // Avaliação mínima do passageiro (padrão 4.90, max=5.0)
+    val minPassengerRating: Double = 4.70,   // Avaliação mínima do passageiro (padrão 4.70, max=5.0)
     val maxDuration: Double = 0.0,          // Duração máxima aceitável min (0=desativado)
     val maxStops: Int = 1,                  // Máximo de paradas aceitáveis (padrão 1)
     val minDropoffDistance: Double = 0.0    // Distância mínima do destino km (0=desativado)
