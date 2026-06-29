@@ -64,6 +64,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.activity.compose.rememberLauncherForActivityResult
+import android.content.Context
+import androidx.compose.foundation.BorderStroke
 import java.util.*
 
 @Composable
@@ -277,6 +279,9 @@ fun DashboardTab(prefsManager: PrefsManager, database: AppDatabase) {
         ShiftDashboardCard(context, scope, prefsManager)
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        // v7.4.0: Sugestão proativa da IA
+        AiSuggestionCard(prefsManager)
 
         // v6.9.18: Painel de Corridas Vigente e Próxima (ActiveRidesHub)
         ActiveRidesHub(database)
@@ -2289,4 +2294,74 @@ private fun showActiveRideNotification(context: android.content.Context, ride: c
         .build()
 
     notifManager.notify(1003, notification)
+}
+
+// ============================================================================
+// v7.4.0: Card de Sugestão Proativa da IA
+// ============================================================================
+@Composable
+fun AiSuggestionCard(prefsManager: PrefsManager) {
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val currentMinScore by prefsManager.autoPilotMinScoreFlow.collectAsState(initial = 75)
+
+    // Check if suggestion was dismissed or postponed
+    val suggestionPrefs = remember { context.getSharedPreferences("ai_suggestions", Context.MODE_PRIVATE) }
+    val dismissed = remember { mutableStateOf(suggestionPrefs.getBoolean("threshold_dismissed", false)) }
+    val postponedUntil = remember { mutableStateOf(suggestionPrefs.getLong("threshold_postponed_until", 0L)) }
+
+    // Only show if threshold is > 80 and not dismissed/postponed
+    if (currentMinScore <= 80 || dismissed.value || System.currentTimeMillis() < postponedUntil.value) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A237E).copy(alpha = 0.15f)),
+        border = BorderStroke(1.dp, Color(0xFF5C6BC0).copy(alpha = 0.3f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null,
+                    tint = Color(0xFF7C4DFF), modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Sugestão da IA", fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall)
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Seu limite de aceitar está em $currentMinScore pts. " +
+                "Baseado no perfil de motoristas semelhantes, corridas com score 75+ são geralmente boas. " +
+                "Sugestão: ajustar para 75 pts.",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = {
+                        scope.launch {
+                            prefsManager.saveAutoPilotMinScore(75)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ScoreGreen),
+                    modifier = Modifier.weight(1f)
+                ) { Text("Aplicar", fontSize = 12.sp) }
+
+                OutlinedButton(
+                    onClick = {
+                        suggestionPrefs.edit().putLong("threshold_postponed_until",
+                            System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000L).apply()
+                        postponedUntil.value = System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000L
+                    },
+                    modifier = Modifier.weight(1f)
+                ) { Text("Adiar 7d", fontSize = 12.sp) }
+
+                TextButton(
+                    onClick = {
+                        suggestionPrefs.edit().putBoolean("threshold_dismissed", true).apply()
+                        dismissed.value = true
+                    },
+                    modifier = Modifier.weight(1f)
+                ) { Text("Ignorar", fontSize = 12.sp) }
+            }
+        }
+    }
 }

@@ -58,7 +58,13 @@ fun OverlayCard(
     if (ride == null || score == null) return
 
     // ── Cores baseadas no score global ──────────────────────────────────────
-    val scoreColor = getScoreColor(score.scoreColor)
+    val scoreColor = when {
+        score.totalScore >= 85 -> ScoreGreen
+        score.totalScore >= 75 -> Color(0xFFDAA520)  // Gold for "Razoável"
+        score.totalScore >= 60 -> ScoreYellow
+        score.totalScore >= 40 -> ScoreOrange
+        else -> ScoreRed
+    }
     val bgColor = Color(0xFF121318)
     val surfaceColor = Color(0xFF1C2030)       // Superfície dos cards internos
     val textPrimary = Color.White
@@ -79,11 +85,12 @@ fun OverlayCard(
     val estimatedProfit = ride.rideValue - estimatedCost
 
     // ── Label de qualidade ───────────────────────────────────────────────────
-    val qualityLabel = when (score.scoreColor) {
-        ScoreLevel.GREEN  -> "✦ Oferta Boa"
-        ScoreLevel.YELLOW -> "● Oferta Ok"
-        ScoreLevel.ORANGE -> "▼ Oferta Fraca"
-        ScoreLevel.RED    -> "✕ Oferta Ruim"
+    val qualityLabel = when {
+        score.totalScore >= 85 -> "✦ Oferta Boa"        // Green
+        score.totalScore >= 75 -> "● Oferta Razoável"    // Yellow-gold (neutra alta)
+        score.totalScore >= 60 -> "▽ Oferta Neutra"      // Orange (neutra baixa)
+        score.totalScore >= 40 -> "▼ Oferta Fraca"        // Orange-red
+        else -> "✕ Oferta Ruim"                           // Red
     }
 
     Box(
@@ -139,6 +146,18 @@ fun OverlayCard(
                             color = textSecondary,
                             fontSize = fsTiny
                         )
+                        // Bairro destino no header
+                        if (ride.dropoffNeighborhood.isNotBlank()) {
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = "→ ${ride.dropoffNeighborhood}",
+                                color = scoreColor,
+                                fontSize = fsSmall,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                         Spacer(Modifier.width(12.dp))
                         // Fechar
                         Text(
@@ -254,8 +273,8 @@ fun OverlayCard(
                     Text(
                         text = ride.pickupNeighborhood.ifBlank { "—" },
                         color = textPrimary,
-                        fontSize = fsSmall,
-                        fontWeight = FontWeight.Medium,
+                        fontSize = fsMedium,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
@@ -264,15 +283,15 @@ fun OverlayCard(
                     Text(
                         text = "  →  ",
                         color = scoreColor,
-                        fontSize = fsSmall,
+                        fontSize = fsMedium,
                         fontWeight = FontWeight.Bold
                     )
                     // Destino
                     Text(
                         text = ride.dropoffNeighborhood.ifBlank { "—" },
                         color = textPrimary,
-                        fontSize = fsSmall,
-                        fontWeight = FontWeight.Medium,
+                        fontSize = fsMedium,
+                        fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),

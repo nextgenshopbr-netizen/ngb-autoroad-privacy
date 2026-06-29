@@ -464,6 +464,14 @@ class RideAccessibilityService : AccessibilityService() {
             }
 
             if (rideData != null && rideData.rideValue > 0) {
+                // v7.4.0: Log detalhado da corrida detectada (bairro + R$/km)
+                TelemetryLogger.getInstance(this).log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.INFO,
+                    "Corrida detectada: R$${rideData.rideValue} | R$/km=${String.format("%.2f", rideData.valuePerKm)} | " +
+                    "Pickup=${rideData.pickupNeighborhood.ifBlank { "?" }} → Destino=${rideData.dropoffNeighborhood.ifBlank { "?" }} | " +
+                    "Dist=${rideData.dropoffDistance}km | Pickup=${rideData.pickupDistance}km | " +
+                    "Dur=${rideData.rideDuration}min | Rating=${rideData.passengerRating} | " +
+                    "Plataforma=${rideData.platform.displayName}")
+
                 // v7.3.0: Dump da árvore de acessibilidade para diagnóstico do AutoPilot
                 dumpAccessibilityTree(packageName)
 
