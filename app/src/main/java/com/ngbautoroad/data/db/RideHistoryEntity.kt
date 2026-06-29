@@ -194,6 +194,10 @@ interface RideHistoryDao {
 
     @Query("UPDATE ride_history SET status = 'ACCEPTED' WHERE id IN (:ids)")
     suspend fun confirmRides(ids: List<Long>)
+
+    // v7.4.0: Expire stale ACCEPTED rides older than threshold to prevent ghost cards
+    @Query("UPDATE ride_history SET status = 'EXPIRED' WHERE status = 'ACCEPTED' AND timestamp < :beforeTimestamp")
+    suspend fun expireStaleAcceptedRides(beforeTimestamp: Long)
 }
 
 /** Resultado de query de bairros mais lucrativos */

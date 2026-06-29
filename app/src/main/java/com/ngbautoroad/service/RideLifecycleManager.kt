@@ -73,12 +73,15 @@ class RideLifecycleManager(private val context: Context) {
         private val UBER_ACCEPTED_TEXTS = listOf(
             "a caminho do passageiro", "dirigir até", "a caminho",
             "heading to rider", "drive to", "en camino al pasajero",
-            "navegando até", "navegando para"
+            "navegando até", "navegando para",
+            "encontro com" // v7.3.1: Uber BR shows "Encontro com [Name]" on accept
         )
         private val UBER_COMPLETED_TEXTS = listOf(
             "viagem concluída", "trip completed", "viaje completado",
             "corrida finalizada", "avalie o passageiro", "rate rider",
-            "como foi a viagem", "how was the trip"
+            "como foi a viagem", "how was the trip",
+            "avaliar usuário", "avaliar o usuário", // v7.3.1: Uber BR rate screen
+            "encerrar uberx", "encerrar uber", "encerrar comfort" // v7.3.1: end-ride button texts
         )
         private val UBER_CANCELLED_TEXTS = listOf(
             "viagem cancelada", "trip cancelled", "corrida cancelada",
@@ -106,6 +109,21 @@ class RideLifecycleManager(private val context: Context) {
         )
         private val INDRIVE_CANCELLED_TEXTS = listOf(
             "cancelada", "cancelled"
+        )
+
+        // v7.3.1: In-trip texts — confirm ride is actively in progress (reset UNCERTAIN timeout)
+        private val UBER_IN_TRIP_TEXTS = listOf(
+            "destino de",                    // "Destino de [Name]" during navigation
+            "iniciar uberx", "iniciar uber", "iniciar comfort", // passenger picked up
+            "encerrar uberx", "encerrar comfort",               // actively in trip, has end button
+            "usuário notificado",            // waiting for passenger
+            "a caminho da primeira parada"   // multi-stop ride
+        )
+        private val NINETY_NINE_IN_TRIP_TEXTS = listOf(
+            "iniciar corrida", "encerrar corrida", "destino"
+        )
+        private val INDRIVE_IN_TRIP_TEXTS = listOf(
+            "em viagem", "destino", "encerrar"
         )
     }
 
@@ -222,6 +240,17 @@ class RideLifecycleManager(private val context: Context) {
                 else if (matchesAnyText(lowerTexts, getCancelledTexts(platform))) {
                     Log.i(TAG, "├─ ❌ CANCELAMENTO DETECTADO via texto!")
                     onRideCancelled()
+                }
+                // v7.3.1: If in-trip text detected, reset UNCERTAIN timeout (ride still active)
+                else if (matchesAnyText(lowerTexts, getInTripTexts(platform))) {
+                    Log.d(TAG, "├─ 🚗 In-trip text detected — resetting UNCERTAIN timeout")
+                    cancelTimeout()
+                    startTimeout(UNCERTAIN_TIMEOUT_MS) {
+                        if (currentPhase == RidePhase.ACCEPTED) {
+                            transitionTo(RidePhase.UNCERTAIN)
+                            showUncertainNotification()
+                        }
+                    }
                 }
             }
             else -> { /* Nada a fazer em outros estados */ }
@@ -696,6 +725,19 @@ class RideLifecycleManager(private val context: Context) {
             com.ngbautoroad.data.model.Platform.NINETY_NINE -> NINETY_NINE_CANCELLED_TEXTS
             com.ngbautoroad.data.model.Platform.INDRIVE -> INDRIVE_CANCELLED_TEXTS
             else -> UBER_CANCELLED_TEXTS + NINETY_NINE_CANCELLED_TEXTS + INDRIVE_CANCELLED_TEXTS
+        }
+    }
+
+    /**
+     * v7.3.1: Retorna textos que confirmam corrida em andamento (in-trip)
+     * Usado para resetar timeout UNCERTAIN quando corrida está ativamente em progresso
+     */
+    private fun getInTripTexts(platform: com.ngbautoroad.data.model.Platform): List<String> {
+        return when (platform) {
+            com.ngbautoroad.data.model.Platform.UBER -> UBER_IN_TRIP_TEXTS
+            com.ngbautoroad.data.model.Platform.NINETY_NINE -> NINETY_NINE_IN_TRIP_TEXTS
+            com.ngbautoroad.data.model.Platform.INDRIVE -> INDRIVE_IN_TRIP_TEXTS
+            else -> UBER_IN_TRIP_TEXTS + NINETY_NINE_IN_TRIP_TEXTS + INDRIVE_IN_TRIP_TEXTS
         }
     }
 

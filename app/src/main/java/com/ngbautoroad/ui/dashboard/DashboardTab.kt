@@ -56,6 +56,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.withContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -2030,6 +2032,14 @@ fun ActiveRidesHub(database: AppDatabase) {
             .sortedBy { it.timestamp }
     }
 
+    // v7.4.0: Clean stale ACCEPTED rides older than 2 hours
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            val staleTime = System.currentTimeMillis() - 2 * 60 * 60 * 1000L
+            dao.expireStaleAcceptedRides(staleTime)
+        }
+    }
+
     // v7.3.0: Notificação expandida com dados da corrida ativa
     LaunchedEffect(activeRides) {
         if (activeRides.isNotEmpty()) {
@@ -2042,170 +2052,224 @@ fun ActiveRidesHub(database: AppDatabase) {
 
     if (activeRides.isEmpty()) return
 
-    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        activeRides.forEachIndexed { index, ride ->
-            val isCurrent = index == 0
-            val textColor = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer
-                            else MaterialTheme.colorScheme.onSurface
-            val subtextColor = if (isCurrent) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                               else MaterialTheme.colorScheme.onSurfaceVariant
+    val currentRide = activeRides.firstOrNull()
+    val nextRide = if (activeRides.size > 1) activeRides[1] else null
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isCurrent) MaterialTheme.colorScheme.primaryContainer
-                                     else MaterialTheme.colorScheme.surfaceVariant
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    var showCurrentDialog by remember { mutableStateOf(false) }
+    var showNextDialog by remember { mutableStateOf(false) }
+
+    // v7.4.0: Two buttons side by side instead of stacked cards
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (currentRide != null) {
+            Button(
+                onClick = { showCurrentDialog = true },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    // Header
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.DirectionsCar,
-                                contentDescription = null,
-                                tint = textColor,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (isCurrent) "Corrida em Andamento" else "Próxima Corrida",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = textColor
-                            )
-                        }
-                        Text(
-                            text = ride.platform,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isCurrent) textColor else MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Valores principais — fontes grandes para legibilidade dirigindo
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column {
-                            Text("Valor", style = MaterialTheme.typography.bodyMedium, color = subtextColor)
-                            Text(
-                                "R$ ${"%.2f".format(ride.rideValue)}",
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Black,
-                                color = textColor
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("R$/KM", style = MaterialTheme.typography.bodyMedium, color = subtextColor)
-                            Text(
-                                "${"%.2f".format(ride.valuePerKm)}",
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Black,
-                                color = textColor
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text("R$/Hora", style = MaterialTheme.typography.bodyMedium, color = subtextColor)
-                            val rpH = if (ride.rideDuration > 0) (ride.rideValue / ride.rideDuration) * 60.0 else 0.0
-                            Text(
-                                "${"%.0f".format(rpH)}",
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Black,
-                                color = textColor
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    @Suppress("DEPRECATION")
-                    Divider(color = textColor.copy(alpha = 0.15f))
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Bairros — destaque grande
-                    if (ride.pickupNeighborhood.isNotBlank() || ride.dropoffNeighborhood.isNotBlank()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(textColor.copy(alpha = 0.12f))
-                                .padding(horizontal = 12.dp, vertical = 10.dp)
-                        ) {
-                            Text(
-                                "${ride.pickupNeighborhood.trim()} ➔ ${ride.dropoffNeighborhood.trim()}",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = textColor
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(10.dp))
-                    }
-
-                    // Detalhes secundários
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(
-                            "Busca: ${"%.1f".format(ride.pickupDistance)} km",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = subtextColor
-                        )
-                        Text(
-                            "Destino: ${"%.1f".format(ride.dropoffDistance)} km",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = subtextColor
-                        )
-                        Text(
-                            "${ride.rideDuration.toInt()} min",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = subtextColor
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "⭐ ${"%.1f".format(ride.passengerRating)}",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = subtextColor
-                        )
-                        Text(
-                            "${ride.score.toInt()} pts",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = when {
-                                ride.score >= 70 -> ScoreGreen
-                                ride.score >= 50 -> ScoreYellow
-                                else -> ScoreRed
-                            }
-                        )
-                    }
-
-                    if (isCurrent) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            OutlinedButton(
-                                onClick = {
-                                    scope.launch(Dispatchers.IO) {
-                                        dao.updateStatusById(ride.id, "COMPLETED")
-                                        val rlm = com.ngbautoroad.service.RideAccessibilityService.instance?.lifecycleManager
-                                        rlm?.onRideCompleted(ride.rideValue)
-                                    }
-                                },
-                                border = androidx.compose.foundation.BorderStroke(1.dp, textColor.copy(alpha = 0.5f))
-                            ) {
-                                Text("Finalizar Viagem", color = textColor, style = MaterialTheme.typography.bodyLarge)
-                            }
-                        }
-                    }
-                }
+                Icon(
+                    Icons.Default.DirectionsCar,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    "Corrida Atual",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        if (nextRide != null) {
+            OutlinedButton(
+                onClick = { showNextDialog = true },
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    Icons.Default.Queue,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    "Próxima Corrida",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
+
+    // Popup dialogs
+    if (showCurrentDialog && currentRide != null) {
+        RideDetailDialog(
+            ride = currentRide,
+            title = "Corrida em Andamento",
+            showFinishButton = true,
+            dao = dao,
+            scope = scope,
+            onDismiss = { showCurrentDialog = false }
+        )
+    }
+    if (showNextDialog && nextRide != null) {
+        RideDetailDialog(
+            ride = nextRide,
+            title = "Próxima Corrida",
+            showFinishButton = false,
+            dao = dao,
+            scope = scope,
+            onDismiss = { showNextDialog = false }
+        )
+    }
+}
+
+/**
+ * v7.4.0: Dialog showing ride details with X to close.
+ * Shows neighborhoods instead of km distances for better readability.
+ */
+@Composable
+fun RideDetailDialog(
+    ride: com.ngbautoroad.data.db.RideHistoryEntity,
+    title: String,
+    showFinishButton: Boolean,
+    dao: com.ngbautoroad.data.db.RideHistoryDao,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "Fechar")
+                }
+            }
+        },
+        text = {
+            Column {
+                // Platform
+                Text(
+                    ride.platform,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(12.dp))
+
+                // Values - large fonts
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text("Valor", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "R$ ${"%.2f".format(ride.rideValue)}",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("R$/KM", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "${"%.2f".format(ride.valuePerKm)}",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("R$/Hora", style = MaterialTheme.typography.bodyMedium)
+                        val rpH = if (ride.rideDuration > 0) (ride.rideValue / ride.rideDuration) * 60.0 else 0.0
+                        Text(
+                            "${"%.0f".format(rpH)}",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                @Suppress("DEPRECATION")
+                Divider()
+                Spacer(Modifier.height(12.dp))
+
+                // Neighborhoods instead of km
+                if (ride.pickupNeighborhood.isNotBlank() || ride.dropoffNeighborhood.isNotBlank()) {
+                    Box(
+                        Modifier.fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            "${ride.pickupNeighborhood.ifBlank { "—" }} ➤ ${ride.dropoffNeighborhood.ifBlank { "—" }}",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                // Details row
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "${ride.rideDuration.toInt()} min",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        "⭐ ${"%.1f".format(ride.passengerRating)}",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        "${ride.score.toInt()} pts",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = when {
+                            ride.score >= 70 -> ScoreGreen
+                            ride.score >= 50 -> ScoreYellow
+                            else -> ScoreRed
+                        }
+                    )
+                }
+
+                // Finish button
+                if (showFinishButton) {
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedButton(
+                        onClick = {
+                            scope.launch(Dispatchers.IO) {
+                                dao.updateStatusById(ride.id, "COMPLETED")
+                                com.ngbautoroad.service.RideAccessibilityService.instance?.lifecycleManager?.onRideCompleted(ride.rideValue)
+                            }
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Finalizar Viagem")
+                    }
+                }
+            }
+        },
+        confirmButton = {} // No confirm button, X in title handles close
+    )
 }
 
 /**

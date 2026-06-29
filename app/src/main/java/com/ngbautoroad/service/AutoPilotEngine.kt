@@ -368,9 +368,11 @@ class AutoPilotEngine(
             telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
                 "AutoPilot: Botao ACEITAR clicado para rideId=$rideDbId (aguardando confirmacao)")
             scheduleGestureConfirmation(800L, acceptTexts, platform.packageName) {
-                notifyAcceptSuccess(ride, rideDbId)
+                // v7.3.1: Don't trigger lifecycle here — UserActionDetector handles it
+                // This prevents false positive when driver manually accepts
+                Log.i(TAG, "Gesture confirmation: accept button disappeared for rideId=$rideDbId")
                 telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
-                    "AutoPilot: ACEITAR confirmado para rideId=$rideDbId")
+                    "AutoPilot: ACEITAR gesture confirmed (button gone) rideId=$rideDbId")
             }
         } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -387,9 +389,10 @@ class AutoPilotEngine(
                     telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
                         "AutoPilot: Fallback ACEITAR (${if (isRadar) "swipe" else "tap"}) para rideId=$rideDbId")
                     scheduleGestureConfirmation(1600L, acceptTexts, platform.packageName) {
-                        notifyAcceptSuccess(ride, rideDbId)
+                        // v7.3.1: Don't trigger lifecycle here — UserActionDetector handles it
+                        Log.i(TAG, "Fallback gesture confirmation: accept button disappeared for rideId=$rideDbId")
                         telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
-                            "AutoPilot: Fallback ACEITAR confirmado para rideId=$rideDbId")
+                            "AutoPilot: Fallback ACEITAR gesture confirmed (button gone) rideId=$rideDbId")
                     }
                 } else {
                     Log.w(TAG, "Fallback ACEITAR falhou (excecao ao montar gesture)")
@@ -441,9 +444,10 @@ class AutoPilotEngine(
             telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
                 "AutoPilot: Tap RECUSAR (fallback) para rideId=$rideDbId")
             scheduleGestureConfirmation(800L, acceptTexts, platform.packageName) {
-                notifyRefuseSuccess(rideDbId)
+                // v7.3.1: Don't trigger lifecycle here — UserActionDetector handles it
+                Log.i(TAG, "Gesture confirmation: refuse action confirmed for rideId=$rideDbId")
                 telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
-                    "AutoPilot: Fallback RECUSAR confirmado para rideId=$rideDbId")
+                    "AutoPilot: RECUSAR gesture confirmed (button gone) rideId=$rideDbId")
             }
         } else {
             Log.w(TAG, "RECUSAR: nenhuma estrategia funcionou -- motorista deve agir")
