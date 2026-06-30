@@ -383,7 +383,16 @@ class RideLifecycleManager(private val context: Context) {
         }
 
         val ride = currentRide ?: return
-        val actualValue = finalValue ?: ride.rideValue
+        // v7.6.0: Proteção contra capturar o TOTAL DO DIA em vez da tarifa da corrida.
+        // A tela de conclusão da Uber mostra o total acumulado do dia; se o valor extraído for
+        // muito maior que a oferta (>3x), quase certamente é o total → usa o valor da oferta.
+        // (Caso real 2026-06-30: oferta R$9,30, extraído R$75,93 = total do dia.)
+        val offerValue = ride.rideValue
+        val actualValue = if (finalValue != null && (offerValue <= 0.0 || finalValue <= offerValue * 3.0)) {
+            finalValue
+        } else {
+            offerValue
+        }
 
         // v6.6.0: Validar KM da Uber vs GPS
         if (gpsRideKm > 0.5) { // Só validar se GPS mediu algo significativo

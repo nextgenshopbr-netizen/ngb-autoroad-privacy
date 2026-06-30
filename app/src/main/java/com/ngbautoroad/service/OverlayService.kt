@@ -531,7 +531,11 @@ class OverlayService : Service(),
       }
     }
 
-    fun hideOverlay(isReplacing: Boolean = false) {
+    // v7.6.0: keepLifecycle=true esconde APENAS o card visual, sem encerrar o ciclo de vida
+    // da corrida. Usado pelo auto-dismiss: o card some, mas o UserActionDetector continua
+    // monitorando para detectar se o motorista aceita a oferta DEPOIS do card sumir (cards da
+    // Uber duram ~15s, o card NGB some em ~9s). Sem isso, aceites tardios não eram registrados.
+    fun hideOverlay(isReplacing: Boolean = false, keepLifecycle: Boolean = false) {
         autoDismissJob?.cancel() // v5.0.0: Cancelar timer ao fechar
         overlayView?.let {
             try {
@@ -543,8 +547,11 @@ class OverlayService : Service(),
         naturalOverlayHeight = 0
 
         // v6.1.1: Notificar lifecycle que overlay foi fechado sem ação do motorista
+        // v7.6.0: NÃO encerrar o lifecycle quando for só o auto-dismiss do card (keepLifecycle).
+        // O rastreamento continua até a oferta resolver de verdade (aceite via UserActionDetector
+        // ou o timeout de aceitação de 60s do RideLifecycleManager).
         val ride = currentRide
-        if (!isReplacing && ride != null && !ride.isSimulation) {
+        if (!isReplacing && !keepLifecycle && ride != null && !ride.isSimulation) {
             com.ngbautoroad.service.RideAccessibilityService.instance?.lifecycleManager?.onOverlayDismissed()
         }
 
@@ -591,9 +598,9 @@ class OverlayService : Service(),
 
                 if (dismissMs > 0) {
                     delay(dismissMs)
-                    android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Fechando overlay após ${effectiveSeconds}s")
-                    telemetry.overlay("AutoDismiss: fechando após ${effectiveSeconds}s plataforma=$platformName")
-                    hideOverlay()
+                    android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Fechando overlay após ${effectiveSeconds}s (lifecycle continua)")
+                    telemetry.overlay("AutoDismiss: fechando card após ${effectiveSeconds}s (lifecycle mantido) plataforma=$platformName")
+                    hideOverlay(keepLifecycle = true)
                 } else {
                     android.util.Log.d("NGB_OVERLAY", "[AutoDismiss] Desativado (0s configurado)")
                 }
