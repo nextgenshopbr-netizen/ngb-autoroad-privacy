@@ -481,12 +481,14 @@ class RideAccessibilityService : AccessibilityService() {
                 else -> null
             })?.copy(platform = platform)
 
-            // v7.6.1: Anti-falso-positivo. Telas de GANHOS/REPASSES/RECENTES/ocioso geram "corridas"
-            // fantasma (ex: R$95,90 = total do dia, 0km) ou com R$/km absurdo (ex: R$/km 114).
-            // Uma oferta REAL sempre tem distância de viagem > 0 e R$/km plausível. Exigir isso
-            // descarta os fantasmas sem perder ofertas legítimas (validado com telemetria 2026-06-30).
+            // v7.6.2: Anti-fantasma SEM bloquear oferta real (prioriza SEMPRE exibir o overlay).
+            // Telas de ganhos/repasses geram fantasmas: total do dia (R$85/95/103, 0km) ou
+            // R$/km absurdo (R$/km 114). Mas a Uber às vezes não expõe distância numa oferta REAL.
+            // Então: COM distância → R$/km tem que ser plausível (<=20); SEM distância → só aceita
+            // valor de corrida plausível (<=80, barra os totais-do-dia). Oferta real sem distância
+            // mas com valor normal CONTINUA aparecendo.
             if (rideData != null && rideData.rideValue > 0 &&
-                rideData.dropoffDistance > 0 && rideData.valuePerKm <= 20.0) {
+                (if (rideData.dropoffDistance > 0) rideData.valuePerKm <= 20.0 else rideData.rideValue <= 80.0)) {
                 // v7.4.0: Log detalhado da corrida detectada (bairro + R$/km)
                 TelemetryLogger.getInstance(this).log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.INFO,
                     "Corrida detectada: R$${rideData.rideValue} | R$/km=${String.format("%.2f", rideData.valuePerKm)} | " +
@@ -749,9 +751,9 @@ class RideAccessibilityService : AccessibilityService() {
                             else -> null
                         })?.copy(platform = platform) // v7.6.1: plataforma real sempre vence
 
-                        // v7.6.1: mesmo anti-falso-positivo da árvore (distância real + R$/km plausível)
+                        // v7.6.2: mesmo anti-fantasma da árvore (sem bloquear oferta real sem distância)
                         if (rideData != null && rideData.rideValue > 0 &&
-                            rideData.dropoffDistance > 0 && rideData.valuePerKm <= 20.0) {
+                            (if (rideData.dropoffDistance > 0) rideData.valuePerKm <= 20.0 else rideData.rideValue <= 80.0)) {
                             val hash = generateRideHash(rideData)
                             val now = System.currentTimeMillis()
 
