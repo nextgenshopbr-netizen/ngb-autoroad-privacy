@@ -114,9 +114,6 @@ dependencies {
     // WorkManager (tarefas periódicas: recorrência de despesas)
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
-    // Android Auto (Cars App Library)
-    implementation("androidx.car.app:app:1.2.0")
-
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")

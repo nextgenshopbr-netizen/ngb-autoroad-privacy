@@ -31,6 +31,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import com.ngbautoroad.data.model.Platform
 import com.ngbautoroad.data.model.RideData
 import com.ngbautoroad.data.prefs.PrefsManager
@@ -230,7 +231,12 @@ class AutoPilotEngine(
         for (window in windows) {
             val root = window.root ?: continue
             val pkg  = root.packageName?.toString() ?: ""
-            if (pkg == targetPackage || pkg.isEmpty()) return root
+            // v7.5.0: Filtro permissivo — alinhado com collectTextsMultiWindow (detecção).
+            // A Uber renderiza a oferta em janela cujo root pode reportar "com.ubercab"
+            // (não ".driver") ou aparecer como TYPE_APPLICATION genérica. O filtro estrito
+            // antigo (só == targetPackage) descartava essas janelas — provável causa de
+            // "AutoPilot visible nodes VAZIO" enquanto a detecção (filtro permissivo) funcionava.
+            if (pkg == targetPackage || pkg.isEmpty() || window.type == AccessibilityWindowInfo.TYPE_APPLICATION) return root
             try { root.recycle() } catch (_: Exception) {}
         }
         return null
@@ -355,9 +361,10 @@ class AutoPilotEngine(
         // v7.3.0: Log quais nodes são visíveis para diagnóstico
         logVisibleNodes(platform.packageName)
 
-        // v7.4.0: Small delay to let the ride offer card fully render before searching nodes
-        try { Thread.sleep(300) } catch (_: Exception) {}
-
+        // v7.5.0: Thread.sleep(300) REMOVIDO — performAccept roda no main thread (handler),
+        // então o sleep bloqueava a thread principal (risco de ANR e de travar o processamento
+        // de eventos de acessibilidade). O delay de 1,5–5s do scheduleAction já garante que a
+        // carta de oferta esteja totalmente renderizada antes de buscar os nodes.
         val clicked = findAndClickButton(acceptTexts, platform.packageName, useBoundsDetection = true)
         if (clicked) {
             Log.i(TAG, "Botao ACEITAR clicado -- aguardando confirmacao em 800ms")
@@ -573,7 +580,9 @@ class AutoPilotEngine(
             for (window in windows) {
                 val root = window.root ?: continue
                 val windowPackage = root.packageName?.toString() ?: ""
-                if (windowPackage != targetPackage && windowPackage.isNotEmpty()) {
+                // v7.5.0: Filtro permissivo alinhado com a detecção (inclui TYPE_APPLICATION)
+                if (windowPackage != targetPackage && windowPackage.isNotEmpty() &&
+                    window.type != AccessibilityWindowInfo.TYPE_APPLICATION) {
                     try { root.recycle() } catch (_: Exception) {}
                     continue
                 }
@@ -653,7 +662,9 @@ class AutoPilotEngine(
             for (window in windows) {
                 val root = window.root ?: continue
                 val windowPackage = root.packageName?.toString() ?: ""
-                if (windowPackage != targetPackage && windowPackage.isNotEmpty()) {
+                // v7.5.0: Filtro permissivo alinhado com a detecção (inclui TYPE_APPLICATION)
+                if (windowPackage != targetPackage && windowPackage.isNotEmpty() &&
+                    window.type != AccessibilityWindowInfo.TYPE_APPLICATION) {
                     try { root.recycle() } catch (_: Exception) {}
                     continue
                 }

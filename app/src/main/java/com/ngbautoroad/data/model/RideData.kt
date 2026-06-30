@@ -210,7 +210,11 @@ data class DriverThresholds(
 data class RideScore(
     val totalScore: Double = 0.0,
     val criteriaScores: Map<String, CriteriaScore> = emptyMap(),
-    val thresholdViolations: List<ThresholdViolation> = emptyList()
+    val thresholdViolations: List<ThresholdViolation> = emptyList(),
+    // v7.5.0: Penalidade de bairro bloqueado aplicada (0 = não bloqueado).
+    // Exposto para o OverlayCard pintar o bairro de vermelho quando estiver puxando o score.
+    val pickupPenalty: Int = 0,
+    val dropoffPenalty: Int = 0
 ) {
     val scoreColor: ScoreLevel
         get() = when {

@@ -342,8 +342,21 @@ class RideAccessibilityService : AccessibilityService() {
                 lastForegroundPackage = packageName
                 return // NÃO processar NADA do banco
             } else if (stealthModeActive) {
-                // Saiu do banco — desativar Ghost Mode
-                deactivateGhostMode(packageName)
+                // v7.5.0: Saiu do banco — desativar Ghost Mode, MAS com proteção contra
+                // janelas transitórias. Como o Ghost Mode agora escuta WINDOW_STATE de todos
+                // os apps (packageNames=null), uma barra de notificações, teclado (IME) ou
+                // diálogo do sistema aparecendo SOBRE o banco geraria um WINDOW_STATE não-banco
+                // e desativaria o Ghost Mode prematuramente (expondo o banco). Só desativa se:
+                //   (a) UsageStats confirma que o banco NÃO está mais em foreground, OU
+                //   (b) sem UsageStats, a janela não é transitória do sistema (teclado/systemui).
+                val fg = getForegroundPackage()
+                val bankStillForeground = fg != null && isBankApp(fg)
+                if (!bankStillForeground && !isTransientSystemWindow(packageName)) {
+                    Log.d(TAG_GHOST, "│  Saída do banco confirmada (janela=$packageName, fg=${fg ?: "?"}) — desativando")
+                    deactivateGhostMode(packageName)
+                } else {
+                    Log.d(TAG_GHOST, "│  WINDOW_STATE de '$packageName' sobre o banco — mantendo Ghost Mode (transitória ou banco ainda em foreground)")
+                }
             }
             lastForegroundPackage = packageName
         }
@@ -802,17 +815,26 @@ class RideAccessibilityService : AccessibilityService() {
         // O que fazemos: parar de processar eventos + esconder toda UI.
         try {
             serviceInfo = serviceInfo.apply {
-                // Filtrar apenas o próprio app → não recebe eventos de outros apps
-                // Usar nosso próprio package (menos suspeito que placeholder inexistente)
-                packageNames = arrayOf("com.ngbautoroad")
-                // Manter eventTypes mínimo (precisa de WINDOW_STATE para detectar saída do banco)
+                // v7.5.0 CORREÇÃO: NÃO filtrar por package durante o Ghost Mode.
+                // O filtro antigo (packageNames=[self]) deixava o serviço surdo a todos os
+                // outros apps — então o evento de SAÍDA do banco (WINDOW_STATE de outro app)
+                // nunca chegava, e a única saída era o polling de UsageStats (frágil, depende
+                // de permissão) ou o timeout de 5min. Resultado: overlay morto por até 5min
+                // após o motorista fechar o banco.
+                // Com packageNames=null + flags=0, recebemos APENAS a notificação de troca de
+                // janela (sem ler conteúdo de NENHUM app — flags=0 não puxa a árvore de nós),
+                // o que basta para sair do Ghost Mode INSTANTANEAMENTE ao fechar o banco.
+                // Banco não é exposto: nenhum conteúdo é lido; e bancos detectam serviços de
+                // acessibilidade REGISTRADOS, não o fluxo de eventos (ver nota acima).
+                packageNames = null
+                // eventTypes mínimo: só WINDOW_STATE (necessário para detectar entrada/saída de apps)
                 eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
-                // Remover flags de leitura de conteúdo
-                flags = 0 // Nenhuma flag = mínimo de atividade
+                // flags=0 → nenhuma leitura de conteúdo (não puxa árvore de nós de nenhum app)
+                flags = 0
                 // Timeout alto para reduzir processamento
                 notificationTimeout = 1000
             }
-            Log.d(TAG_GHOST, "│  ServiceInfo hibernado (packageNames=[self], eventTypes=WINDOW_STATE only, flags=0)")
+            Log.d(TAG_GHOST, "│  ServiceInfo hibernado (packageNames=null, eventTypes=WINDOW_STATE only, flags=0 — saída instantânea ao fechar banco)")
         } catch (e: Exception) {
             Log.e(TAG_GHOST, "│  ✖ Erro ao hibernar serviceInfo: ${e.message}")
         }
@@ -1616,6 +1638,24 @@ class RideAccessibilityService : AccessibilityService() {
         return BANK_PACKAGES.any { packageName.startsWith(it) }
     }
 
+    /**
+     * v7.5.0: Identifica janelas transitórias do sistema que podem aparecer SOBRE o app
+     * de banco (barra de notificações, teclado/IME, diálogos do sistema, o próprio app).
+     * Um WINDOW_STATE dessas janelas NÃO significa que o motorista saiu do banco — então
+     * não deve desativar o Ghost Mode. Usado como salvaguarda quando o UsageStats não está
+     * disponível para confirmar o app em foreground.
+     */
+    private fun isTransientSystemWindow(packageName: String): Boolean {
+        if (packageName.isEmpty()) return true
+        if (packageName == applicationContext.packageName) return true // nosso próprio app
+        if (packageName == "com.android.systemui" || packageName == "android") return true
+        // Teclados (IME): Gboard, Samsung Honeyboard, SwiftKey, etc.
+        if (packageName.contains("inputmethod") || packageName.contains("honeyboard") ||
+            packageName.contains("keyboard") || packageName.contains("latin") ||
+            packageName.contains("swiftkey")) return true
+        return false
+    }
+
     private fun isRideApp(packageName: String): Boolean {
         return RIDE_PACKAGES.contains(packageName)
     }
@@ -1631,6 +1671,23 @@ class RideAccessibilityService : AccessibilityService() {
      */
     private fun generateRideHash(ride: RideData): Int {
         return "${ride.platform}_${String.format("%.2f", ride.rideValue)}_${String.format("%.1f", ride.pickupDistance)}_${String.format("%.1f", ride.dropoffDistance)}_${ride.pickupNeighborhood}".hashCode()
+    }
+
+    /**
+     * v7.5.0: Limpa o estado de deduplicação do engine de detecção.
+     *
+     * Chamado pelo RideLifecycleManager quando a corrida atual é RESOLVIDA. Sem isso,
+     * a janela de dedup de 30s bloquearia uma re-oferta (a Uber re-oferta a MESMA corrida
+     * segundos após uma recusa) e o engine nunca enviaria a oferta ao OverlayService —
+     * o motorista nunca veria o card. Limpar aqui garante que toda oferta válida
+     * após uma resolução chegue ao overlay.
+     */
+    fun resetRideDedup() {
+        lastRideHash = 0
+        lastRideHashTime = 0L
+        lastRideValue = 0.0
+        lastRideValueTime = 0L
+        Log.d(TAG_DEDUP, "│  Dedup do engine limpo — próxima oferta (mesmo re-oferta idêntica) será processada")
     }
 
     /**

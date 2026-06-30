@@ -93,6 +93,19 @@ fun OverlayCard(
         else -> "✕ Oferta Ruim"                           // Red
     }
 
+    // ── Cores por critério ────────────────────────────────────────────────────
+    // Cada campo reflete a cor do seu critério QUANDO ele está afetando o score
+    // (ou seja, quando o critério existe no breakdown). Se o critério não está ativo
+    // (peso 0 ou dado ausente), o campo fica neutro (branco) — sinalizando que não
+    // está puxando o score para cima nem para baixo.
+    val durationColor = getCriteriaColor(score, "rideDuration", textPrimary)
+    val rideValueColor = getCriteriaColor(score, "rideValue", textPrimary)
+    // Total km combina pickup+dropoff: prioriza a distância de destino (motor principal
+    // do score), caindo para a de embarque se só ela estiver ativa.
+    val kmColor = score.criteriaScores["dropoffDistance"]?.let { getScoreColor(it.level) }
+        ?: score.criteriaScores["pickupDistance"]?.let { getScoreColor(it.level) }
+        ?: textPrimary
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -105,7 +118,9 @@ fun OverlayCard(
             .clip(RoundedCornerShape(16.dp))
             .background(bgColor)
             .border(
-                width = if (score.scoreColor == ScoreLevel.GREEN) 2.dp else 1.5.dp,
+                // v7.5.0: Bordas mais grossas e sempre na cor do score (verde um pouco
+                // mais destacado por ser a oferta boa)
+                width = if (score.scoreColor == ScoreLevel.GREEN) 3.5.dp else 3.dp,
                 color = scoreColor,
                 shape = RoundedCornerShape(16.dp)
             )
@@ -211,7 +226,8 @@ fun OverlayCard(
                 MetricBlock(
                     label = "Lucro",
                     value = "%.2f".format(estimatedProfit),
-                    valueColor = if (estimatedProfit >= 0) ScoreGreen else ScoreRed,
+                    // Reflete o critério Lucro/KM quando ativo; senão, cor pelo sinal do lucro
+                    valueColor = getCriteriaColor(score, "profitPerKm", if (estimatedProfit >= 0) ScoreGreen else ScoreRed),
                     labelColor = textSecondary,
                     fsLarge = fsLarge,
                     fsTiny = fsTiny,
@@ -232,7 +248,7 @@ fun OverlayCard(
                         ChipDetail(
                             icon = "⏱",
                             text = "${ride.rideDuration}min",
-                            textColor = textPrimary,
+                            textColor = durationColor,
                             fontSize = fsMedium
                         )
                     }
@@ -240,7 +256,7 @@ fun OverlayCard(
                         ChipDetail(
                             icon = "📍",
                             text = "${"%.1f".format(totalKm)}km",
-                            textColor = textPrimary,
+                            textColor = kmColor,
                             fontSize = fsMedium
                         )
                     }
@@ -248,7 +264,7 @@ fun OverlayCard(
                         ChipDetail(
                             icon = "R$",
                             text = "%.2f".format(ride.rideValue),
-                            textColor = textPrimary,
+                            textColor = rideValueColor,
                             fontSize = fsMedium
                         )
                     }
@@ -256,8 +272,14 @@ fun OverlayCard(
             }
 
             // ── BAIRROS: origem → destino ────────────────────────────────────
-            if ((cardType == "STANDARD" || showNeighborhoods) &&
+            // v7.5.0: Bairro é informação crítica — exibido em TODOS os cards exceto o
+            // Customizável (onde o motorista pode desligar via toggle). Bairro bloqueado
+            // (penalidade > 0) aparece em vermelho, pois está puxando o score para baixo.
+            if ((cardType != "CUSTOMIZABLE" || showNeighborhoods) &&
                 (ride.pickupNeighborhood.isNotBlank() || ride.dropoffNeighborhood.isNotBlank())) {
+
+                val pickupColor = if (score.pickupPenalty > 0) ScoreRed else textPrimary
+                val dropoffColor = if (score.dropoffPenalty > 0) ScoreRed else textPrimary
 
                 Row(
                     modifier = Modifier
@@ -269,10 +291,10 @@ fun OverlayCard(
                         .padding(horizontal = 8.dp, vertical = 5.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Origem
+                    // Origem (vermelho se bairro bloqueado)
                     Text(
-                        text = ride.pickupNeighborhood.ifBlank { "—" },
-                        color = textPrimary,
+                        text = ride.pickupNeighborhood.ifBlank { "—" } + if (score.pickupPenalty > 0) " ⛔" else "",
+                        color = pickupColor,
                         fontSize = fsMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
@@ -286,10 +308,10 @@ fun OverlayCard(
                         fontSize = fsMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    // Destino
+                    // Destino (vermelho se bairro bloqueado)
                     Text(
-                        text = ride.dropoffNeighborhood.ifBlank { "—" },
-                        color = textPrimary,
+                        text = ride.dropoffNeighborhood.ifBlank { "—" } + if (score.dropoffPenalty > 0) " ⛔" else "",
+                        color = dropoffColor,
                         fontSize = fsMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,

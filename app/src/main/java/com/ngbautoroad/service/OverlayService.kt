@@ -126,8 +126,6 @@ class OverlayService : Service(),
 
     companion object {
         const val NOTIFICATION_ID = 1001
-        const val RIDE_NOTIFICATION_ID = 1002
-        const val RIDE_CHANNEL_ID = "ngb_ride_alerts"
         const val ACTION_STOP = "com.ngbautoroad.STOP_SERVICE"
         var onRideDetected: ((RideData) -> Unit)? = null
         var onStealthModeChanged: ((Boolean) -> Unit)? = null
@@ -297,59 +295,85 @@ class OverlayService : Service(),
     }
 
     // =========================================================================
-    // v7.1.0: queueRide — Debounce inteligente + deduplicação
+    // v7.5.0: queueRide — Debounce inteligente + deduplicação CONSCIENTE DE ESTADO
+    //
+    // CORREÇÃO DEFINITIVA do "overlay nem sempre aparece":
+    //   A dedup só pode suprimir uma oferta enquanto o overlay daquela oferta ainda
+    //   estiver ATIVO (visível ou aguardando no debounce). Assim que a corrida é
+    //   resolvida (recusada/aceita/concluída/cancelada → resetDedupState()), a memória
+    //   é limpa e a MESMA oferta (re-oferta da Uber) ou uma oferta idêntica nova
+    //   volta a ser exibida imediatamente, em vez de morrer silenciosamente.
     //
     // Comportamento:
-    //   - MESMA corrida (mesmo hash, destino ainda vazio): adia 600ms aguardando
-    //     o bairro de destino carregar antes de exibir (evita overlay incompleto)
-    //   - MESMA corrida com destino já presente: exibe imediatamente (100ms mínimo)
-    //   - CORRIDA DIFERENTE: cancela debounce anterior e exibe imediatamente
-    //   - DUPLICATA confirmada (30s window): ignora silenciosamente
+    //   - DUPLICATA com overlay ATIVO (30s window): ignora (evita re-pop da mesma oferta)
+    //   - MESMA corrida no debounce, destino agora completo: re-agenda e exibe (100ms)
+    //   - MESMA corrida no debounce, destino ainda vazio: aguarda destino carregar
+    //   - QUALQUER outro caso (nova, re-oferta após resolução, simulação): EXIBE
     // =========================================================================
     private fun queueRide(ride: RideData) {
-        // Deduplicação por hash (30s window)
         // v7.1.2: rideType REMOVIDO do hash — o parser pode atualizá-lo entre eventos
         // (ex: UBER_X → UBER_COMFORT ao ler o badge), gerando hash diferente e re-exibindo o overlay.
         // Hash estável: plataforma + valor + bairro destino (suficiente para identificar a oferta)
         val rideHash = "${ride.platform}_${ride.rideValue}_${ride.dropoffNeighborhood}".hashCode()
         val now = System.currentTimeMillis()
-        if (!ride.isSimulation && rideHash == lastRideHash && (now - lastRideTime) < DUPLICATE_WINDOW_MS) {
-            android.util.Log.d("NGB_OVERLAY", "[Queue] Duplicata ignorada (hash=$rideHash, Δt=${now - lastRideTime}ms)")
+
+        // ── Deduplicação consciente de estado ──
+        // Só descarta como duplicata se for a MESMA oferta E o overlay ainda estiver ativo
+        // (visível ou aguardando no debounce). Se a oferta anterior já foi resolvida, a
+        // dedup foi limpa via resetDedupState() e esta oferta volta a ser exibida.
+        val overlayActive = isOverlayVisible || debounceJob?.isActive == true
+        if (!ride.isSimulation && rideHash == lastRideHash &&
+            (now - lastRideTime) < DUPLICATE_WINDOW_MS && overlayActive) {
+            android.util.Log.d("NGB_OVERLAY", "[Queue] Duplicata ignorada (overlay ativo, hash=$rideHash, Δt=${now - lastRideTime}ms)")
             return
         }
 
-        // v7.2.1: Simulações sempre tratadas como corrida nova — permite repetir sem reiniciar o serviço
-        val isNewRide = ride.isSimulation || rideHash != pendingRideHash
-
-        if (isNewRide) {
-            // Corrida diferente: cancela debounce anterior e inicia imediatamente
-            debounceJob?.cancel()
-            pendingRideHash = rideHash
-            val delay = if (ride.dropoffNeighborhood.isBlank()) 400L else 0L
-            debounceJob = serviceScope.launch {
-                if (delay > 0) kotlinx.coroutines.delay(delay)
-                if (!ride.isSimulation) { lastRideHash = rideHash; lastRideTime = System.currentTimeMillis() }
-                showOverlay(ride)
-            }
-            android.util.Log.d("NGB_OVERLAY", "[Queue] Nova corrida R$${ride.rideValue} | delay=${delay}ms")
-            telemetry.overlay("Queue: nova corrida R$${ride.rideValue} plataforma=${ride.platform.displayName} delay=${delay}ms")
-        } else {
-            // Mesma corrida chegando de novo (destino atualizou ou releitura do AS):
-            // só atualiza se o destino ficou mais completo (tem bairro agora E job ainda está aguardando)
-            val hasNeighborhoodUpdate = ride.dropoffNeighborhood.isNotBlank() && (debounceJob?.isActive == true)
-            if (hasNeighborhoodUpdate) {
+        // ── Mesma oferta ainda no debounce (aguardando o bairro de destino carregar) ──
+        val isSamePendingRide = !ride.isSimulation && rideHash == pendingRideHash && debounceJob?.isActive == true
+        if (isSamePendingRide) {
+            // Só re-agenda se o destino ficou mais completo (evita exibir overlay sem bairro)
+            if (ride.dropoffNeighborhood.isNotBlank()) {
                 debounceJob?.cancel()
-                pendingRideHash = rideHash
                 debounceJob = serviceScope.launch {
                     kotlinx.coroutines.delay(100L) // mínimo para evitar flash
-                    if (!ride.isSimulation) { lastRideHash = rideHash; lastRideTime = System.currentTimeMillis() }
+                    lastRideHash = rideHash; lastRideTime = System.currentTimeMillis()
                     showOverlay(ride)
                 }
-                android.util.Log.d("NGB_OVERLAY", "[Queue] Mesma corrida com destino atualizado — exibindo")
+                android.util.Log.d("NGB_OVERLAY", "[Queue] Mesma corrida no debounce — destino atualizado, exibindo")
             } else {
-                android.util.Log.d("NGB_OVERLAY", "[Queue] Releitura da mesma corrida pendente — ignorando")
+                android.util.Log.d("NGB_OVERLAY", "[Queue] Releitura da mesma corrida no debounce — aguardando destino")
             }
+            return
         }
+
+        // ── Corrida nova, re-oferta após resolução, ou simulação → EXIBIR ──
+        // v7.2.1: Simulações sempre tratadas como corrida nova (repetir sem reiniciar o serviço)
+        debounceJob?.cancel()
+        pendingRideHash = rideHash
+        val delay = if (!ride.isSimulation && ride.dropoffNeighborhood.isBlank()) 400L else 0L
+        debounceJob = serviceScope.launch {
+            if (delay > 0) kotlinx.coroutines.delay(delay)
+            if (!ride.isSimulation) { lastRideHash = rideHash; lastRideTime = System.currentTimeMillis() }
+            showOverlay(ride)
+        }
+        android.util.Log.d("NGB_OVERLAY", "[Queue] Nova corrida R$${ride.rideValue} | delay=${delay}ms")
+        telemetry.overlay("Queue: nova corrida R$${ride.rideValue} plataforma=${ride.platform.displayName} delay=${delay}ms")
+    }
+
+    /**
+     * v7.5.0: Limpa o estado de deduplicação do overlay.
+     *
+     * Chamado pelo RideLifecycleManager quando a corrida atual é RESOLVIDA
+     * (recusada/aceita/concluída/cancelada). Sem isso, uma re-oferta da Uber
+     * (mesma oferta segundos depois) ou uma corrida idêntica nova seria suprimida
+     * pela janela de dedup de 30s e o overlay não apareceria — causa raiz do
+     * "overlay nem sempre aparece".
+     */
+    fun resetDedupState() {
+        lastRideHash = 0
+        lastRideTime = 0L
+        pendingRideHash = 0
+        android.util.Log.d("NGB_OVERLAY", "[Queue] Estado de dedup limpo — próxima oferta (mesmo idêntica) será exibida")
     }
 
     private suspend fun showOverlay(ride: RideData) {
@@ -482,15 +506,6 @@ class OverlayService : Service(),
         )
         telemetry.overlay("showOverlay: R$${ride.rideValue} score=${currentScore?.totalScore?.toInt()} pipe=$isPipeMode plataforma=${ride.platform.displayName}")
 
-        // v6.9.9: Notificação de corrida para Android Auto e tela de bloqueio
-        val androidAutoEnabled = prefsManager.androidAutoEnabledFlow.first()
-        val androidAutoAutoDetect = prefsManager.androidAutoAutoDetectFlow.first()
-        val uiModeManager = getSystemService(Context.UI_MODE_SERVICE) as? android.app.UiModeManager
-        val isCarMode = uiModeManager?.currentModeType == android.content.res.Configuration.UI_MODE_TYPE_CAR
-        if (androidAutoEnabled || (androidAutoAutoDetect && isCarMode)) {
-            showRideNotification(ride, currentScore)
-        }
-
         withContext(Dispatchers.Main) {
             // v5.0.0: Se overlay já visível, remover antes de recriar (evita duplicata)
             if (isOverlayVisible) {
@@ -518,7 +533,6 @@ class OverlayService : Service(),
 
     fun hideOverlay(isReplacing: Boolean = false) {
         autoDismissJob?.cancel() // v5.0.0: Cancelar timer ao fechar
-        dismissRideNotification() // v7.1.1: Limpar notificação de corrida ao fechar overlay
         overlayView?.let {
             try {
                 windowManager?.removeView(it)
@@ -939,61 +953,4 @@ class OverlayService : Service(),
             .build()
     }
 
-    // =========================================================================
-    // v6.9.9: Notificação de corrida (visível no Android Auto e tela de bloqueio)
-    // =========================================================================
-
-    private fun showRideNotification(ride: RideData, score: com.ngbautoroad.data.model.RideScore?) {
-        try {
-            // Criar canal de notificação para corridas (alta prioridade para Android Auto)
-            val notifManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channel = android.app.NotificationChannel(
-                    RIDE_CHANNEL_ID,
-                    "Alertas de Corrida",
-                    android.app.NotificationManager.IMPORTANCE_HIGH
-                ).apply {
-                    description = "Notificações de novas corridas detectadas"
-                    lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
-                }
-                notifManager.createNotificationChannel(channel)
-            }
-
-            val scoreText = if (score != null) "%.0f pts".format(score.totalScore) else "--"
-            val valueText = "R$ %.2f".format(ride.rideValue)
-            val platformName = ride.platform.displayName
-
-            // Resumo compacto para Android Auto
-            val title = "🚗 $platformName — $valueText ($scoreText)"
-            val body = buildString {
-                if (ride.pickupNeighborhood.isNotBlank()) append("↑ ${ride.pickupNeighborhood}")
-                if (ride.dropoffNeighborhood.isNotBlank()) append(" → ${ride.dropoffNeighborhood}")
-                if (ride.pickupDistance > 0) append(" | ${"%.1f".format(ride.pickupDistance)}km")
-                if (ride.rideDuration > 0) append(" | ${ride.rideDuration}min")
-            }
-
-            val notification = NotificationCompat.Builder(this, RIDE_CHANNEL_ID)
-                .setContentTitle(title)
-                .setContentText(body)
-                .setSmallIcon(android.R.drawable.ic_menu_directions)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_MESSAGE) // Aparece no Android Auto
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setAutoCancel(true)
-                .setTimeoutAfter(30_000) // Auto-dismiss após 30s
-                .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
-                .build()
-
-            notifManager.notify(RIDE_NOTIFICATION_ID, notification)
-        } catch (e: Exception) {
-            android.util.Log.e("OverlayService", "Erro ao mostrar notificação de corrida: ${e.message}")
-        }
-    }
-
-    private fun dismissRideNotification() {
-        try {
-            val notifManager = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-            notifManager.cancel(RIDE_NOTIFICATION_ID)
-        } catch (_: Exception) {}
-    }
 }

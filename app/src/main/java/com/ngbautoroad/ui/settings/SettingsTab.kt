@@ -621,21 +621,48 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                             return@Button
                         }
                         
+                        // v7.5.0: Simulador gera dados ALEATÓRIOS a cada toque (antes era fixo).
+                        // Permite testar o card com cenários variados — valores, distâncias,
+                        // bairros, ratings e plataformas diferentes a cada chamada.
+                        val rnd = kotlin.random.Random(System.currentTimeMillis())
+                        val hoods = listOf(
+                            "Centro", "Efapi", "Passo dos Fortes", "São Cristóvão", "Jardim Itália",
+                            "Líder", "Universitário", "Presidente Médici", "Santa Maria", "Seminário",
+                            "Palmital", "Belvedere", "Eldorado", "Bela Vista", "Esplanada",
+                            "Maria Goretti", "Alvorada", "Jardim América", "Vila Real", "Parque das Palmeiras"
+                        )
+                        val pickup = hoods.random(rnd)
+                        var dropoff = hoods.random(rnd)
+                        while (dropoff == pickup) dropoff = hoods.random(rnd)
+                        val (plat, badge) = listOf(
+                            Platform.UBER to "UberX",
+                            Platform.UBER to "Comfort",
+                            Platform.NINETY_NINE to "99Pop",
+                            Platform.INDRIVE to "Padrão"
+                        ).random(rnd)
+                        val dist = rnd.nextDouble(1.5, 18.0)
+                        val rawValue = dist * rnd.nextDouble(1.4, 3.4) + rnd.nextDouble(2.0, 6.0)
+                        val dur = (dist * rnd.nextDouble(2.0, 3.5)).coerceAtLeast(4.0)
                         val simRide = RideData(
-                            platform = Platform.UBER,
-                            rideType = RideType.UBER_X,
-                            rideValue = 28.50,
-                            rideDuration = 12.0,
-                            pickupDistance = 1.5,
-                            dropoffDistance = 7.0,
-                            pickupNeighborhood = "Centro",
-                            dropoffNeighborhood = "Bairro Alto",
-                            passengerRating = 4.95,
+                            platform = plat,
+                            rideType = RideType.fromBadgeText(badge, plat),
+                            rideValue = (rawValue * 100).toInt() / 100.0,
+                            rideDuration = dur,
+                            pickupDistance = (rnd.nextDouble(0.3, 5.0) * 10).toInt() / 10.0,
+                            dropoffDistance = (dist * 10).toInt() / 10.0,
+                            pickupNeighborhood = pickup,
+                            dropoffNeighborhood = dropoff,
+                            passengerRating = (rnd.nextDouble(4.3, 5.0) * 100).toInt() / 100.0,
+                            intermediateStops = if (rnd.nextInt(6) == 0) 1 else 0,
                             isSimulation = true,
                             timestamp = System.currentTimeMillis()
                         )
                         OverlayService.start(context, simRide)
-                        Toast.makeText(context, "Simulando chamada...", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            "Simulando: ${plat.displayName} R$ ${"%.2f".format(simRide.rideValue)} ($pickup → $dropoff)",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -854,66 +881,6 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                     valueRange = 0.3f..1.0f,
                     steps = 6
                 )
-            }
-        }
-
-        // === ANDROID AUTO ===
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                val androidAutoEnabled by prefsManager.androidAutoEnabledFlow.collectAsState(initial = false)
-                val androidAutoAutoDetect by prefsManager.androidAutoAutoDetectFlow.collectAsState(initial = false)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp)
-                    ) {
-                        Text("Android Auto", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            "Exibir overlay no Android Auto",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = androidAutoEnabled,
-                        onCheckedChange = { enabled ->
-                            scope.launch { prefsManager.setAndroidAutoEnabled(enabled) }
-                        }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp)
-                    ) {
-                        Text("Modo Automático", style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            "Ativar notificações apenas quando conectado ao Android Auto",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = androidAutoAutoDetect,
-                        onCheckedChange = { enabled ->
-                            scope.launch { prefsManager.setAndroidAutoAutoDetect(enabled) }
-                        }
-                    )
-                }
             }
         }
 

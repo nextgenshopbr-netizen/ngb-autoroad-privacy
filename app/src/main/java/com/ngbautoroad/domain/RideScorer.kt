@@ -388,7 +388,9 @@ class RideScorer(
         return RideScore(
             totalScore = totalScore,
             criteriaScores = criteriaScores,
-            thresholdViolations = violations
+            thresholdViolations = violations,
+            pickupPenalty = pickupPenalty,
+            dropoffPenalty = dropoffPenalty
         )
     }
 

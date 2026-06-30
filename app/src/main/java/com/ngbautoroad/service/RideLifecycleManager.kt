@@ -279,6 +279,9 @@ class RideLifecycleManager(private val context: Context) {
         // O serviço continua ativo — se nova oferta real chegar (com botão aceitar), abre novo overlay
         OverlayService.onRideAccepted?.invoke()
 
+        // v7.5.0: Liberar dedup — ofertas back-to-back durante a viagem devem reabrir o overlay
+        clearDedupCaches()
+
         // v6.6.0: Iniciar rastreamento GPS da corrida
         try {
             val gps = GpsTrackingEngine(context)
@@ -331,6 +334,9 @@ class RideLifecycleManager(private val context: Context) {
 
         // v7.3.1: Fechar overlay quando corrida é recusada/expirada
         OverlayService.onRideAccepted?.invoke()
+
+        // v7.5.0: Liberar dedup — re-oferta da Uber (mesma corrida) deve reabrir o overlay
+        clearDedupCaches()
 
         // v6.6.0: Registrar recusa no SmartRoutingEngine (incrementa contador de recusas consecutivas)
         try {
@@ -429,6 +435,9 @@ class RideLifecycleManager(private val context: Context) {
             nm.cancel(1003)
         } catch (_: Exception) {}
 
+        // v7.5.0: Liberar dedup — a próxima oferta deve poder reabrir o overlay imediatamente
+        clearDedupCaches()
+
         finishLifecycle()
     }
 
@@ -464,6 +473,9 @@ class RideLifecycleManager(private val context: Context) {
                 Log.e(TAG, "│  ✖ Erro ao cancelar corrida: ${e.message}")
             }
         }
+
+        // v7.5.0: Liberar dedup — a próxima oferta deve poder reabrir o overlay imediatamente
+        clearDedupCaches()
 
         finishLifecycle()
     }
@@ -644,6 +656,28 @@ class RideLifecycleManager(private val context: Context) {
         timeoutRunnable?.let {
             handler.removeCallbacks(it)
             timeoutRunnable = null
+        }
+    }
+
+    /**
+     * v7.5.0: Limpa as memórias de deduplicação do engine de detecção e do overlay.
+     *
+     * Deve ser chamado quando a corrida atual é RESOLVIDA pelo motorista ou pela
+     * plataforma (recusa / aceite / conclusão / cancelamento). A partir daí, a oferta
+     * atual deixou de existir: qualquer nova oferta — inclusive uma re-oferta idêntica
+     * da Uber — DEVE poder reabrir o overlay imediatamente, sem ser bloqueada pela
+     * janela de dedup de 30s. Esta é a correção definitiva do "overlay nem sempre aparece".
+     *
+     * NÃO é chamado no caminho de auto-dismiss/EXPIRED (onOverlayDismissed), para
+     * respeitar o tempo de overlay configurado pelo motorista e não re-exibir um card
+     * que ele deixou expirar enquanto a oferta ainda está na tela.
+     */
+    private fun clearDedupCaches() {
+        try {
+            RideAccessibilityService.instance?.resetRideDedup()
+            OverlayService.instance?.resetDedupState()
+        } catch (e: Exception) {
+            Log.w(TAG, "│  clearDedupCaches falhou: ${e.message}")
         }
     }
 
