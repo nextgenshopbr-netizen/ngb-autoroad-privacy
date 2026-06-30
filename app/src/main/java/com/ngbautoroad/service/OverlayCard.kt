@@ -52,6 +52,7 @@ fun OverlayCard(
     showDuration: Boolean = true,
     showTotalKm: Boolean = true,
     showNeighborhoods: Boolean = true,
+    showProfit: Boolean = false,
     onDismiss: () -> Unit,
     onDrag: (Float, Float) -> Unit
 ) {
@@ -187,7 +188,7 @@ fun OverlayCard(
                 }
             }
 
-            // ── MÉTRICAS PRINCIPAIS: R$/km | R$/h | Lucro ───────────────────
+            // ── MÉTRICAS PRINCIPAIS: R$/km | R$/h | Valor da corrida ─────────
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -222,21 +223,26 @@ fun OverlayCard(
                     MetricDivider()
                 }
 
-                // Lucro estimado — diferencial NGB vs Gigu
-                MetricBlock(
-                    label = "Lucro",
-                    value = "%.2f".format(estimatedProfit),
-                    // Reflete o critério Lucro/KM quando ativo; senão, cor pelo sinal do lucro
-                    valueColor = getCriteriaColor(score, "profitPerKm", if (estimatedProfit >= 0) ScoreGreen else ScoreRed),
-                    labelColor = textSecondary,
-                    fsLarge = fsLarge,
-                    fsTiny = fsTiny,
-                    modifier = Modifier.weight(1f)
-                )
+                // Valor da corrida — métrica MAIS importante na decisão (substituiu Lucro).
+                // Mostrado em todos os cards; no Customizável respeita o toggle de valor.
+                if (cardType != "CUSTOMIZABLE" || showRideValue) {
+                    MetricBlock(
+                        label = "Valor",
+                        value = "%.2f".format(ride.rideValue),
+                        valueColor = rideValueColor,
+                        labelColor = textSecondary,
+                        fsLarge = fsLarge,
+                        fsTiny = fsTiny,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
 
-            // ── LINHA DE DETALHES: tempo + km + valor bruto ─────────────────
-            if (cardType == "STANDARD" || showDuration || showTotalKm || showRideValue) {
+            // ── LINHA DE DETALHES: tempo + km (+ Lucro só no Customizável) ──────
+            // O valor da corrida saiu daqui — virou métrica principal no destaque acima.
+            // Lucro estimado só aparece no card Customizável quando o motorista liga o toggle.
+            val showProfitChip = cardType == "CUSTOMIZABLE" && showProfit
+            if (cardType == "STANDARD" || showDuration || showTotalKm || showProfitChip) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -247,7 +253,7 @@ fun OverlayCard(
                     if (cardType == "STANDARD" || showDuration) {
                         ChipDetail(
                             icon = "⏱",
-                            text = "${ride.rideDuration}min",
+                            text = "${ride.rideDuration.toInt()}min",
                             textColor = durationColor,
                             fontSize = fsMedium
                         )
@@ -260,11 +266,11 @@ fun OverlayCard(
                             fontSize = fsMedium
                         )
                     }
-                    if (cardType == "STANDARD" || showRideValue) {
+                    if (showProfitChip) {
                         ChipDetail(
-                            icon = "R$",
-                            text = "%.2f".format(ride.rideValue),
-                            textColor = rideValueColor,
+                            icon = "💰",
+                            text = "%.2f".format(estimatedProfit),
+                            textColor = getCriteriaColor(score, "profitPerKm", if (estimatedProfit >= 0) ScoreGreen else ScoreRed),
                             fontSize = fsMedium
                         )
                     }
@@ -418,13 +424,15 @@ private fun ChipDetail(
     fontSize: androidx.compose.ui.unit.TextUnit
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = icon, fontSize = fontSize, color = textColor.copy(alpha = 0.9f))
+        Text(text = icon, fontSize = fontSize, color = textColor.copy(alpha = 0.9f), maxLines = 1)
         Spacer(Modifier.width(3.dp))
         Text(
             text = text,
             color = textColor.copy(alpha = 0.9f),
             fontWeight = FontWeight.SemiBold,
-            fontSize = fontSize
+            fontSize = fontSize,
+            maxLines = 1,
+            softWrap = false
         )
     }
 }

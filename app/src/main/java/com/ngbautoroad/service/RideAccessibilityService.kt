@@ -152,7 +152,8 @@ class RideAccessibilityService : AccessibilityService() {
             "com.ubercab",              // Uber (rider, caso driver use)
             "com.app99.driver",          // 99 Motorista (package real Play Store)
             "com.machfrankfurt.android", // inDrive
-            "com.cabify.driver"         // Cabify Driver
+            "com.cabify.driver",         // Cabify Driver
+            "br.com.orb.taxi.drivermachine" // v7.6.0: Orb (táxi)
         )
 
         // --- ESTADO COMPARTILHADO (acessível por outros serviços) ---
@@ -473,6 +474,7 @@ class RideAccessibilityService : AccessibilityService() {
                 Platform.NINETY_NINE -> parse99Ride(allTexts)
                 Platform.INDRIVE -> parseInDriveRide(allTexts)
                 Platform.CABIFY -> parseCabifyRide(allTexts)
+                Platform.ORB -> parseInDriveRide(allTexts) // v7.6.0: parser genérico (calibrar com oferta real do Orb)
                 else -> null
             }
 
@@ -735,6 +737,7 @@ class RideAccessibilityService : AccessibilityService() {
                             Platform.NINETY_NINE -> parse99Ride(lines)
                             Platform.INDRIVE -> parseInDriveRide(lines)
                             Platform.CABIFY -> parseCabifyRide(lines)
+                            Platform.ORB -> parseInDriveRide(lines) // v7.6.0: parser genérico (calibrar depois)
                             else -> null
                         }
 

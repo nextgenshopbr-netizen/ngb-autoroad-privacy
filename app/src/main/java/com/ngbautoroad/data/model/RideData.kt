@@ -68,6 +68,7 @@ enum class Platform(val displayName: String, val packageName: String) {
     NINETY_NINE("99", "com.app99.driver"),
     INDRIVE("inDrive", "com.machfrankfurt.android"),
     CABIFY("Cabify", "com.cabify.driver"),
+    ORB("Orb", "br.com.orb.taxi.drivermachine"), // v7.6.0: app de táxi Orb
     UNKNOWN("Desconhecido", "")
 }
 

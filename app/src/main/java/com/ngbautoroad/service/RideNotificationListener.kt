@@ -71,7 +71,8 @@ class RideNotificationListener : NotificationListenerService() {
             "com.ubercab",
             "com.app99.driver",          // 99 Motorista (package real Play Store)
             "com.machfrankfurt.android",
-            "com.cabify.driver"
+            "com.cabify.driver",
+            "br.com.orb.taxi.drivermachine" // v7.6.0: Orb (táxi)
         )
 
         // Estado: se o listener está ativo
@@ -157,6 +158,7 @@ class RideNotificationListener : NotificationListenerService() {
             packageName.contains("app99") || packageName.contains("ninety9") -> parse99Notification(fullText)
             packageName.contains("machfrankfurt") -> parseInDriveNotification(fullText)
             packageName.contains("cabify") -> parseCabifyNotification(fullText)
+            packageName.contains("orb") -> parseInDriveNotification(fullText) // v7.6.0: genérico
             else -> null
         }
 

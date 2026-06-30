@@ -134,10 +134,23 @@ class AutoPilotEngine(
                 val canAccept = mode in listOf(MODE_ACCEPT_ONLY, MODE_FULL, MODE_ACCEPT, MODE_BOTH)
                 val canRefuse = mode in listOf(MODE_REFUSE_ONLY, MODE_FULL, MODE_REFUSE, MODE_BOTH)
 
-                val decision = when {
+                var decision = when {
                     score >= minAcceptScore && canAccept -> AutoPilotDecision.ACCEPT
                     score <= maxRefuseScore && canRefuse -> AutoPilotDecision.REFUSE
                     else -> AutoPilotDecision.NEUTRAL
+                }
+
+                // v7.6.0: SEGURANÇA — não auto-aceitar às cegas.
+                // Quando o destino não foi lido (a oferta da Uber muitas vezes não expõe o
+                // bairro na árvore de acessibilidade) e o motorista pede para respeitar filtros
+                // geográficos, não dá para garantir que a corrida não vai para uma zona bloqueada
+                // (foi assim que o motorista acabou indo para o Efapi). Rebaixa para NEUTRO e
+                // deixa o motorista decidir — alinhado com "a IA orienta, o motorista decide".
+                if (decision == AutoPilotDecision.ACCEPT && geoFiltersEnabled && ride.dropoffNeighborhood.isBlank()) {
+                    Log.w(TAG, "ACEITAR rebaixado para NEUTRO: destino desconhecido + filtros geográficos ativos")
+                    telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.WARN,
+                        "AutoPilot: ACEITAR->NEUTRO (destino vazio, não dá para checar zona bloqueada) rideId=$rideDbId")
+                    decision = AutoPilotDecision.NEUTRAL
                 }
 
                 Log.i(TAG, "Decisao: ${decision.name}")

@@ -531,6 +531,7 @@ class PrefsManager(private val context: Context) {
     private val KEY_OVERLAY_SHOW_DURATION = booleanPreferencesKey("overlay_show_duration")
     private val KEY_OVERLAY_SHOW_TOTAL_KM = booleanPreferencesKey("overlay_show_total_km")
     private val KEY_OVERLAY_SHOW_NEIGHBORHOODS = booleanPreferencesKey("overlay_show_neighborhoods")
+    private val KEY_OVERLAY_SHOW_PROFIT = booleanPreferencesKey("overlay_show_profit") // Lucro estimado — só no Customizável, off por padrão
     private val KEY_OVERLAY_CARD_TYPE = stringPreferencesKey("overlay_card_type") // "STANDARD" ou "CUSTOMIZABLE"
 
     val overlayShowScoreFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_SCORE] ?: true }
@@ -545,6 +546,7 @@ class PrefsManager(private val context: Context) {
     val overlayShowDurationFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_DURATION] ?: true }
     val overlayShowTotalKmFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_TOTAL_KM] ?: true }
     val overlayShowNeighborhoodsFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_NEIGHBORHOODS] ?: true }
+    val overlayShowProfitFlow: Flow<Boolean> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_SHOW_PROFIT] ?: false }
     val overlayCardTypeFlow: Flow<String> = context.dataStore.data.map { prefs -> prefs[KEY_OVERLAY_CARD_TYPE] ?: "STANDARD" }
 
     suspend fun setOverlayShowScore(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_SCORE] = show } }
@@ -559,6 +561,7 @@ class PrefsManager(private val context: Context) {
     suspend fun setOverlayShowDuration(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_DURATION] = show } }
     suspend fun setOverlayShowTotalKm(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_TOTAL_KM] = show } }
     suspend fun setOverlayShowNeighborhoods(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_NEIGHBORHOODS] = show } }
+    suspend fun setOverlayShowProfit(show: Boolean) { context.dataStore.edit { it[KEY_OVERLAY_SHOW_PROFIT] = show } }
     suspend fun setOverlayCardType(type: String) { context.dataStore.edit { it[KEY_OVERLAY_CARD_TYPE] = type } }
 
 

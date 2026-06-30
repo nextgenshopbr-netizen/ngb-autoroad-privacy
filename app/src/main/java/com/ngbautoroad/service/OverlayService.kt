@@ -676,6 +676,7 @@ class OverlayService : Service(),
                         val showDuration by prefsManager.overlayShowDurationFlow.collectAsState(initial = true)
                         val showTotalKm by prefsManager.overlayShowTotalKmFlow.collectAsState(initial = true)
                         val showNeighborhoods by prefsManager.overlayShowNeighborhoodsFlow.collectAsState(initial = true)
+                        val showProfit by prefsManager.overlayShowProfitFlow.collectAsState(initial = false)
                         val overlayCardType by prefsManager.overlayCardTypeFlow.collectAsState(initial = "STANDARD")
                         
                         val isPinned by prefsManager.overlayPinnedFlow.collectAsState(initial = false)
@@ -700,6 +701,7 @@ class OverlayService : Service(),
                             showDuration = showDuration,
                             showTotalKm = showTotalKm,
                             showNeighborhoods = showNeighborhoods,
+                            showProfit = showProfit,
                             onDismiss = { hideOverlay() },
                             onDrag = { deltaX, deltaY ->
                                 val screenWidth = resources.displayMetrics.widthPixels

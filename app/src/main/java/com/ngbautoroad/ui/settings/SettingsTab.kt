@@ -526,6 +526,10 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
     val showDuration by prefsManager.overlayShowDurationFlow.collectAsState(initial = true)
     val showTotalKm by prefsManager.overlayShowTotalKmFlow.collectAsState(initial = true)
     val showNeighborhoods by prefsManager.overlayShowNeighborhoodsFlow.collectAsState(initial = true)
+    val showProfit by prefsManager.overlayShowProfitFlow.collectAsState(initial = false)
+    // v7.5.0: bairros bloqueados do motorista — usados no simulador para testar a cor vermelha
+    val blockedPickupList by prefsManager.blockedPickupFlow.collectAsState(initial = emptyList<Pair<String, Int>>())
+    val blockedDropoffList by prefsManager.blockedDropoffFlow.collectAsState(initial = emptyList<Pair<String, Int>>())
 
     Column(
         modifier = Modifier
@@ -586,9 +590,9 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                 if (protectionEnabled) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "- Randomiza intervalos de leitura OCR\n" +
-                                "- Desativa AccessibilityService periodicamente\n" +
-                                "- Simula comportamento humano nos tempos de resposta",
+                        text = "- Ghost Mode: esconde overlay e bubble automaticamente ao abrir apps de banco\n" +
+                                "- Modo Pipe: com o AutoPilot ativo, os toques passam direto para o app de corrida (sem marca de sobreposição)\n" +
+                                "- Card flutuante leve, sem captura de tela contínua",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -631,8 +635,14 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                             "Palmital", "Belvedere", "Eldorado", "Bela Vista", "Esplanada",
                             "Maria Goretti", "Alvorada", "Jardim América", "Vila Real", "Parque das Palmeiras"
                         )
-                        val pickup = hoods.random(rnd)
-                        var dropoff = hoods.random(rnd)
+                        // v7.5.0: ~40% das vezes usa um bairro BLOQUEADO configurado pelo motorista
+                        // (se houver), para ele ver no card de teste a cor vermelha da sua própria config.
+                        val blockedPickup = blockedPickupList.map { it.first }
+                        val blockedDropoff = blockedDropoffList.map { it.first }
+                        val pickup = if (blockedPickup.isNotEmpty() && rnd.nextInt(10) < 4)
+                            blockedPickup.random(rnd) else hoods.random(rnd)
+                        var dropoff = if (blockedDropoff.isNotEmpty() && rnd.nextInt(10) < 4)
+                            blockedDropoff.random(rnd) else hoods.random(rnd)
                         while (dropoff == pickup) dropoff = hoods.random(rnd)
                         val (plat, badge) = listOf(
                             Platform.UBER to "UberX",
@@ -722,7 +732,8 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                         "Ganhos R$/h" to Pair(showValuePerHour) { v: Boolean -> scope.launch { prefsManager.setOverlayShowValuePerHour(v) } },
                         "Tempo (min)" to Pair(showDuration) { v: Boolean -> scope.launch { prefsManager.setOverlayShowDuration(v) } },
                         "KM Total" to Pair(showTotalKm) { v: Boolean -> scope.launch { prefsManager.setOverlayShowTotalKm(v) } },
-                        "Bairros (Origem -> Destino)" to Pair(showNeighborhoods) { v: Boolean -> scope.launch { prefsManager.setOverlayShowNeighborhoods(v) } }
+                        "Bairros (Origem -> Destino)" to Pair(showNeighborhoods) { v: Boolean -> scope.launch { prefsManager.setOverlayShowNeighborhoods(v) } },
+                        "Lucro estimado (R$)" to Pair(showProfit) { v: Boolean -> scope.launch { prefsManager.setOverlayShowProfit(v) } }
                     )
                     
                     toggleItems.forEach { (label, data) ->
