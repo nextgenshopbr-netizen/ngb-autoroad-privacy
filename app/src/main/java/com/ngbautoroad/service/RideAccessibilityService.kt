@@ -469,16 +469,24 @@ class RideAccessibilityService : AccessibilityService() {
                 Log.w(TAG_TREE, "│  ⚠ Erro ao extrair nós geométricos: ${e.message}")
             }
 
-            val rideData = when (platform) {
+            // v7.6.1: copy(platform=platform) — a plataforma REAL (do app em foreground) sempre
+            // vence o que o parser fixou. Corrige o Orb (roteado ao parseInDriveRide) aparecendo
+            // como "inDrive", e qualquer outro mislabel.
+            val rideData = (when (platform) {
                 Platform.UBER -> parseUberRide(allTexts, allNodes)
                 Platform.NINETY_NINE -> parse99Ride(allTexts)
                 Platform.INDRIVE -> parseInDriveRide(allTexts)
                 Platform.CABIFY -> parseCabifyRide(allTexts)
                 Platform.ORB -> parseInDriveRide(allTexts) // v7.6.0: parser genérico (calibrar com oferta real do Orb)
                 else -> null
-            }
+            })?.copy(platform = platform)
 
-            if (rideData != null && rideData.rideValue > 0) {
+            // v7.6.1: Anti-falso-positivo. Telas de GANHOS/REPASSES/RECENTES/ocioso geram "corridas"
+            // fantasma (ex: R$95,90 = total do dia, 0km) ou com R$/km absurdo (ex: R$/km 114).
+            // Uma oferta REAL sempre tem distância de viagem > 0 e R$/km plausível. Exigir isso
+            // descarta os fantasmas sem perder ofertas legítimas (validado com telemetria 2026-06-30).
+            if (rideData != null && rideData.rideValue > 0 &&
+                rideData.dropoffDistance > 0 && rideData.valuePerKm <= 20.0) {
                 // v7.4.0: Log detalhado da corrida detectada (bairro + R$/km)
                 TelemetryLogger.getInstance(this).log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.INFO,
                     "Corrida detectada: R$${rideData.rideValue} | R$/km=${String.format("%.2f", rideData.valuePerKm)} | " +
@@ -732,16 +740,18 @@ class RideAccessibilityService : AccessibilityService() {
                             .map { it.trim() }
                             .filter { it.isNotBlank() }
 
-                        val rideData = when (platform) {
+                        val rideData = (when (platform) {
                             Platform.UBER -> parseUberRide(lines)
                             Platform.NINETY_NINE -> parse99Ride(lines)
                             Platform.INDRIVE -> parseInDriveRide(lines)
                             Platform.CABIFY -> parseCabifyRide(lines)
                             Platform.ORB -> parseInDriveRide(lines) // v7.6.0: parser genérico (calibrar depois)
                             else -> null
-                        }
+                        })?.copy(platform = platform) // v7.6.1: plataforma real sempre vence
 
-                        if (rideData != null && rideData.rideValue > 0) {
+                        // v7.6.1: mesmo anti-falso-positivo da árvore (distância real + R$/km plausível)
+                        if (rideData != null && rideData.rideValue > 0 &&
+                            rideData.dropoffDistance > 0 && rideData.valuePerKm <= 20.0) {
                             val hash = generateRideHash(rideData)
                             val now = System.currentTimeMillis()
 
