@@ -109,7 +109,9 @@ class RideAccessibilityService : AccessibilityService() {
         private const val TAG_DEDUP = "NGB_DEDUP"
 
         // --- PACKAGES DE APPS BANCÁRIOS (Ghost Mode) ---
-        // Lista abrangente de bancos brasileiros que detectam AccessibilityService
+        // Lista ABRANGENTE de bancos/carteiras/fintechs brasileiros (app comercial — protege
+        // todo motorista, independente do banco). O overlay não é prejudicado por isso porque
+        // o Ghost Mode tem debounce de 6s (olhada rápida em carteira/banco não derruba o card).
         val BANK_PACKAGES = setOf(
             // Grandes bancos
             "com.itau", "com.itau.empresas",
@@ -143,7 +145,19 @@ class RideAccessibilityService : AccessibilityService() {
             "br.com.bmg",
             "com.modalmais",
             "br.com.rico",
-            "com.iti.itau"
+            "com.iti.itau",
+            // v7.6.4: bancos/carteiras/fintechs adicionais (app comercial — cobrir mais motoristas).
+            // Package completo e específico (entrada errada é inofensiva: nunca casa com app real).
+            // TODO: auditar/verificar a lista completa contra a Play Store (ver tarefa dedicada).
+            "br.com.pan",                       // Banco Pan
+            "com.mercadolibre",                 // Mercado Livre (carteira/Mercado Pago integrado)
+            "br.com.uol.ps.myaccount",          // PagBank
+            "br.com.banrisul.banrisuldigital",  // Banrisul
+            "br.com.brb.appbrb",                // BRB
+            "com.recarga.recarga",              // RecargaPay
+            "br.com.amedigital",                // Ame Digital
+            "br.com.bs2.bank",                  // Banco BS2
+            "br.com.banese.banesepay"           // Banese
         )
 
         // --- PACKAGES DE APPS DE CORRIDA ---
