@@ -206,6 +206,11 @@ class RideAccessibilityService : AccessibilityService() {
     private val GHOST_MODE_TIMEOUT_MS = 5 * 60 * 1000L // 5 min timeout segurança
     private val ghostHandler = Handler(Looper.getMainLooper())
     private var ghostPollingRunnable: Runnable? = null
+    // v7.6.3: Debounce de ativação — só ativa Ghost Mode se o banco ficar este tempo
+    // contínuo em foreground. Olhada rápida (ex: conferir pagamento no Mercado Pago) NÃO
+    // derruba o overlay. Calibrável.
+    private val GHOST_ACTIVATION_DELAY_MS = 6000L
+    private var pendingGhostActivation: Runnable? = null
 
     // --- Screenshot OCR Fallback ---
     private var lastScreenshotTime = 0L
@@ -337,26 +342,43 @@ class RideAccessibilityService : AccessibilityService() {
         // ─────────────────────────────────────────────────────────────────────
         if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             if (isBankApp(packageName)) {
-                if (!stealthModeActive) {
-                    activateGhostMode(packageName)
+                // v7.6.3: DEBOUNCE — não ativa na hora. Agenda a ativação para
+                // GHOST_ACTIVATION_DELAY_MS depois; só ativa se o banco continuar em foreground.
+                // Olhada rápida no banco/carteira (e voltar pro app de corrida) não derruba o overlay.
+                if (!stealthModeActive && pendingGhostActivation == null) {
+                    val bankPkg = packageName
+                    val r = Runnable {
+                        pendingGhostActivation = null
+                        val fg = getForegroundPackage()
+                        // Ainda no banco? (UsageStats confirma; sem permissão, usa o último foreground)
+                        val stillBank = (fg != null && isBankApp(fg)) || (fg == null && isBankApp(lastForegroundPackage))
+                        if (!stealthModeActive && stillBank) {
+                            activateGhostMode(bankPkg)
+                        } else {
+                            Log.d(TAG_GHOST, "│  Ativação cancelada no timer — banco já saiu (fg=${fg ?: "?"})")
+                        }
+                    }
+                    pendingGhostActivation = r
+                    ghostHandler.postDelayed(r, GHOST_ACTIVATION_DELAY_MS)
+                    Log.d(TAG_GHOST, "│  Banco em foreground ($packageName) — ativação agendada em ${GHOST_ACTIVATION_DELAY_MS}ms")
                 }
                 lastForegroundPackage = packageName
                 return // NÃO processar NADA do banco
-            } else if (stealthModeActive) {
-                // v7.5.0: Saiu do banco — desativar Ghost Mode, MAS com proteção contra
-                // janelas transitórias. Como o Ghost Mode agora escuta WINDOW_STATE de todos
-                // os apps (packageNames=null), uma barra de notificações, teclado (IME) ou
-                // diálogo do sistema aparecendo SOBRE o banco geraria um WINDOW_STATE não-banco
-                // e desativaria o Ghost Mode prematuramente (expondo o banco). Só desativa se:
-                //   (a) UsageStats confirma que o banco NÃO está mais em foreground, OU
-                //   (b) sem UsageStats, a janela não é transitória do sistema (teclado/systemui).
-                val fg = getForegroundPackage()
-                val bankStillForeground = fg != null && isBankApp(fg)
-                if (!bankStillForeground && !isTransientSystemWindow(packageName)) {
-                    Log.d(TAG_GHOST, "│  Saída do banco confirmada (janela=$packageName, fg=${fg ?: "?"}) — desativando")
-                    deactivateGhostMode(packageName)
-                } else {
-                    Log.d(TAG_GHOST, "│  WINDOW_STATE de '$packageName' sobre o banco — mantendo Ghost Mode (transitória ou banco ainda em foreground)")
+            } else {
+                // Janela não-banco. Ignorar janelas transitórias (teclado/systemui/diálogos) —
+                // elas não significam que o motorista saiu do banco.
+                if (!isTransientSystemWindow(packageName)) {
+                    // Saiu pra um app REAL → cancelar qualquer ativação pendente do banco
+                    pendingGhostActivation?.let { ghostHandler.removeCallbacks(it); pendingGhostActivation = null }
+                    // E se o Ghost Mode estava ativo, desativar (overlay/detecção voltam)
+                    if (stealthModeActive) {
+                        val fg = getForegroundPackage()
+                        val bankStillForeground = fg != null && isBankApp(fg)
+                        if (!bankStillForeground) {
+                            Log.d(TAG_GHOST, "│  Saída do banco confirmada (janela=$packageName, fg=${fg ?: "?"}) — desativando")
+                            deactivateGhostMode(packageName)
+                        }
+                    }
                 }
             }
             lastForegroundPackage = packageName
@@ -871,6 +893,11 @@ class RideAccessibilityService : AccessibilityService() {
 
         stealthModeActive = false
         stopGhostModePolling()
+
+        // v7.6.3: logar a desativação na telemetria (antes só a ativação era logada — ficávamos
+        // cegos sobre a reativação do overlay após sair do banco)
+        TelemetryLogger.getInstance(applicationContext).log(TelemetryLogger.Category.SYSTEM, TelemetryLogger.Level.INFO,
+            "Ghost Mode DESATIVADO (saiu para: $currentPackage, durou ${duration / 1000}s) — overlay/detecção restaurados")
 
         // ── Restaurar ServiceInfo original ──
         try {
