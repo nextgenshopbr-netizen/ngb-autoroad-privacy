@@ -661,14 +661,14 @@ class Simulation2FinanceTest {
         val combustion = engine.calculateReserve(mariaVehicle(vehicleType = "COMBUSTION"))
         val electric = engine.calculateReserve(mariaVehicle(vehicleType = "ELECTRIC"))
 
-        // Both should have reserves (MaintenanceReserveEngine doesn't differentiate
-        // electric vs combustion -- it uses raw values from VehicleProfileEntity)
+        // Both should have reserves
         assertTrue(combustion.reservePerKm > 0)
         assertTrue(electric.reservePerKm > 0)
 
-        // With same input values, reserves should be equal
-        // (differentiation happens in FinanceDREEngine.calculateDesgastePorKm, not here)
-        assertEquals(combustion.reservePerKm, electric.reservePerKm, 0.001)
+        // v6.10.1: MaintenanceReserveEngine now uses vehicle-type-aware depreciation life:
+        //   COMBUSTION: 200k km, HYBRID: 250k km, ELECTRIC: 300k km
+        // With same purchase value, electric has LOWER depreciation per km, so lower total reserve
+        assertTrue("Electric reserve should be lower (longer life)", electric.reservePerKm < combustion.reservePerKm)
     }
 
     // =====================================================================

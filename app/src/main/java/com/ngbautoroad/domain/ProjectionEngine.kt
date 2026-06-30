@@ -63,7 +63,8 @@ class ProjectionEngine(
         val avgDailyEarnings = totalEarnings30 / daysWithData
         val avgDailyKm = totalDistance30 / daysWithData
         // v6.3.1: Removido coerceAtLeast(1) — se não há dados, projeção deve ser 0
-        val avgDailyRides = (totalRides30.toDouble() / daysWithData).toInt()
+        // v6.10.1: Keep as Double to avoid truncation loss (2.8 rides/day * 30 = 84, not 60)
+        val avgDailyRides = totalRides30.toDouble() / daysWithData
         val avgDailyHours = (totalDuration30 / 60.0) / daysWithData
 
         // Multiplicador por período
@@ -105,8 +106,14 @@ class ProjectionEngine(
         val projGrossProfit = projEarnings - projFuelCost
         val projNetProfit = projEarnings - projTotalCosts
         // Lucro real = líquido - depreciação do veículo (usando KM real)
+        // v6.10.1: Vehicle-type-aware life span (consistent with FinanceDRE)
+        val vehicleLifeKm = when (vehicle?.vehicleType) {
+            "ELECTRIC" -> 300_000.0
+            "HYBRID" -> 250_000.0
+            else -> 200_000.0
+        }
         val depreciationPerKm = if (vehicle != null && vehicle.purchaseValue > 0) {
-            vehicle.purchaseValue / 200000.0 // Depreciação em 200.000 km
+            vehicle.purchaseValue / vehicleLifeKm
         } else 0.0
         val projRealProfit = projNetProfit - (projKmReal * depreciationPerKm)
 
@@ -364,7 +371,13 @@ class ProjectionEngine(
 
     private fun getDepreciationPerKm(vehicle: VehicleProfileEntity?): Double {
         if (vehicle == null || vehicle.purchaseValue <= 0) return 0.0
-        return vehicle.purchaseValue / 200000.0
+        // v6.10.1: Vehicle-type-aware life span (consistent with FinanceDRE)
+        val vehicleLifeKm = when (vehicle.vehicleType) {
+            "ELECTRIC" -> 300_000.0
+            "HYBRID" -> 250_000.0
+            else -> 200_000.0
+        }
+        return vehicle.purchaseValue / vehicleLifeKm
     }
 
     private fun List<Double>.averageOrZero(): Double =

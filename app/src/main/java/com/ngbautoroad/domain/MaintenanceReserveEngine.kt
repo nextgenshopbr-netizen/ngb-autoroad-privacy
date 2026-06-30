@@ -112,13 +112,19 @@ class MaintenanceReserveEngine {
         }
 
         // Depreciação (se valor de compra informado)
+        // v6.10.1: Vehicle-type-aware life span (consistent with FinanceDRE)
         if (vehicle.purchaseValue > 0) {
-            val depPerKm = vehicle.purchaseValue / 200_000.0 // Vida útil estimada: 200k km
+            val vehicleLifeKm = when (vehicle.vehicleType) {
+                "ELECTRIC" -> 300_000
+                "HYBRID" -> 250_000
+                else -> 200_000
+            }
+            val depPerKm = vehicle.purchaseValue / vehicleLifeKm.toDouble()
             totalReservePerKm += depPerKm
             breakdown.add(ReserveBreakdown(
                 category = "Depreciação",
                 costPerKm = depPerKm,
-                intervalKm = 200_000,
+                intervalKm = vehicleLifeKm,
                 totalCost = vehicle.purchaseValue,
                 percentOfTotal = 0.0
             ))

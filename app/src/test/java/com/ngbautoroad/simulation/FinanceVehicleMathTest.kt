@@ -190,19 +190,16 @@ class FinanceVehicleMathTest {
         val combustion = engine.calculateReserve(defaultVehicle())
         val electric = engine.calculateReserve(electricVehicle())
 
-        // Elétrico deve ter maior depreciação (carro mais caro) mas menor manutenção mecânica
-        // Combustão: pneus=0.0375, freio=0.02, óleo=0.03, revisão=0.04, deprec=0.35
-        // Elétrico:  mesmos custos de peças, mas vida útil diferente calculada em DRE (não no engine)
-        // MaintenanceReserveEngine NÃO diferencia elétrico/combustão — usa valores do veículo diretamente
-        // A diferença vem da depreciação (purchaseValue diferente)
-
+        // v6.10.1: MaintenanceReserveEngine now uses vehicle-type-aware depreciation life:
+        //   COMBUSTION: 200k km (deprec = 70000/200000 = 0.35)
+        //   ELECTRIC: 300k km (deprec = 150000/300000 = 0.50)
         val combustionDeprecPerKm = 70000.0 / 200000.0  // 0.35
-        val electricDeprecPerKm = 150000.0 / 200000.0    // 0.75
+        val electricDeprecPerKm = 150000.0 / 300000.0    // 0.50
 
-        assertTrue("Electric depreciation per km should be higher than combustion",
+        assertTrue("Electric depreciation per km should be higher than combustion (higher purchase value)",
             electricDeprecPerKm > combustionDeprecPerKm)
 
-        // Reserva do elétrico deve ser maior (depreciação domina)
+        // Reserva do elétrico deve ser maior (depreciação domina — higher purchase value)
         assertTrue("Electric total reserve should be higher: elec=${electric.reservePerKm} comb=${combustion.reservePerKm}",
             electric.reservePerKm > combustion.reservePerKm)
     }
