@@ -122,6 +122,9 @@ class UserActionDetector(
     private var lastOfferScreenTime = 0L
     private var offerWasVisible = false
     private var currentPlatform: Platform? = null
+    // v7.7.0: contador de leituras "ociosas" consecutivas — exige confirmação dupla
+    // antes de decretar RECUSADA/EXPIRADA (ver onScreenContentChanged)
+    private var consecutiveIdleReads = 0
 
     /**
      * Inicia monitoramento para uma nova corrida detectada
@@ -131,6 +134,7 @@ class UserActionDetector(
         offerWasVisible = true
         currentPlatform = platform
         lastOfferScreenTime = System.currentTimeMillis()
+        consecutiveIdleReads = 0
         Log.d(TAG, "▶ Monitoramento iniciado para ${platform.displayName}")
         telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
             "UserActionDetector: monitoramento iniciado para ${platform.displayName}")
@@ -143,6 +147,7 @@ class UserActionDetector(
         isMonitoring = false
         offerWasVisible = false
         currentPlatform = null
+        consecutiveIdleReads = 0
         Log.d(TAG, "⏹ Monitoramento parado")
     }
 
@@ -257,10 +262,15 @@ class UserActionDetector(
             joinedTexts.contains(indicator)
         } || isNavigationScreen(allTexts)
 
-        // Verificar se voltou para tela de espera (corrida expirou)
-        val isIdleScreen = IDLE_SCREEN_INDICATORS.any { indicator ->
+        // v7.7.0: Verificar se voltou para tela de espera (corrida expirou).
+        // ANTES bastava 1 palavra genérica bater (ex.: "você está online" — que pode ser um
+        // cabeçalho persistente, presente inclusive COM a oferta na tela). Isso derrubava
+        // corridas reais como RECUSADA em 4-15s (task_b3cf48f5, confirmado via telemetria).
+        // Agora exige 2+ indicadores batendo — o mesmo critério que isEarningsScreen() já usa
+        // com sucesso logo abaixo.
+        val isIdleScreen = IDLE_SCREEN_INDICATORS.count { indicator ->
             joinedTexts.contains(indicator)
-        }
+        } >= 2
 
         if (offerWasVisible && !offerStillVisible) {
             // A oferta desapareceu! Determinar o que aconteceu
@@ -270,18 +280,29 @@ class UserActionDetector(
                 telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
                     "AÇÃO: Corrida ACEITA (tela mudou para navegação - swipe inferido)")
                 offerWasVisible = false
+                consecutiveIdleReads = 0
                 onAccepted()
                 return true
             } else if (isIdleScreen) {
-                // Voltou para tela de espera → corrida expirou ou foi recusada
-                Log.i(TAG, "├─ ⏰ EXPIRAÇÃO/RECUSA DETECTADA via mudança de tela")
+                // v7.7.0: Confirmação dupla — só decreta RECUSADA/EXPIRADA na 2ª leitura
+                // ociosa CONSECUTIVA. Uma leitura isolada pode ser uma tela de transição
+                // (Uber renderizando em etapas); duas leituras seguidas apontando pro mesmo
+                // estado ocioso é sinal muito mais confiável de que a oferta realmente sumiu.
+                consecutiveIdleReads++
+                if (consecutiveIdleReads < 2) {
+                    Log.d(TAG, "│  Possível expiração (leitura ${consecutiveIdleReads}/2) — aguardando confirmação")
+                    return false
+                }
+                Log.i(TAG, "├─ ⏰ EXPIRAÇÃO/RECUSA DETECTADA via mudança de tela (confirmado 2x)")
                 telemetry.log(TelemetryLogger.Category.LIFECYCLE, TelemetryLogger.Level.INFO,
-                    "AÇÃO: Corrida EXPIRADA/RECUSADA (tela voltou para espera)")
+                    "AÇÃO: Corrida EXPIRADA/RECUSADA (tela voltou para espera, confirmado 2x)")
                 offerWasVisible = false
+                consecutiveIdleReads = 0
                 onRefused()
                 return true
             } else {
                 // Tela mudou mas não sabemos para onde — aguardar mais um ciclo
+                consecutiveIdleReads = 0
                 Log.d(TAG, "│  Oferta sumiu mas destino incerto — aguardando...")
             }
         }
@@ -290,6 +311,7 @@ class UserActionDetector(
         if (offerStillVisible) {
             offerWasVisible = true
             lastOfferScreenTime = System.currentTimeMillis()
+            consecutiveIdleReads = 0
         }
 
         return false
