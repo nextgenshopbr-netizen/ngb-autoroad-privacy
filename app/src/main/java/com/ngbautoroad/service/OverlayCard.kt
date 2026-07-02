@@ -72,7 +72,9 @@ fun OverlayCard(
     val textSecondary = Color(0xFF8A93A8)      // Cinza azulado para labels
 
     // ── Escala de fonte com limite ───────────────────────────────────────────
-    val fs = fontScale.coerceIn(0.8f, 1.4f)
+    // Faixa alinhada ao slider de Ajustes (0.7x..2.0x) e ao clamp de PrefsManager,
+    // para que qualquer valor escolhido pelo usuário realmente afete o card.
+    val fs = fontScale.coerceIn(0.7f, 2.0f)
     val fsLarge  = (22 * fs).sp   // Números principais (R$/km, R$/h, lucro)
     val fsMedium = (12 * fs).sp   // Valores secundários
     val fsSmall  = (10 * fs).sp   // Labels e bairros

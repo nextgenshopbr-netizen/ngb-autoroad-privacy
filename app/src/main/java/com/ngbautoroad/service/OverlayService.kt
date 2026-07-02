@@ -688,6 +688,11 @@ class OverlayService : Service(),
                         
                         val isPinned by prefsManager.overlayPinnedFlow.collectAsState(initial = false)
 
+                        // Escala de fonte lida como estado reativo (igual aos demais
+                        // ajustes de aparência) para atualizar o card ao vivo quando o
+                        // usuário move o slider em Ajustes > Overlay - Aparência.
+                        val fontScale by prefsManager.overlayFontScaleFlow.collectAsState(initial = currentFontScale)
+
                         LaunchedEffect(isPinned) {
                             if (isPinned) {
                                 autoDismissJob?.cancel()
@@ -699,7 +704,7 @@ class OverlayService : Service(),
                         OverlayCard(
                             ride = ride,
                             score = score,
-                            fontScale = currentFontScale,
+                            fontScale = fontScale,
                             cardType = overlayCardType,
                             showScore = showScore,
                             showValuePerKm = showValuePerKm,
