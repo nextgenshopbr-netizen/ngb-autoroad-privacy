@@ -53,6 +53,7 @@ fun OverlayCard(
     showTotalKm: Boolean = true,
     showNeighborhoods: Boolean = true,
     showProfit: Boolean = false,
+    minHeightDp: Int = 0,
     onDismiss: () -> Unit,
     onDrag: (Float, Float) -> Unit
 ) {
@@ -70,13 +71,6 @@ fun OverlayCard(
     val surfaceColor = Color(0xFF1C2030)       // Superfície dos cards internos
     val textPrimary = Color.White
     val textSecondary = Color(0xFF8A93A8)      // Cinza azulado para labels
-
-    // ── Escala de fonte com limite ───────────────────────────────────────────
-    val fs = fontScale.coerceIn(0.8f, 1.4f)
-    val fsLarge  = (22 * fs).sp   // Números principais (R$/km, R$/h, lucro)
-    val fsMedium = (12 * fs).sp   // Valores secundários
-    val fsSmall  = (10 * fs).sp   // Labels e bairros
-    val fsTiny   = (9  * fs).sp   // Sub-labels
 
     // ── Calcular lucro estimado ──────────────────────────────────────────────
     // Depende de: ride.rideValue, ride.pickupDistance, ride.dropoffDistance
@@ -107,9 +101,11 @@ fun OverlayCard(
         ?: score.criteriaScores["pickupDistance"]?.let { getScoreColor(it.level) }
         ?: textPrimary
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
+            // Altura mínima opcional definida pelo usuário (0 = automática/wrap).
+            .then(if (minHeightDp > 0) Modifier.heightIn(min = minHeightDp.dp) else Modifier)
             .pointerInput(Unit) {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
@@ -126,6 +122,19 @@ fun OverlayCard(
                 shape = RoundedCornerShape(16.dp)
             )
     ) {
+        // ── Escala de fonte ───────────────────────────────────────────────────
+        // Combina o ajuste manual do usuário (slider, 0.7x..2.0x) com um fator
+        // AUTOMÁTICO baseado na largura real do card. Assim a fonte "acompanha" a
+        // largura escolhida: cards estreitos reduzem a fonte (evita texto cortado
+        // ou quebrado em várias linhas, como o rótulo virando vertical) e cards
+        // largos aproveitam o espaço. 320dp é a largura de referência (fator 1.0).
+        val widthScale = (maxWidth.value / 320f)
+        val fs = (fontScale.coerceIn(0.7f, 2.0f) * widthScale).coerceIn(0.6f, 2.2f)
+        val fsLarge  = (22 * fs).sp   // Números principais (R$/km, R$/h, lucro)
+        val fsMedium = (12 * fs).sp   // Valores secundários
+        val fsSmall  = (10 * fs).sp   // Labels e bairros
+        val fsTiny   = (9  * fs).sp   // Sub-labels
+
         Column(modifier = Modifier.fillMaxWidth()) {
 
             // ── FAIXA SUPERIOR: qualidade + plataforma + fechar ─────────────
@@ -385,7 +394,10 @@ private fun MetricBlock(
             text = label,
             color = labelColor,
             fontSize = fsTiny,
-            fontWeight = FontWeight.Normal
+            fontWeight = FontWeight.Normal,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
         )
         Spacer(Modifier.height(2.dp))
         Text(

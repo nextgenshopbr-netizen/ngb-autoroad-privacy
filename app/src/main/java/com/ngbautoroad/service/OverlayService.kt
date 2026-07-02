@@ -688,6 +688,13 @@ class OverlayService : Service(),
                         
                         val isPinned by prefsManager.overlayPinnedFlow.collectAsState(initial = false)
 
+                        // Escala de fonte lida como estado reativo (igual aos demais
+                        // ajustes de aparência) para atualizar o card ao vivo quando o
+                        // usuário move o slider em Ajustes > Overlay - Aparência.
+                        val fontScale by prefsManager.overlayFontScaleFlow.collectAsState(initial = currentFontScale)
+                        // Altura mínima do card (0 = automática). Também reativa ao slider.
+                        val minHeightDp by prefsManager.overlayHeightFlow.collectAsState(initial = overlayHeight)
+
                         LaunchedEffect(isPinned) {
                             if (isPinned) {
                                 autoDismissJob?.cancel()
@@ -699,7 +706,8 @@ class OverlayService : Service(),
                         OverlayCard(
                             ride = ride,
                             score = score,
-                            fontScale = currentFontScale,
+                            fontScale = fontScale,
+                            minHeightDp = minHeightDp,
                             cardType = overlayCardType,
                             showScore = showScore,
                             showValuePerKm = showValuePerKm,
@@ -908,11 +916,11 @@ class OverlayService : Service(),
         overlayView?.let { view ->
             val params = view.layoutParams as? WindowManager.LayoutParams ?: return
             params.width = widthPx
-            // Preservar altura atual (não zerar)
-            val currentHeightDp = if (params.height > 0) (params.height / density).toInt() else 0
             try {
                 windowManager?.updateViewLayout(view, params)
-                serviceScope.launch { prefsManager.saveOverlaySize(newWidth, currentHeightDp) }
+                // Salva apenas a largura — a altura mínima é configurada à parte e não
+                // deve ser sobrescrita ao arrastar o slider de largura.
+                serviceScope.launch { prefsManager.saveOverlayWidth(newWidth) }
             } catch (_: Exception) {}
         }
     }

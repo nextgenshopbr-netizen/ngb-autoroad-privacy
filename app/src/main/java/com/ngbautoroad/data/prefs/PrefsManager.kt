@@ -326,8 +326,9 @@ class PrefsManager(private val context: Context) {
         prefs[KEY_OVERLAY_WIDTH] ?: 320
     }
 
+    // Altura mínima do card (0 = automática/wrap-content).
     val overlayHeightFlow: Flow<Int> = context.dataStore.data.map { prefs ->
-        prefs[KEY_OVERLAY_HEIGHT] ?: 180
+        prefs[KEY_OVERLAY_HEIGHT] ?: 0
     }
 
     val overlayFontScaleFlow: Flow<Float> = context.dataStore.data.map { prefs ->
@@ -341,9 +342,23 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    // Salvam largura/altura de forma independente, para que ajustar um slider não
+    // apague o valor do outro (largura e altura são configuradas separadamente).
+    suspend fun saveOverlayWidth(width: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_OVERLAY_WIDTH] = width.coerceIn(200, 500)
+        }
+    }
+
+    suspend fun saveOverlayHeight(height: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_OVERLAY_HEIGHT] = height.coerceIn(0, 600)
+        }
+    }
+
     suspend fun saveOverlayFontScale(scale: Float) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_OVERLAY_FONT_SCALE] = scale.coerceIn(1.0f, 2.5f)
+            prefs[KEY_OVERLAY_FONT_SCALE] = scale.coerceIn(0.7f, 2.0f)
         }
     }
 

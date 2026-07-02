@@ -515,6 +515,7 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
     // v7.1.0: ocrEnabled removido — OcrCaptureService desativado, Triple Engine cobre OCR internamente
     val protectionEnabled by prefsManager.protectionEnabledFlow.collectAsState(initial = false)
     val overlayWidth by prefsManager.overlayWidthFlow.collectAsState(initial = 320)
+    val overlayHeight by prefsManager.overlayHeightFlow.collectAsState(initial = 0)
     val overlayFontScale by prefsManager.overlayFontScaleFlow.collectAsState(initial = 1.0f)
 
     // Variáveis de Customização do Card
@@ -780,12 +781,37 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                     value = overlayWidth.toFloat(),
                     onValueChange = { newWidth ->
                         scope.launch {
-                            prefsManager.saveOverlaySize(newWidth.toInt(), 0)
+                            // Salva só a largura (não zera a altura configurada à parte)
+                            prefsManager.saveOverlayWidth(newWidth.toInt())
                             OverlayService.resizeFromOutside(newWidth.toInt())
                         }
                     },
                     valueRange = 200f..500f,
                     steps = 14
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Altura mínima do overlay (0 = automática / ajusta ao conteúdo)
+                Text(
+                    if (overlayHeight <= 0) "Altura: Automática"
+                    else "Altura mínima: ${overlayHeight}dp",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = overlayHeight.toFloat(),
+                    onValueChange = { newHeight ->
+                        // Passo de 20dp; abaixo do 1º passo volta a 0 (automática)
+                        val snapped = if (newHeight < 20f) 0 else (newHeight / 20f).toInt() * 20
+                        scope.launch { prefsManager.saveOverlayHeight(snapped) }
+                    },
+                    valueRange = 0f..400f,
+                    steps = 19
+                )
+                Text(
+                    "0 = automática (recomendado) · aumente para um card mais alto",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -802,6 +828,11 @@ private fun SettingsSystemContent(prefsManager: PrefsManager) {
                     },
                     valueRange = 0.7f..2.0f,
                     steps = 12
+                )
+                Text(
+                    "A fonte também acompanha automaticamente a largura do card",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
