@@ -1,0 +1,75 @@
+name: Release APK (manual)
+
+# Disparável manualmente (workflow_dispatch) — gera o APK de release
+# assinado sem depender de push de tag. Publica no Releases e também
+# como artefato do run (fallback para download).
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag/versão do release (ex: v7.0.1)"
+        required: true
+        default: "v7.0.1"
+
+jobs:
+  release:
+    name: Build & Publish Release (manual)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Permissão para gradlew
+        run: chmod +x gradlew
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build Release APK (assinado via keystore do repo)
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Renomear APK
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk "dist/NGBAutoRoad-${VERSION}.apk"
+          ls -lh dist
+
+      - name: Upload APK como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: NGBAutoRoad-release
+          path: dist/NGBAutoRoad-*.apk
+          retention-days: 30
+
+      - name: Publicar Release no GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: "NGBAutoRoad ${{ github.event.inputs.version }}"
+          body: |
+            Correções de aparência do overlay:
+            - Escala de fonte funcionando em toda a faixa (0.7x–2.0x).
+            - Fonte acompanha automaticamente a largura do card.
+            - Nova opção de altura do card.
+          draft: false
+          files: dist/NGBAutoRoad-*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
