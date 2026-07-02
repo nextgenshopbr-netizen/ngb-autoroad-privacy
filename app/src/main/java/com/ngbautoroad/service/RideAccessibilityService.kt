@@ -449,14 +449,27 @@ class RideAccessibilityService : AccessibilityService() {
         if (userActionDetector?.isActive() == true || lifecycleManager?.isActive() == true) {
             val textsForLifecycle = collectTextsMultiWindow(packageName, event)
             if (textsForLifecycle.isNotEmpty()) {
-                // Camada 2: Detecção por mudança de contexto da tela
-                val contextAction = userActionDetector?.onScreenContentChanged(textsForLifecycle) ?: false
-                if (!contextAction) {
-                    // Camada 2b: Detecção de conclusão/cancelamento após aceite
-                    userActionDetector?.onTextsAfterAccepted(textsForLifecycle)
-                }
-                // Legacy lifecycle (mantido para compatibilidade)
+                // v7.7.0: Detector específico (frases exatas, sensível à fase atual) roda
+                // PRIMEIRO. É mais confiável que a heurística genérica do UserActionDetector,
+                // que só olha palavras soltas (ex.: "você está online") sem saber em que fase
+                // a corrida está — e por isso decidia REFUSED antes do texto de aceite real
+                // ("a caminho do passageiro") ter chance de ser lido (task_b3cf48f5, confirmado
+                // via telemetria: corridas 318/321/324 marcadas RECUSADA 4-15s após detectadas,
+                // todas com corrida real CONCLUÍDA na Uber). Se o específico já resolveu a
+                // transição neste evento, o genérico nem entra — só ele decidia por W.O. antes.
+                val phaseBefore = lifecycleManager?.getCurrentPhase()
                 lifecycleManager?.onTextsDetected(textsForLifecycle, event.packageName?.toString() ?: "")
+                val resolvedBySpecificDetector = phaseBefore != null && phaseBefore != lifecycleManager?.getCurrentPhase()
+
+                if (!resolvedBySpecificDetector) {
+                    // Camada 2: heurística genérica (mudança de contexto da tela) — só age
+                    // quando o detector específico não achou nenhum padrão exato neste evento
+                    val contextAction = userActionDetector?.onScreenContentChanged(textsForLifecycle) ?: false
+                    if (!contextAction) {
+                        // Camada 2b: Detecção de conclusão/cancelamento após aceite
+                        userActionDetector?.onTextsAfterAccepted(textsForLifecycle)
+                    }
+                }
             }
         }
     }
@@ -587,10 +600,12 @@ class RideAccessibilityService : AccessibilityService() {
                 }
             } else {
                 Log.d(TAG_PARSE, "│  ○ Sem dados suficientes para corrida (valor=${rideData?.rideValue ?: 0.0})")
-                // Se não encontrou dados mas é TYPE_WINDOW_STATE_CHANGED, tentar screenshot
-                if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                    triggerScreenshotFallback(packageName, platform)
-                }
+                // v7.7.0: Antes só tentava screenshot em TYPE_WINDOW_STATE_CHANGED. Mas a Uber
+                // atualiza a oferta como bottom sheet dentro da mesma janela (gera
+                // TYPE_WINDOW_CONTENT_CHANGED, não STATE_CHANGED) — esse caso ficava sem
+                // NENHUMA tentativa de fallback, mesmo com a árvore incompleta. O cooldown de
+                // 2s (SCREENSHOT_COOLDOWN_MS) já protege contra sobrecarga.
+                triggerScreenshotFallback(packageName, platform)
                 Log.d(TAG_ENGINE, "└─ Fim processamento (sem corrida)")
             }
         } catch (e: Exception) {
@@ -703,6 +718,7 @@ class RideAccessibilityService : AccessibilityService() {
      * - Processamento OCR leva ~500-800ms
      */
     private fun triggerScreenshotFallback(packageName: String, platform: Platform) {
+        val telemetry = TelemetryLogger.getInstance(this)
         // Verificar se API suporta takeScreenshot
         if (Build.VERSION.SDK_INT < 30) {
             Log.d(TAG_OCR, "│  ⊘ Screenshot indisponível (API ${Build.VERSION.SDK_INT} < 30)")
@@ -713,6 +729,8 @@ class RideAccessibilityService : AccessibilityService() {
         val now = System.currentTimeMillis()
         if (now - lastScreenshotTime < SCREENSHOT_COOLDOWN_MS) {
             Log.d(TAG_OCR, "│  ⊘ Screenshot em cooldown (${now - lastScreenshotTime}ms < ${SCREENSHOT_COOLDOWN_MS}ms)")
+            telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.DEBUG,
+                "OCR: fallback em cooldown (${now - lastScreenshotTime}ms) pkg=$packageName")
             return
         }
 
@@ -720,6 +738,11 @@ class RideAccessibilityService : AccessibilityService() {
         pendingScreenshotForPackage = packageName
 
         Log.d(TAG_OCR, "│  📸 Iniciando screenshot silencioso para OCR...")
+        // v7.7.0: Instrumentação — antes esse caminho inteiro só logava em Logcat (invisível
+        // no export de telemetria). Sem isso não dá pra saber se o OCR chegou a rodar quando
+        // a árvore de acessibilidade falha.
+        telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.INFO,
+            "OCR: fallback acionado (árvore insuficiente) pkg=$packageName plataforma=${platform.displayName}")
 
         try {
             takeScreenshot(
@@ -733,12 +756,16 @@ class RideAccessibilityService : AccessibilityService() {
 
                     override fun onFailure(errorCode: Int) {
                         Log.w(TAG_OCR, "│  ✖ Screenshot falhou (errorCode=$errorCode)")
+                        telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.WARN,
+                            "OCR: screenshot falhou errorCode=$errorCode pkg=$packageName")
                         pendingScreenshotForPackage = null
                     }
                 }
             )
         } catch (e: Exception) {
             Log.e(TAG_OCR, "│  ✖ Exceção no takeScreenshot: ${e.message}")
+            telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.ERROR,
+                "OCR: exceção no takeScreenshot: ${e.message} pkg=$packageName")
             pendingScreenshotForPackage = null
         }
     }
@@ -748,6 +775,7 @@ class RideAccessibilityService : AccessibilityService() {
      * Extrai texto e tenta parsear como corrida.
      */
     private fun processScreenshotWithOcr(screenshot: ScreenshotResult, platform: Platform) {
+        val telemetry = TelemetryLogger.getInstance(this)
         try {
             val hardwareBuffer = screenshot.hardwareBuffer
             val colorSpace = screenshot.colorSpace
@@ -758,6 +786,7 @@ class RideAccessibilityService : AccessibilityService() {
 
             if (bitmap == null) {
                 Log.w(TAG_OCR, "│  ✖ Bitmap nulo após conversão")
+                telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.WARN, "OCR: bitmap nulo após conversão")
                 return
             }
 
@@ -772,6 +801,8 @@ class RideAccessibilityService : AccessibilityService() {
                     val fullText = visionText.text
                     if (fullText.isNotBlank()) {
                         Log.d(TAG_OCR, "│  ✓ OCR extraiu ${fullText.length} chars")
+                        telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.INFO,
+                            "OCR: extraiu ${fullText.length} chars plataforma=${platform.displayName}")
 
                         // Converter texto OCR em lista de linhas para o parser
                         val lines = fullText.lines()
@@ -799,6 +830,8 @@ class RideAccessibilityService : AccessibilityService() {
                                 lastRideValue = rideData.rideValue
                                 lastRideValueTime = now
                                 Log.i(TAG_OCR, "│  ✅ CORRIDA VIA OCR! R$${String.format("%.2f", rideData.rideValue)}")
+                                telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.INFO,
+                                    "OCR: CORRIDA DETECTADA R$${String.format("%.2f", rideData.rideValue)} plataforma=${rideData.platform.displayName}")
                                 // v7.1.0: Fallback robusto — usa Intent quando callback null
                                 if (!OverlayService.isRunning() || OverlayService.onRideDetected == null) {
                                     Log.w(TAG_OCR, "│  ⚠️ OverlayService não disponível. Iniciando via Intent...")
@@ -806,19 +839,31 @@ class RideAccessibilityService : AccessibilityService() {
                                 } else {
                                     OverlayService.onRideDetected?.invoke(rideData)
                                 }
+                            } else {
+                                telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.DEBUG,
+                                    "OCR: corrida duplicada descartada (hash=$hash)")
                             }
+                        } else {
+                            telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.DEBUG,
+                                "OCR: texto extraído mas sem dados de corrida válidos (valor=${rideData?.rideValue ?: 0.0})")
                         }
                     } else {
                         Log.d(TAG_OCR, "│  ○ OCR: texto vazio")
+                        telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.DEBUG,
+                            "OCR: texto vazio (nada reconhecido na imagem)")
                     }
                     bitmap.recycle()
                 }
                 .addOnFailureListener { e ->
                     Log.e(TAG_OCR, "│  ✖ ML Kit falhou: ${e.message}")
+                    telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.ERROR,
+                        "OCR: ML Kit falhou: ${e.message}")
                     bitmap.recycle()
                 }
         } catch (e: Exception) {
             Log.e(TAG_OCR, "│  ✖ Erro processando screenshot: ${e.message}", e)
+            telemetry.log(TelemetryLogger.Category.PARSER, TelemetryLogger.Level.ERROR,
+                "OCR: erro processando screenshot: ${e.message}")
         } finally {
             pendingScreenshotForPackage = null
         }

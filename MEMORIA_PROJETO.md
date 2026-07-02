@@ -221,13 +221,52 @@
 - Fonte negrito com espaçamento generoso nos botões
 - versionCode=33, versionName="5.3.2"
 
+### 2026-06-30 21:30 — v7.0.0
+- **Segurança Proativa**:
+  - Integração inicial de **SQLCipher** (Framework pronto para criptografia AES-256).
+  - Gestão de chaves via **EncryptedSharedPreferences** e Keystore.
+- **Novas Funcionalidades**:
+  - **OCR de Despesas**: Motor ML Kit estendido para leitura automática de recibos/notas fiscais.
+  - **Profit Heatmaps**: Estrutura de dados (Lat/Lng) adicionada às entidades de ganho para visualização de zonas de lucro.
+  - **Backup Privado**: CloudBackupManager implementado para facilitar exportação e sincronia.
+- **UX & Integração com Sistema**:
+  - **Quick Settings Tile**: Ligar/desligar overlay diretamente da central de notificações.
+  - **Home Widget**: Widget Glance para monitoramento rápido de ganhos e status.
+  - **Setup Wizard v2**: Inclusão de verificação de otimização de bateria e permissões Android 17.
+- **Estabilidade**:
+  - OverlayService migrado para `START_STICKY`.
+  - Melhorias na gestão de memória (onTrimMemory) para evitar fechamento do serviço pelo sistema.
+
+### 2026-06-30 22:00 — v7.0.0
+- **Fix 16KB Page Alignment**:
+  - Migração definitiva do SQLCipher legatário (`android-database-sqlcipher`) para o moderno **`net.zetetic:sqlcipher-android:4.16.0`**.
+  - Suporte nativo a kernels de 16KB (Android 15+).
+  - Adicionado `android:extractNativeLibs="false"` no Manifest.
+  - Habilitado `android.bundle.enableUncompressedNativeLibs` no `gradle.properties`.
+  - Carregamento explícito da lib via `System.loadLibrary("sqlcipher")` no `NGBAutoRoadApp`.
+- **Segurança**:
+  - Re-ativação completa da criptografia AES-256 nos bancos App e Finance.
+- **Novas Funcionalidades**:
+  - **OCR de Despesas**: Motor ML Kit estendido para leitura automática de recibos/notas fiscais.
+  - **Profit Heatmaps**: Estrutura de dados (Lat/Lng) adicionada às entidades de ganho para visualização de zonas de lucro.
+  - **Backup Privado**: CloudBackupManager implementado para facilitar exportação e sincronia.
+- **UX & Integração com Sistema**:
+  - **Quick Settings Tile**: Ligar/desligar overlay diretamente da central de notificações.
+  - **Home Widget**: Widget Glance para monitoramento rápido de ganhos e status.
+  - **Setup Wizard v2**: Inclusão de verificação de otimização de bateria e permissões Android 17.
+
 ---
 
-## Arquitetura Atual (v5.3.2)
+## Arquitetura Atual (v7.0.0)
 
 | Camada | Arquivo | Responsabilidade |
 |--------|---------|-----------------|
-| App | NGBAutoRoadApp.kt | Application class |
+| App | NGBAutoRoadApp.kt | Application class + Koin + Memory Management |
+| DI | AppModule.kt | Injeção de Dependência |
+| Security | SecurityUtils.kt | Criptografia e gestão de chaves |
+| Widget | EarningsWidget.kt | Home screen monitoring |
+| Service | OverlayTileService.kt | Quick Access Control |
+| Util | ReceiptOcrHelper.kt | OCR de recibos |
 | Model | RideData.kt | RideData, RideType enum, RideScore, ScoreLevel |
 | Model | CardGallery.kt | 35 cards, CardField enum, categorias |
 | Model | FinanceModels.kt | Modelos financeiros |
@@ -759,3 +798,40 @@ Simulação avançada de 1 ano com dados aleatórios (365 dias, ~4.500 corridas,
 - **Correções de Compilação**: Adicionado import `rememberLauncherForActivityResult` no DashboardTab, fix referência `LocalLifecycleOwner` (pacote correto: `compose.ui.platform`), adicionado `@OptIn(ExperimentalMaterial3Api)` no PermissionsStep, adicionada dependência `lifecycle-runtime-compose:2.7.0`.
 - **Backup de Teste Regenerado**: Script `generate_backup.py` corrigido com chave `profiles_json`, campos corretos de CriteriaWeights/DriverThresholds, campo `id` e campos `autoPilotMode`/`minAcceptScore`/`maxRefuseScore` em cada perfil. ZIP regenerado com 3.464 corridas, 132 turnos, R$ 48.756 em ganhos.
 - **Release**: APK v6.9.3 (versionCode 72) compilado, zipalign 4-byte, assinado v2/v3, publicado no GitHub com backup atualizado.
+
+---
+
+### 2026-07-01 — Fix: Race condition entre detectores causava RECUSADA falsa (PR #1)
+
+**Contexto:** Export de telemetria do turno de 01/07 (24 corridas reais na Uber, R$301,94)
+comparado ao histórico do app revelou 10/24 COMPLETED, 20 REFUSED incorretas, R$158
+registrado. Investigação log-a-log (arquivo `ngb_telemetry_20260701_064029.log`)
+identificou a causa raiz.
+
+**Causa raiz:** `UserActionDetector.onScreenContentChanged()` (heurístico genérico, palavra
+solta tipo "você está online") rodava ANTES de `RideLifecycleManager.onTextsDetected()`
+(específico por fase, frases exatas tipo "a caminho do passageiro") a cada evento de
+acessibilidade (throttle 80ms). O genérico decretava REFUSED em 4-15s mesmo em corridas
+que a Uber já tinha registrado como concluídas — confirmado nas corridas rideId 318, 321,
+324 do log (R$54,94 perdidos só nesse turno). Outras 6 corridas (R$63,58) nunca apareceram
+no log nem pela árvore de acessibilidade nem pelo fallback OCR.
+
+**Correções aplicadas** (`RideAccessibilityService.kt`, `UserActionDetector.kt`):
+1. Reordenada a prioridade: detector específico roda primeiro; genérico só age se o
+   específico não resolveu nada naquele evento.
+2. "Tela ociosa" agora exige 2+ indicadores (mesmo critério que `isEarningsScreen` já
+   usava) em vez de 1 palavra isolada, mais confirmação em 2 leituras consecutivas.
+3. Instrumentado `TelemetryLogger` em todo o caminho de screenshot+OCR (antes só logava em
+   Logcat — invisível em exports de telemetria, impedindo confirmar se o OCR rodava quando
+   a árvore de acessibilidade vinha vazia).
+4. Removida a restrição de `TYPE_WINDOW_STATE_CHANGED` no acionamento do fallback OCR
+   quando a árvore tem texto insuficiente (a Uber atualiza a oferta via
+   `TYPE_WINDOW_CONTENT_CHANGED`, que nunca acionava o fallback antes).
+
+**Status:** Build compilado (`compileDebugKotlin`/`assembleDebug`) e instalado via `adb`
+no dispositivo físico (SM-S948B) para validação em turno real. PR aberto:
+https://github.com/nextgenshopbr-netizen/ngb-autoroad-privacy/pull/1 (branch
+`fix/ride-lifecycle-false-refused-race`, ainda não mergeado).
+
+**Pendente:** Validar com o próximo export de telemetria — confirmar queda de falsos
+REFUSED e presença de logs `OCR:` nas janelas que antes tinham silêncio total.
